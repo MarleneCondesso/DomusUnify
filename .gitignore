@@ -1,0 +1,52 @@
+## =========================
+## .NET / C#
+## =========================
+
+# Build results
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+
+# VS Code
+.vscode/
+
+# Dotnet tools
+.dotnet/
+
+# NuGet packages
+**/packages/*
+*.nupkg
+*.snupkg
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables / secrets
+appsettings.Development.json
+appsettings.Production.json
+.env
+
+# Coverage
+coverage/
+coverage.xml
+
+# Publish output
+publish/
+
+# Backup files
+*.bak
+*.tmp
+*.swp
