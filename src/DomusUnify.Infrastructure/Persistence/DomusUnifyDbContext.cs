@@ -1,9 +1,10 @@
 using DomusUnify.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using DomusUnify.Application.Common.Interfaces;
 
 namespace DomusUnify.Infrastructure.Persistence;
 
-public class DomusUnifyDbContext : DbContext
+public class DomusUnifyDbContext : DbContext, IAppDbContext
 {
     public DomusUnifyDbContext(DbContextOptions<DomusUnifyDbContext> options)
         : base(options) { }
@@ -15,6 +16,8 @@ public class DomusUnifyDbContext : DbContext
     public DbSet<SharedList> Lists => Set<SharedList>();
     public DbSet<ListItem> ListItems => Set<ListItem>();
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<ListCategory> ListCategories => Set<ListCategory>();
+    public DbSet<ItemCategory> ItemCategories => Set<ItemCategory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -78,6 +81,42 @@ public class DomusUnifyDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // LIST CATEGORY
+        modelBuilder.Entity<ListCategory>(b =>
+        {
+            b.ToTable("ListCategories");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Name).HasMaxLength(80).IsRequired();
+            b.Property(x => x.ColorHex).HasMaxLength(7);
+            b.Property(x => x.SortOrder).IsRequired();
+
+            b.HasIndex(x => new { x.FamilyId, x.Name }).IsUnique();
+
+            b.HasOne(x => x.Family)
+                .WithMany()
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ITEM CATEGORY
+        modelBuilder.Entity<ItemCategory>(b =>
+        {
+            b.ToTable("ItemCategories");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Name).HasMaxLength(80).IsRequired();
+            b.Property(x => x.ColorHex).HasMaxLength(7);
+            b.Property(x => x.SortOrder).IsRequired();
+
+            b.HasIndex(x => new { x.FamilyId, x.Name }).IsUnique();
+
+            b.HasOne(x => x.Family)
+                .WithMany()
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // CALENDAR EVENT
         modelBuilder.Entity<CalendarEvent>(b =>
         {
@@ -118,6 +157,14 @@ public class DomusUnifyDbContext : DbContext
                 .WithMany(x => x.Lists)
                 .HasForeignKey(x => x.FamilyId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.Category)
+                .WithMany(c => c.Lists)
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasIndex(x => new { x.FamilyId, x.CategoryId });
+
         });
 
         // LIST ITEM
@@ -140,6 +187,14 @@ public class DomusUnifyDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.CompletedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasOne(x => x.Category)
+                .WithMany(c => c.Items)
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasIndex(x => new { x.SharedListId, x.CategoryId });
+
         });
 
         // EXPENSE

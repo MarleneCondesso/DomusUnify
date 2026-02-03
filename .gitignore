@@ -16,6 +16,13 @@ obj/
 # Rider
 .idea/
 
+# Node.js
+node_modules/
+**/node_modules/
+
+# Local tooling (do not commit)
+tools/
+
 # VS Code
 .vscode/
 

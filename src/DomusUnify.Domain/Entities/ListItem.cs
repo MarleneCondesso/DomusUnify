@@ -12,6 +12,9 @@ public class ListItem : BaseEntity
 
     public Guid? CompletedByUserId { get; set; }
     public User? CompletedByUser { get; set; }
+    public Guid? CategoryId { get; set; }
+    public ItemCategory? Category { get; set; }
+
 
     public DateTime? CompletedAtUtc { get; set; }
 }

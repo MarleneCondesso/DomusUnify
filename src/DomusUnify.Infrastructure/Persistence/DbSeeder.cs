@@ -22,6 +22,7 @@ public static class DbSeeder
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!")
         };
 
+
         var family = new Family
         {
             Name = "DomusUnify Family"
@@ -40,6 +41,8 @@ public static class DbSeeder
         };
 
         db.FamilyMembers.Add(membership);
+        adminUser.CurrentFamilyId = family.Id;
+
         await db.SaveChangesAsync();
     }
 }

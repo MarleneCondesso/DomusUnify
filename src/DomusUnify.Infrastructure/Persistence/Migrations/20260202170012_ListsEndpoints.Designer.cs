@@ -4,6 +4,7 @@ using DomusUnify.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DomusUnify.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(DomusUnifyDbContext))]
-    partial class DomusUnifyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260202170012_ListsEndpoints")]
+    partial class ListsEndpoints
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -158,91 +161,10 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.ToTable("FamilyMembers", (string)null);
                 });
 
-            modelBuilder.Entity("DomusUnify.Domain.Entities.ItemCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ColorHex")
-                        .HasMaxLength(7)
-                        .HasColumnType("nvarchar(7)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("FamilyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("IconKey")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("nvarchar(80)");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FamilyId", "Name")
-                        .IsUnique();
-
-                    b.ToTable("ItemCategories", (string)null);
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.ListCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ColorHex")
-                        .HasMaxLength(7)
-                        .HasColumnType("nvarchar(7)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("FamilyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("IconKey")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("nvarchar(80)");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FamilyId", "Name")
-                        .IsUnique();
-
-                    b.ToTable("ListCategories", (string)null);
-                });
-
             modelBuilder.Entity("DomusUnify.Domain.Entities.ListItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("CompletedAtUtc")
@@ -270,11 +192,7 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
-
                     b.HasIndex("CompletedByUserId");
-
-                    b.HasIndex("SharedListId", "CategoryId");
 
                     b.HasIndex("SharedListId", "IsCompleted");
 
@@ -285,9 +203,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -308,10 +223,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("FamilyId", "CategoryId");
 
                     b.HasIndex("FamilyId", "Name");
 
@@ -414,35 +325,8 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DomusUnify.Domain.Entities.ItemCategory", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
-                        .WithMany()
-                        .HasForeignKey("FamilyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Family");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.ListCategory", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
-                        .WithMany()
-                        .HasForeignKey("FamilyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Family");
-                });
-
             modelBuilder.Entity("DomusUnify.Domain.Entities.ListItem", b =>
                 {
-                    b.HasOne("DomusUnify.Domain.Entities.ItemCategory", "Category")
-                        .WithMany("Items")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("DomusUnify.Domain.Entities.User", "CompletedByUser")
                         .WithMany()
                         .HasForeignKey("CompletedByUserId")
@@ -454,8 +338,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Category");
-
                     b.Navigation("CompletedByUser");
 
                     b.Navigation("SharedList");
@@ -463,18 +345,11 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.SharedList", b =>
                 {
-                    b.HasOne("DomusUnify.Domain.Entities.ListCategory", "Category")
-                        .WithMany("Lists")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
                         .WithMany("Lists")
                         .HasForeignKey("FamilyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Category");
 
                     b.Navigation("Family");
                 });
@@ -498,16 +373,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Navigation("Lists");
 
                     b.Navigation("Members");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.ItemCategory", b =>
-                {
-                    b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.ListCategory", b =>
-                {
-                    b.Navigation("Lists");
                 });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.SharedList", b =>

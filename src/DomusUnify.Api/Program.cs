@@ -2,8 +2,14 @@ using DomusUnify.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using DomusUnify.Api.Services.Auth;
 using Microsoft.OpenApi.Models;
+using DomusUnify.Application.Lists;
+using DomusUnify.Application.Common.Realtime;
+using DomusUnify.Application.Categories;
+using DomusUnify.Api.Services.Auth;
+using DomusUnify.Api.Services.CurrentUser;
+using DomusUnify.Api.Realtime;
+using DomusUnify.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +23,7 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1"
     });
 
-    // 🔐 Bearer JWT
+    // Bearer JWT
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -63,6 +69,23 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ClockSkew = TimeSpan.FromSeconds(30)
         };
+
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/family"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+
     });
 
 builder.Services.AddAuthorization();
@@ -71,6 +94,16 @@ builder.Services.AddAuthorization();
 // DB + Infra
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
+
+// Application
+builder.Services.AddScoped<IListService, ListService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
+// Realtime
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
 
 var app = builder.Build();
 
@@ -94,5 +127,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<FamilyHub>("/hubs/family");
 
 app.Run();
