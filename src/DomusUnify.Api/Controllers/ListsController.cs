@@ -43,23 +43,24 @@ public class ListsController : ControllerBase
     {
         var familyId = await _ctx.GetCurrentFamilyIdAsync(ct);
 
-        var created = await _listService.CreateListAsync(_ctx.UserId, familyId, request.Name, request.Type, ct);
+        var created = await _listService.CreateListAsync(_ctx.UserId, familyId, request.Name, request.ColorHex, request.Type, ct);
 
         return Ok(new ListResponse
         {
             Id = created.Id,
             Name = created.Name,
             Type = created.Type,
+            ColorHex = created.ColorHex,
             ItemsCount = created.ItemsCount,
             CompletedCount = created.CompletedCount
         });
     }
 
     [HttpPatch("{listId:guid}")]
-    public async Task<IActionResult> RenameList(Guid listId, RenameListRequest request, CancellationToken ct)
+    public async Task<IActionResult> UpdateList(Guid listId, UpdateListRequest request, CancellationToken ct)
     {
         var familyId = await _ctx.GetCurrentFamilyIdAsync(ct);
-        await _listService.RenameListAsync(_ctx.UserId, familyId, listId, request.Name, ct);
+        await _listService.UpdateListAsync(_ctx.UserId, familyId, listId, request.Name, request.ColorHex, request.Type, ct);
         return NoContent();
     }
 

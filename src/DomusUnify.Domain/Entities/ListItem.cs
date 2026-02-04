@@ -9,12 +9,9 @@ public class ListItem : BaseEntity
 
     public string Name { get; set; } = null!;
     public bool IsCompleted { get; set; }
-
     public Guid? CompletedByUserId { get; set; }
     public User? CompletedByUser { get; set; }
     public Guid? CategoryId { get; set; }
     public ItemCategory? Category { get; set; }
-
-
     public DateTime? CompletedAtUtc { get; set; }
 }

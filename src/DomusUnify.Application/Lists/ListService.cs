@@ -29,6 +29,7 @@ public sealed class ListService : IListService
             {
                 l.Id,
                 l.Name,
+                l.ColorHex,
                 l.Type, // enum (fica como int no SQL)
                 ItemsCount = l.Items.Count(),
                 CompletedCount = l.Items.Count(i => i.IsCompleted)
@@ -40,6 +41,7 @@ public sealed class ListService : IListService
             .Select(x => new ListSummary(
                 x.Id,
                 x.Name,
+                x.ColorHex ?? string.Empty,
                 x.Type.ToString(), // conversão já em memória
                 x.ItemsCount,
                 x.CompletedCount
@@ -47,7 +49,7 @@ public sealed class ListService : IListService
             .ToList();
     }
 
-    public async Task<ListSummary> CreateListAsync(Guid userId, Guid familyId, string name, string type, CancellationToken ct)
+    public async Task<ListSummary> CreateListAsync(Guid userId, Guid familyId, string name, string colorHex, string type, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
         EnsureNotViewer(role);
@@ -63,7 +65,8 @@ public sealed class ListService : IListService
         {
             FamilyId = familyId,
             Name = trimmed,
-            Type = listType
+            Type = listType,
+            ColorHex = colorHex.Trim()
         };
 
         _db.Lists.Add(list);
@@ -76,14 +79,15 @@ public sealed class ListService : IListService
             {
                 id = list.Id,
                 name = list.Name,
-                type = list.Type.ToString()
+                type = list.Type.ToString(),
+                colorHex = list.ColorHex
             }
         }, ct);
 
-        return new ListSummary(list.Id, list.Name, list.Type.ToString(), 0, 0);
+        return new ListSummary(list.Id, list.Name, list.ColorHex, list.Type.ToString(), 0, 0);
     }
 
-    public async Task RenameListAsync(Guid userId, Guid familyId, Guid listId, string newName, CancellationToken ct)
+    public async Task UpdateListAsync(Guid userId, Guid familyId, Guid listId, string newName, string colorHex, string type, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
         EnsureNotViewer(role);
@@ -97,15 +101,21 @@ public sealed class ListService : IListService
             throw new KeyNotFoundException("Lista não encontrada.");
 
         list.Name = trimmed;
+        list.ColorHex = colorHex.Trim();
+        if (!Enum.TryParse<ListType>(type, true, out var listType))
+            throw new ArgumentException("Tipo inválido. Use: Shopping, Tasks, Custom.");
+        list.Type = listType;
+
         await _db.SaveChangesAsync(ct);
 
         await _rt.NotifyFamilyAsync(familyId, "lists:changed", new
         {
-            action = "renamed",
+            action = "updated",
             list = new
             {
                 id = list.Id,
                 name = list.Name,
+                colorHex = list.ColorHex,
                 type = list.Type.ToString()
             }
         }, ct);
@@ -242,7 +252,7 @@ public sealed class ListService : IListService
             item.Name = trimmed;
         }
 
-        // Categoria (PATCH profissional)
+        // Categoria 
         if (categoryChangeRequested)
         {
             if (categoryId is null)
@@ -258,7 +268,7 @@ public sealed class ListService : IListService
                 if (!exists)
                     throw new ArgumentException("Categoria inválida para esta família.");
 
-                item.CategoryId = categoryId;
+                item.CategoryId = categoryId; // definir
             }
         }
 

@@ -3,6 +3,7 @@ namespace DomusUnify.Application.Lists.Models;
 public sealed record ListSummary(
     Guid Id,
     string Name,
+    string ColorHex,
     string Type,
     int ItemsCount,
     int CompletedCount

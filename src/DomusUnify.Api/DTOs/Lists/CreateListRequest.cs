@@ -4,4 +4,5 @@ public sealed class CreateListRequest
 {
     public string Name { get; set; } = null!;
     public string Type { get; set; } = "Custom"; // Shopping | Tasks | Custom
+    public string ColorHex { get; set; } = "";
 }

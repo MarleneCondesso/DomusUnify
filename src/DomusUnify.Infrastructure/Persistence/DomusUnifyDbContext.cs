@@ -16,7 +16,6 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     public DbSet<SharedList> Lists => Set<SharedList>();
     public DbSet<ListItem> ListItems => Set<ListItem>();
     public DbSet<Expense> Expenses => Set<Expense>();
-    public DbSet<ListCategory> ListCategories => Set<ListCategory>();
     public DbSet<ItemCategory> ItemCategories => Set<ItemCategory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -81,24 +80,6 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // LIST CATEGORY
-        modelBuilder.Entity<ListCategory>(b =>
-        {
-            b.ToTable("ListCategories");
-            b.HasKey(x => x.Id);
-
-            b.Property(x => x.Name).HasMaxLength(80).IsRequired();
-            b.Property(x => x.ColorHex).HasMaxLength(7);
-            b.Property(x => x.SortOrder).IsRequired();
-
-            b.HasIndex(x => new { x.FamilyId, x.Name }).IsUnique();
-
-            b.HasOne(x => x.Family)
-                .WithMany()
-                .HasForeignKey(x => x.FamilyId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
         // ITEM CATEGORY
         modelBuilder.Entity<ItemCategory>(b =>
         {
@@ -106,7 +87,6 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
             b.HasKey(x => x.Id);
 
             b.Property(x => x.Name).HasMaxLength(80).IsRequired();
-            b.Property(x => x.ColorHex).HasMaxLength(7);
             b.Property(x => x.SortOrder).IsRequired();
 
             b.HasIndex(x => new { x.FamilyId, x.Name }).IsUnique();
@@ -157,13 +137,6 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
                 .WithMany(x => x.Lists)
                 .HasForeignKey(x => x.FamilyId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            b.HasOne(x => x.Category)
-                .WithMany(c => c.Lists)
-                .HasForeignKey(x => x.CategoryId)
-                .OnDelete(DeleteBehavior.NoAction);
-
-            b.HasIndex(x => new { x.FamilyId, x.CategoryId });
 
         });
 

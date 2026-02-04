@@ -31,7 +31,6 @@ public class ItemCategoriesController : ControllerBase
             Id = x.Id,
             Name = x.Name,
             IconKey = x.IconKey,
-            ColorHex = x.ColorHex,
             SortOrder = x.SortOrder
         }).ToList());
     }
@@ -45,14 +44,13 @@ public class ItemCategoriesController : ControllerBase
 
             var created = await _svc.CreateItemCategoryAsync(
                 _ctx.UserId, familyId,
-                request.Name, request.IconKey, request.ColorHex, request.SortOrder, ct);
+                request.Name, request.IconKey, request.SortOrder, ct);
 
             return Ok(new CategoryResponse
             {
                 Id = created.Id,
                 Name = created.Name,
                 IconKey = created.IconKey,
-                ColorHex = created.ColorHex,
                 SortOrder = created.SortOrder
             });
         }
@@ -70,14 +68,13 @@ public class ItemCategoriesController : ControllerBase
 
             var updated = await _svc.UpdateItemCategoryAsync(
                 _ctx.UserId, familyId,
-                categoryId, request.Name, request.IconKey, request.ColorHex, request.SortOrder, ct);
+                categoryId, request.Name, request.IconKey, request.SortOrder, ct);
 
             return Ok(new CategoryResponse
             {
                 Id = updated.Id,
                 Name = updated.Name,
                 IconKey = updated.IconKey,
-                ColorHex = updated.ColorHex,
                 SortOrder = updated.SortOrder
             });
         }

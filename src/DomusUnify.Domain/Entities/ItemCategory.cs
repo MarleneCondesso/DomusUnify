@@ -9,7 +9,6 @@ public class ItemCategory : BaseEntity
 
     public string Name { get; set; } = null!;
     public string IconKey { get; set; } = "tag";  // ✅ novo (default)
-    public string? ColorHex { get; set; }
     public int SortOrder { get; set; } = 0;
 
 

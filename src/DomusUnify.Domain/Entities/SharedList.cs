@@ -7,9 +7,7 @@ public class SharedList : BaseEntity
 {
     public Guid FamilyId { get; set; }
     public Family Family { get; set; } = null!;
-    public Guid? CategoryId { get; set; }
-    public ListCategory? Category { get; set; }
-
+    public string? ColorHex { get; set; }
     public string Name { get; set; } = null!;
     public ListType Type { get; set; } = ListType.Custom;
 

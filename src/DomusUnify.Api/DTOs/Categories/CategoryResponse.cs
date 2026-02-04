@@ -5,6 +5,5 @@ public sealed class CategoryResponse
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;
     public string IconKey { get; set; } = null!;
-    public string? ColorHex { get; set; }
     public int SortOrder { get; set; }
 }
