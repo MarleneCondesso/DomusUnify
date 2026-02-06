@@ -21,6 +21,14 @@ public class AuthController : ControllerBase
         _jwt = jwt;
     }
 
+    /// <summary>
+    /// Registra um novo utilizador com os detalhes fornecidos.
+    /// </summary>
+    /// <remarks>
+    /// O email deve ser único. A palavra-passe é encriptada antes de ser armazenada.
+    /// </remarks>
+    /// <param name="request">O pedido de registo contendo nome, email e palavra-passe.</param>
+    /// <returns>Uma resposta de autenticação com token de acesso e tempo de expiração.</returns>
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
@@ -44,6 +52,14 @@ public class AuthController : ControllerBase
         return Ok(new AuthResponse { AccessToken = token, ExpiresAtUtc = expires });
     }
 
+    /// <summary>
+    /// Autentica um utilizador existente e retorna um token de acesso.
+    /// </summary>
+    /// <remarks>
+    /// Verifica as credenciais fornecidas. Se inválidas, retorna erro de não autorizado.
+    /// </remarks>
+    /// <param name="request">O pedido de login contendo email e palavra-passe.</param>
+    /// <returns>Uma resposta de autenticação com token de acesso e tempo de expiração.</returns>
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {

@@ -19,6 +19,14 @@ public class ListsController : ControllerBase
         _listService = listService;
     }
 
+    /// <summary>
+    /// Obtém todas as listas para a família atual.
+    /// </summary>
+    /// <remarks>
+    /// Lista todas as listas visíveis para o utilizador, incluindo contagem de itens e completados.
+    /// </remarks>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista de respostas de listas.</returns>
     // GET api/v1/lists
     [HttpGet]
     public async Task<ActionResult<List<ListResponse>>> GetLists(CancellationToken ct)
@@ -37,6 +45,15 @@ public class ListsController : ControllerBase
         }).ToList());
     }
 
+    /// <summary>
+    /// Cria uma nova lista para a família atual.
+    /// </summary>
+    /// <remarks>
+    /// Permite definir nome, cor e tipo da lista. O utilizador deve ter permissões na família.
+    /// </remarks>
+    /// <param name="request">O pedido contendo detalhes da lista a criar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>A resposta da lista criada.</returns>
     // POST api/v1/lists
     [HttpPost]
     public async Task<ActionResult<ListResponse>> CreateList(CreateListRequest request, CancellationToken ct)
@@ -56,6 +73,16 @@ public class ListsController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Atualiza uma lista existente.
+    /// </summary>
+    /// <remarks>
+    /// Permite alterar nome, cor e tipo da lista. O utilizador deve ter permissões na família.
+    /// </remarks>
+    /// <param name="listId">O ID da lista a atualizar.</param>
+    /// <param name="request">O pedido contendo detalhes atualizados da lista.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpPatch("{listId:guid}")]
     public async Task<IActionResult> UpdateList(Guid listId, UpdateListRequest request, CancellationToken ct)
     {
@@ -72,6 +99,15 @@ public class ListsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Obtém todos os itens de uma lista.
+    /// </summary>
+    /// <remarks>
+    /// Lista todos os itens da lista especificada, incluindo estado de conclusão e categoria.
+    /// </remarks>
+    /// <param name="listId">O ID da lista.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista de respostas de itens da lista.</returns>
     // GET api/v1/lists/{listId}/items
     [HttpGet("{listId:guid}/items")]
     public async Task<ActionResult<List<ListItemResponse>>> GetItems(Guid listId, CancellationToken ct)
@@ -93,6 +129,16 @@ public class ListsController : ControllerBase
 
     }
 
+    /// <summary>
+    /// Adiciona um novo item a uma lista.
+    /// </summary>
+    /// <remarks>
+    /// Permite definir nome e categoria opcional do item. O utilizador deve ter permissões na família.
+    /// </remarks>
+    /// <param name="listId">O ID da lista.</param>
+    /// <param name="request">O pedido contendo detalhes do item a adicionar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>A resposta do item da lista adicionado.</returns>
     // POST api/v1/lists/{listId}/items
     [HttpPost("{listId:guid}/items")]
     public async Task<ActionResult<ListItemResponse>> AddItem(Guid listId, CreateListItemRequest request, CancellationToken ct)
@@ -113,6 +159,16 @@ public class ListsController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Atualiza um item de lista existente.
+    /// </summary>
+    /// <remarks>
+    /// Permite alterar nome, estado de conclusão e categoria. CategoryId pode ser null para remover categoria.
+    /// </remarks>
+    /// <param name="itemId">O ID do item a atualizar.</param>
+    /// <param name="request">O pedido contendo detalhes atualizados do item.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     // PATCH api/v1/lists/items/{itemId}
     [HttpPatch("items/{itemId:guid}")]
     public async Task<IActionResult> UpdateItem(Guid itemId, UpdateListItemRequest request, CancellationToken ct)
@@ -155,6 +211,15 @@ public class ListsController : ControllerBase
     }
 
 
+    /// <summary>
+    /// Elimina um item de lista existente.
+    /// </summary>
+    /// <remarks>
+    /// Remove o item da lista. O utilizador deve ter permissões na família.
+    /// </remarks>
+    /// <param name="itemId">O ID do item a eliminar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     // DELETE api/v1/lists/items/{itemId}
     [HttpDelete("items/{itemId:guid}")]
     public async Task<IActionResult> DeleteItem(Guid itemId, CancellationToken ct)

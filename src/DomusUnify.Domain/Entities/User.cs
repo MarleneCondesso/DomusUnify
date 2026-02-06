@@ -12,9 +12,7 @@ public class User : BaseEntity
     public Family? CurrentFamily { get; set; }
 
     public ICollection<FamilyMember> FamilyMemberships { get; set; } = new List<FamilyMember>();
+    public ICollection<CalendarEvent> CreatedEvents  { get; set; } = new List<CalendarEvent>();
 
 
-    // audit (quem criou coisas)
-    public ICollection<CalendarEvent> CreatedEvents { get; set; } = new List<CalendarEvent>();
-    public ICollection<Expense> CreatedExpenses { get; set; } = new List<Expense>();
 }

@@ -18,7 +18,14 @@ public class FamiliesController : ControllerBase
 
     public FamiliesController(DomusUnifyDbContext db) => _db = db;
 
-    // POST api/v1/families
+    /// <summary>
+    /// Cria uma nova família e atribui o utilizador autenticado como administrador.
+    /// </summary>
+    /// <remarks>
+    /// O nome da família é obrigatório. O utilizador torna-se membro com papel de admin.
+    /// </remarks>
+    /// <param name="request">O pedido contendo o nome da família.</param>
+    /// <returns>A resposta da família criada.</returns>
     [HttpPost]
     public async Task<ActionResult<FamilyResponse>> CreateFamily(CreateFamilyRequest request)
     {
@@ -57,6 +64,13 @@ public class FamiliesController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Obtém a família atual do utilizador autenticado.
+    /// </summary>
+    /// <remarks>
+    /// Retorna a família definida como atual. Se não houver família ativa, sugere usar /api/v1/families/my para selecionar uma.
+    /// </remarks>
+    /// <returns>A resposta da família atual.</returns>
     // GET api/v1/families/me
     [HttpGet("me")]
     public async Task<ActionResult<FamilyResponse>> GetMyFamily()
@@ -89,7 +103,13 @@ public class FamiliesController : ControllerBase
     }
 
 
-    // GET api/v1/families/my
+    /// <summary>
+    /// Obtém todas as famílias das quais o utilizador autenticado é membro.
+    /// </summary>
+    /// <remarks>
+    /// Lista todas as famílias associadas ao utilizador, ordenadas por nome.
+    /// </remarks>
+    /// <returns>Uma lista de respostas de famílias.</returns>
     [HttpGet("my")]
     public async Task<ActionResult<List<FamilyResponse>>> GetMyFamilies()
     {
@@ -112,6 +132,14 @@ public class FamiliesController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Define a família atual para o utilizador autenticado.
+    /// </summary>
+    /// <remarks>
+    /// O utilizador deve ser membro da família especificada. Caso contrário, retorna erro de proibido.
+    /// </remarks>
+    /// <param name="request">O pedido contendo o ID da família a definir como atual.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpPost("set-current")]
     public async Task<IActionResult> SetCurrentFamily(SetCurrentFamilyRequest request)
     {

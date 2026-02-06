@@ -4,6 +4,7 @@ using DomusUnify.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DomusUnify.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(DomusUnifyDbContext))]
-    partial class DomusUnifyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260205084506_AddCalendarModule")]
+    partial class AddCalendarModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,13 +44,13 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("EndUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("ExceptionDateUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("FamilyId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsAllDay")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsCancelled")
                         .HasColumnType("bit");
 
                     b.Property<string>("Location")
@@ -191,47 +194,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Families", (string)null);
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.FamilyCalendarSettings", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CalendarColorHex")
-                        .HasMaxLength(7)
-                        .HasColumnType("nvarchar(7)");
-
-                    b.Property<int?>("CleanupOlderThanMonths")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("CleanupOlderThanYears")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("DailyReminderEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("FamilyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("HolidaysCountryCode")
-                        .IsRequired()
-                        .HasMaxLength(2)
-                        .HasColumnType("nvarchar(2)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FamilyId")
-                        .IsUnique();
-
-                    b.ToTable("FamilyCalendarSettings", (string)null);
                 });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.FamilyMember", b =>
@@ -417,38 +379,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("DomusUnify.Domain.Entities.UserCalendarSettings", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("DailyReminderMode")
-                        .HasColumnType("int");
-
-                    b.Property<TimeSpan>("DailyReminderTime")
-                        .HasColumnType("time");
-
-                    b.Property<int?>("DefaultEventReminderMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("UserCalendarSettings", (string)null);
-                });
-
             modelBuilder.Entity("DomusUnify.Domain.Entities.CalendarEvent", b =>
                 {
                     b.HasOne("DomusUnify.Domain.Entities.User", "CreatedByUser")
@@ -522,17 +452,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Navigation("Event");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.FamilyCalendarSettings", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
-                        .WithOne()
-                        .HasForeignKey("DomusUnify.Domain.Entities.FamilyCalendarSettings", "FamilyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Family");
                 });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.FamilyMember", b =>
@@ -609,17 +528,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("CurrentFamily");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.UserCalendarSettings", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.User", "User")
-                        .WithOne()
-                        .HasForeignKey("DomusUnify.Domain.Entities.UserCalendarSettings", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.CalendarEvent", b =>

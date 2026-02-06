@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using DomusUnify.Application.Lists;
 using DomusUnify.Application.Common.Realtime;
 using DomusUnify.Application.Categories;
+using DomusUnify.Application.Calendar;
 using DomusUnify.Api.Services.Auth;
 using DomusUnify.Api.Services.CurrentUser;
 using DomusUnify.Api.Realtime;
@@ -48,6 +49,26 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    c.MapType<DateOnly>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "date",
+        Example = new Microsoft.OpenApi.Any.OpenApiString("2026-02-04")
+    });
+
+    c.MapType<DateOnly?>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "date",
+        Nullable = true,
+        Example = new Microsoft.OpenApi.Any.OpenApiString("2026-02-04")
+    });
+
+    var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    c.IncludeXmlComments(xmlPath);
+
 });
 
 // JWT Auth
@@ -100,6 +121,9 @@ builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 // Application
 builder.Services.AddScoped<IListService, ListService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ICalendarService, CalendarService>();
+builder.Services.AddScoped<ICalendarSettingsService, CalendarSettingsService>();
+builder.Services.AddScoped<IRecurrenceService, RecurrenceService>();
 
 // Realtime
 builder.Services.AddSignalR();

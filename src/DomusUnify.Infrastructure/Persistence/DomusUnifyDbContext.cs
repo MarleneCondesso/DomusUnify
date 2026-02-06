@@ -12,11 +12,15 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Family> Families => Set<Family>();
     public DbSet<FamilyMember> FamilyMembers => Set<FamilyMember>();
-    public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
     public DbSet<SharedList> Lists => Set<SharedList>();
     public DbSet<ListItem> ListItems => Set<ListItem>();
-    public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<ItemCategory> ItemCategories => Set<ItemCategory>();
+    public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
+    public DbSet<CalendarEventParticipant> CalendarEventParticipants => Set<CalendarEventParticipant>();
+    public DbSet<CalendarEventVisibility> CalendarEventVisibilities => Set<CalendarEventVisibility>();
+    public DbSet<CalendarEventReminder> CalendarEventReminders => Set<CalendarEventReminder>();
+    public DbSet<FamilyCalendarSettings> FamilyCalendarSettings => Set<FamilyCalendarSettings>();
+    public DbSet<UserCalendarSettings> UserCalendarSettings => Set<UserCalendarSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -104,22 +108,123 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
             b.HasKey(x => x.Id);
 
             b.Property(x => x.Title).HasMaxLength(200).IsRequired();
-            b.Property(x => x.Description).HasMaxLength(1000);
+            b.Property(x => x.Note).HasMaxLength(2000);
+            b.Property(x => x.Location).HasMaxLength(300);
 
-            b.Property(x => x.StartUtc).IsRequired();
-            b.Property(x => x.EndUtc).IsRequired();
+            b.Property(x => x.ColorHex).HasMaxLength(7);
+            b.Property(x => x.RecurrenceRule).HasMaxLength(300);
+            b.Property(x => x.TimezoneId).HasMaxLength(60);
 
-            b.HasIndex(x => new { x.FamilyId, x.StartUtc });
-
+            // ✅ 1 relação clara CalendarEvent -> Family usando FamilyId
             b.HasOne(x => x.Family)
-                .WithMany(x => x.CalendarEvents)
+                .WithMany(f => f.CalendarEvents)       // ✅ agora existe na entity Family
                 .HasForeignKey(x => x.FamilyId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // ✅ 1 relação clara CalendarEvent -> User (CreatedBy)
             b.HasOne(x => x.CreatedByUser)
-                .WithMany(x => x.CreatedEvents)
+                .WithMany(u => u.CreatedEvents)        // ✅ agora existe na entity User
                 .HasForeignKey(x => x.CreatedByUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasOne(x => x.ParentEvent)
+                .WithMany()
+                .HasForeignKey(x => x.ParentEventId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasIndex(x => new { x.FamilyId, x.StartUtc });
+            b.HasIndex(x => new { x.FamilyId, x.EndUtc });
+        });
+
+
+        modelBuilder.Entity<CalendarEventParticipant>(b =>
+        {
+            b.ToTable("CalendarEventParticipants");
+            b.HasKey(x => x.Id);
+
+            b.HasOne(x => x.Event)
+                .WithMany(e => e.Participants)
+                .HasForeignKey(x => x.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasIndex(x => new { x.EventId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<CalendarEventVisibility>(b =>
+        {
+            b.ToTable("CalendarEventVisibilities");
+            b.HasKey(x => x.Id);
+
+            b.HasOne(x => x.Event)
+                .WithMany(e => e.VisibleTo)
+                .HasForeignKey(x => x.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasIndex(x => new { x.EventId, x.UserId }).IsUnique();
+            b.HasIndex(x => x.UserId);
+        });
+
+        modelBuilder.Entity<CalendarEventReminder>(b =>
+        {
+            b.ToTable("CalendarEventReminders");
+            b.HasKey(x => x.Id);
+
+            b.HasOne(x => x.Event)
+                .WithMany(e => e.Reminders)
+                .HasForeignKey(x => x.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(x => x.EventId);
+        });
+
+        // FAMILY CALENDAR SETTINGS
+        modelBuilder.Entity<FamilyCalendarSettings>(b =>
+        {
+            b.ToTable("FamilyCalendarSettings");
+            b.HasKey(x => x.Id);
+
+            b.HasIndex(x => x.FamilyId).IsUnique();
+
+            b.Property(x => x.HolidaysCountryCode)
+                .HasMaxLength(2)
+                .IsRequired();
+
+            b.Property(x => x.CalendarColorHex)
+                .HasMaxLength(7);
+
+            b.HasOne(x => x.Family)
+                .WithOne()
+                .HasForeignKey<FamilyCalendarSettings>(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // USER CALENDAR SETTINGS
+        modelBuilder.Entity<UserCalendarSettings>(b =>
+        {
+            b.ToTable("UserCalendarSettings");
+            b.HasKey(x => x.Id);
+
+            b.HasIndex(x => x.UserId).IsUnique();
+
+            b.Property(x => x.DailyReminderTime)
+                .HasConversion(
+                    t => t.ToTimeSpan(),
+                    t => TimeOnly.FromTimeSpan(t));
+
+            b.HasOne(x => x.User)
+                .WithOne()
+                .HasForeignKey<UserCalendarSettings>(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // LIST
@@ -171,30 +276,5 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
         });
 
         // EXPENSE
-        modelBuilder.Entity<Expense>(b =>
-        {
-            b.ToTable("Expenses");
-            b.HasKey(x => x.Id);
-
-            b.Property(x => x.Amount)
-                .HasPrecision(18, 2)
-                .IsRequired();
-
-            b.Property(x => x.Category).IsRequired();
-            b.Property(x => x.Description).HasMaxLength(500);
-            b.Property(x => x.DateUtc).IsRequired();
-
-            b.HasIndex(x => new { x.FamilyId, x.DateUtc });
-
-            b.HasOne(x => x.Family)
-                .WithMany(x => x.Expenses)
-                .HasForeignKey(x => x.FamilyId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            b.HasOne(x => x.CreatedByUser)
-                .WithMany(x => x.CreatedExpenses)
-                .HasForeignKey(x => x.CreatedByUserId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
     }
 }

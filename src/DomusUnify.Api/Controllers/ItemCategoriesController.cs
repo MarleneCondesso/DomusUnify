@@ -20,6 +20,14 @@ public class ItemCategoriesController : ControllerBase
         _svc = svc;
     }
 
+    /// <summary>
+    /// Obtém todas as categorias de itens para a família atual.
+    /// </summary>
+    /// <remarks>
+    /// Lista todas as categorias visíveis para o utilizador na família atual.
+    /// </remarks>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista de respostas de categorias.</returns>
     [HttpGet]
     public async Task<ActionResult<List<CategoryResponse>>> Get(CancellationToken ct)
     {
@@ -35,6 +43,15 @@ public class ItemCategoriesController : ControllerBase
         }).ToList());
     }
 
+    /// <summary>
+    /// Cria uma nova categoria de itens para a família atual.
+    /// </summary>
+    /// <remarks>
+    /// Permite definir nome, ícone e ordem de classificação. O utilizador deve ter permissões na família.
+    /// </remarks>
+    /// <param name="request">O pedido contendo detalhes da categoria a criar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>A resposta da categoria criada.</returns>
     [HttpPost]
     public async Task<ActionResult<CategoryResponse>> Create(CreateCategoryRequest request, CancellationToken ct)
     {
@@ -59,6 +76,13 @@ public class ItemCategoriesController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Updates an existing item category.
+    /// </summary>
+    /// <param name="categoryId">The ID of the category to update.</param>
+    /// <param name="request">The request containing updated category details.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The updated category response.</returns>
     [HttpPatch("{categoryId:guid}")]
     public async Task<ActionResult<CategoryResponse>> Update(Guid categoryId, UpdateCategoryRequest request, CancellationToken ct)
     {
@@ -84,6 +108,15 @@ public class ItemCategoriesController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Elimina uma categoria de itens.
+    /// </summary>
+    /// <remarks>
+    /// Remove a categoria se não estiver em uso. O utilizador deve ter permissões na família.
+    /// </remarks>
+    /// <param name="categoryId">O ID da categoria a eliminar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpDelete("{categoryId:guid}")]
     public async Task<IActionResult> Delete(Guid categoryId, CancellationToken ct)
     {
