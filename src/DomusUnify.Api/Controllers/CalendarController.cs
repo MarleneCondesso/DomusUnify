@@ -1,4 +1,5 @@
 using DomusUnify.Api.DTOs.Calendar;
+using DomusUnify.Application.Calendar.Models;
 using DomusUnify.Api.Services.CurrentUser;
 using DomusUnify.Application.Calendar;
 using Microsoft.AspNetCore.Authorization;
@@ -72,6 +73,53 @@ public sealed class CalendarController : ControllerBase
             VisibleToUserIds = e.VisibleToUserIds.ToList(),
             ReminderOffsetsMinutes = e.ReminderOffsetsMinutes.ToList()
         }).ToList());
+    }
+
+
+    /// <summary>
+    /// Devolve os detalhes de um evento do calendario pelo seu ID.
+    /// </summary>
+    /// <remarks>
+    /// Retorna <c>404 Not Found</c> se o evento nao existir ou nao for visivel para o utilizador autenticado na familia atual.
+    /// </remarks>
+    // GET api/v1/calendar/events/{eventId}
+    [HttpGet("events/{eventId:guid}")]
+    public async Task<ActionResult<CalendarEventDetailResponse>> GetEventById(Guid eventId, CancellationToken ct)
+    {
+        var familyId = await _ctx.GetCurrentFamilyIdAsync(ct);
+
+        try
+        {
+            var e = await _cal.GetEventByIdAsync(_ctx.UserId, familyId, eventId, ct);
+
+            return Ok(new CalendarEventDetailResponse
+            {
+                Id = e.Id,
+                FamilyId = e.FamilyId,
+                Title = e.Title,
+                IsAllDay = e.IsAllDay,
+                StartUtc = e.StartUtc,
+                EndUtc = e.EndUtc,
+                Location = e.Location,
+                Note = e.Note,
+                ColorHex = e.ColorHex,
+                TimezoneId = e.TimezoneId,
+                RecurrenceRule = e.RecurrenceRule,
+                RecurrenceUntilUtc = e.RecurrenceUntilUtc,
+                RecurrenceCount = e.RecurrenceCount,
+                CreatedByUserId = e.CreatedByUserId,
+                CreatedByName = e.CreatedByName,
+                CreatedAtUtc = e.CreatedAtUtc,
+                UpdatedAtUtc = e.UpdatedAtUtc,
+                ParticipantUserIds = e.ParticipantUserIds.ToList(),
+                VisibleToUserIds = e.VisibleToUserIds.ToList(),
+                ReminderOffsetsMinutes = e.ReminderOffsetsMinutes.ToList()
+            });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     /// <summary>
@@ -338,6 +386,137 @@ public sealed class CalendarController : ControllerBase
             ct);
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Exporta um evento do calendário como um arquivo ICS para importação em aplicações de calendário.
+    /// </summary>
+    /// <remarks>
+    /// Para eventos recorrentes, você pode especificar <c>occurrenceStartUtc</c> para exportar uma ocorrência específica.
+    /// Retorna <c>404 Not Found</c> se o evento não existir ou não for visível para o utilizador autenticado na família atual.
+    /// </remarks>
+    /// <param name="eventId">O ID do evento a exportar.</param>
+    /// <param name="occurrenceStartUtc">A hora de início (UTC) de uma ocorrência específica para eventos recorrentes. Se não fornecido, usa a ocorrência padrão.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Um arquivo ICS contendo os detalhes do evento.</returns>
+    // GET api/v1/calendar/events/{eventId}/export?occurrenceStartUtc=2026-02-04T10:00:00Z
+    [HttpGet("events/{eventId:guid}/export")]
+    public async Task<IActionResult> ExportIcs(
+     Guid eventId,
+     [FromQuery] DateTime? occurrenceStartUtc,
+     CancellationToken ct)
+    {
+        var familyId = await _ctx.GetCurrentFamilyIdAsync(ct);
+
+        CalendarEventExportModel e;
+        try
+        {
+            e = await _cal.GetEventExportAsync(_ctx.UserId, familyId, eventId, occurrenceStartUtc, ct);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+
+        var ics = BuildIcsExport(e);
+
+        var safe = string.Join("_", e.Title.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+        if (string.IsNullOrWhiteSpace(safe)) safe = "evento";
+
+        return File(
+            System.Text.Encoding.UTF8.GetBytes(ics),
+            "text/calendar; charset=utf-8",
+            $"{safe}.ics"
+        );
+    }
+
+    /// <summary>
+    /// Constrói uma string ICS (iCalendar) para o evento do calendário, incluindo organizador, participantes e detalhes conforme RFC5545.
+    /// </summary>
+    /// <param name="e">O modelo de exportação do evento do calendário.</param>
+    /// <returns>Uma string formatada em ICS representando o evento com organizador e participantes.</returns>
+    private static string BuildIcsExport(CalendarEventExportModel e)
+    {
+        static string Escape(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "";
+            return s.Replace(@"\", @"\\")
+                    .Replace(";", @"\;")
+                    .Replace(",", @"\,")
+                    .Replace("\r\n", @"\n")
+                    .Replace("\n", @"\n")
+                    .Trim();
+        }
+
+        static string FormatUtc(DateTime dt)
+        {
+            var utc = dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+            return utc.ToString("yyyyMMdd'T'HHmmss'Z'");
+        }
+
+        static string FormatDate(DateTime dt) => dt.ToString("yyyyMMdd");
+
+        var uid = $"{e.EventId}@domusunify";
+        var dtstamp = FormatUtc(DateTime.UtcNow);
+
+        var lines = new List<string>
+    {
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//DomusUnify//Calendar//PT",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "X-WR-CALNAME:DomusUnify", // ✅
+        "BEGIN:VEVENT",
+        $"UID:{uid}",
+        $"DTSTAMP:{dtstamp}",
+        $"SUMMARY:{Escape(e.Title)}"
+    };
+
+        // Organizer
+        lines.Add($"ORGANIZER;CN={Escape(e.Organizer.Name)}:mailto:{e.Organizer.Email}");
+
+        // Attendees
+        foreach (var a in e.Attendees)
+        {
+            // ROLE opcional; podes ajustar depois (REQ-PARTICIPANT, OPT-PARTICIPANT)
+            lines.Add($"ATTENDEE;CN={Escape(a.Name)};ROLE=REQ-PARTICIPANT:mailto:{a.Email}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(e.Note))
+            lines.Add($"DESCRIPTION:{Escape(e.Note)}"); // Note como descrição
+
+        if (!string.IsNullOrWhiteSpace(e.Location))
+            lines.Add($"LOCATION:{Escape(e.Location)}");
+
+        // Recurrence exception identity
+        if (e.RecurrenceIdUtc.HasValue)
+            lines.Add($"RECURRENCE-ID:{FormatUtc(e.RecurrenceIdUtc.Value)}");
+
+        // Cancelled occurrence
+        if (e.IsExceptionCancelled)
+            lines.Add("STATUS:CANCELLED");
+
+        // All-day em ICS: DTEND exclusivo (dia seguinte)
+        if (e.IsAllDay)
+        {
+            var d1 = e.OccurrenceStartUtc.Date;
+            var d2 = e.OccurrenceEndUtc.Date;
+            if (d2 <= d1) d2 = d1.AddDays(1);
+
+            lines.Add($"DTSTART;VALUE=DATE:{FormatDate(d1)}");
+            lines.Add($"DTEND;VALUE=DATE:{FormatDate(d2)}");
+        }
+        else
+        {
+            lines.Add($"DTSTART:{FormatUtc(e.OccurrenceStartUtc)}");
+            lines.Add($"DTEND:{FormatUtc(e.OccurrenceEndUtc)}");
+        }
+
+        lines.Add("END:VEVENT");
+        lines.Add("END:VCALENDAR");
+
+        return string.Join("\r\n", lines) + "\r\n";
     }
 
 }

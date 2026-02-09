@@ -13,7 +13,8 @@ public class CalendarEvent : BaseEntity
     public DateTime StartUtc { get; set; }
     public DateTime EndUtc { get; set; }
 
-    // 🔁 RECORRÊNCIA
+    // RECORRÊNCIA
+    public DateTime? RecurrenceIdUtc { get; set; } // usado apenas em exceções (ParentEventId != null)
     public string? RecurrenceRule { get; set; }        // RRULE
     public DateTime? RecurrenceUntilUtc { get; set; }  // UNTIL
     public int? RecurrenceCount { get; set; }          // COUNT

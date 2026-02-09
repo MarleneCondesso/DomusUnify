@@ -15,8 +15,11 @@ public interface ICalendarService
         Guid? participantUserId,
         CancellationToken ct);
 
-    Task<CalendarEventModel> GetEventByIdAsync(Guid userId, Guid familyId, Guid eventId, CancellationToken ct);
-
+    Task<CalendarEventDetailModel> GetEventByIdAsync(
+        Guid userId,
+        Guid familyId,
+        Guid eventId,
+        CancellationToken ct);
 
     Task<CalendarEventModel> CreateEventAsync(
         Guid userId,
@@ -90,6 +93,13 @@ public interface ICalendarService
         string? note,
         string? colorHex,
         string? timezoneId,
+        CancellationToken ct);
+
+    Task<CalendarEventExportModel> GetEventExportAsync(
+        Guid userId,
+        Guid familyId,
+        Guid eventId,
+        DateTime? occurrenceStartUtc,
         CancellationToken ct);
 
 }

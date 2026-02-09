@@ -115,15 +115,19 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
             b.Property(x => x.RecurrenceRule).HasMaxLength(300);
             b.Property(x => x.TimezoneId).HasMaxLength(60);
 
-            // ✅ 1 relação clara CalendarEvent -> Family usando FamilyId
+            b.Property(x => x.RecurrenceIdUtc);
+
+            b.HasIndex(x => new { x.ParentEventId, x.RecurrenceIdUtc });
+
+            // 1 relação clara CalendarEvent -> Family usando FamilyId
             b.HasOne(x => x.Family)
-                .WithMany(f => f.CalendarEvents)       // ✅ agora existe na entity Family
+                .WithMany(f => f.CalendarEvents)       // agora existe na entity Family
                 .HasForeignKey(x => x.FamilyId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // ✅ 1 relação clara CalendarEvent -> User (CreatedBy)
+            // 1 relação clara CalendarEvent -> User (CreatedBy)
             b.HasOne(x => x.CreatedByUser)
-                .WithMany(u => u.CreatedEvents)        // ✅ agora existe na entity User
+                .WithMany(u => u.CreatedEvents)        // agora existe na entity User
                 .HasForeignKey(x => x.CreatedByUserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
@@ -134,6 +138,11 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
 
             b.HasIndex(x => new { x.FamilyId, x.StartUtc });
             b.HasIndex(x => new { x.FamilyId, x.EndUtc });
+
+            b.HasIndex(x => new { x.ParentEventId, x.RecurrenceIdUtc })
+                .IsUnique()
+                .HasFilter("[ParentEventId] IS NOT NULL AND [RecurrenceIdUtc] IS NOT NULL");
+
         });
 
 

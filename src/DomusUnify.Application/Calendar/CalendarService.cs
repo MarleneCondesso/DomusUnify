@@ -5,7 +5,6 @@ using DomusUnify.Application.Recurrence;
 using DomusUnify.Domain.Entities;
 using DomusUnify.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-
 namespace DomusUnify.Application.Calendar;
 
 public sealed class CalendarService : ICalendarService
@@ -153,9 +152,65 @@ public sealed class CalendarService : ICalendarService
         }
 
         return instances
-            .Where(i => !i.IsCancelled) // se quiseres mostrar “cancelado” no UI, remove isto e marca
+            .Where(i => !i.IsCancelled)
             .OrderBy(i => i.OccurrenceStartUtc)
             .ToList();
+    }
+
+    public async Task<CalendarEventDetailModel> GetEventByIdAsync(
+        Guid userId,
+        Guid familyId,
+        Guid eventId,
+        CancellationToken ct)
+    {
+        await EnsureMemberAsync(userId, familyId, ct);
+
+        // Só eventos "pai" (séries e eventos single)
+        var q = _db.CalendarEvents
+            .AsNoTracking()
+            .Where(e => e.FamilyId == familyId)
+            .Where(e => e.Id == eventId)
+            .Where(e => e.ParentEventId == null)
+            .Where(e => _db.CalendarEventVisibilities.Any(v => v.EventId == e.Id && v.UserId == userId));
+
+        var model = await q
+            .Select(e => new CalendarEventDetailModel(
+                e.Id,
+                e.FamilyId,
+                e.Title,
+                e.IsAllDay,
+                e.StartUtc,
+                e.EndUtc,
+                e.Location,
+                e.Note,
+                e.ColorHex,
+                e.RecurrenceRule,
+                e.RecurrenceUntilUtc,
+                e.RecurrenceCount,
+                e.TimezoneId,
+                e.CreatedByUserId,
+                e.CreatedByUser.Name,
+                e.CreatedAtUtc,
+                e.UpdatedAtUtc,
+                _db.CalendarEventParticipants
+                    .Where(p => p.EventId == e.Id)
+                    .Select(p => p.UserId)
+                    .ToList(),
+                _db.CalendarEventVisibilities
+                    .Where(v => v.EventId == e.Id)
+                    .Select(v => v.UserId)
+                    .ToList(),
+                _db.CalendarEventReminders
+                    .Where(r => r.EventId == e.Id)
+                    .Select(r => r.OffsetMinutes)
+                    .ToList()
+            ))
+            .FirstOrDefaultAsync(ct);
+
+        if (model is null)
+            throw new KeyNotFoundException("Evento não encontrado (ou não tens permissões).");
+
+        return model;
     }
 
     public async Task<CalendarEventModel> CreateEventAsync(
@@ -183,7 +238,7 @@ public sealed class CalendarService : ICalendarService
         EnsureNotViewer(role);
 
         if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("Título é obrigatório.");
-        if (endUtc <= startUtc) throw new ArgumentException("EndUtc tem de ser maior que StartUtc.");
+        if (endUtc <= startUtc) throw new ArgumentException("Data fim tem de ser maior que data de início.");
 
         var memberIds = await _db.FamilyMembers.AsNoTracking()
             .Where(m => m.FamilyId == familyId)
@@ -300,7 +355,7 @@ public sealed class CalendarService : ICalendarService
         if (recurrenceCount.HasValue) e.RecurrenceCount = recurrenceCount.Value;
 
         if (string.IsNullOrWhiteSpace(e.Title)) throw new ArgumentException("Título é obrigatório.");
-        if (e.EndUtc <= e.StartUtc) throw new ArgumentException("EndUtc tem de ser maior que StartUtc.");
+        if (e.EndUtc <= e.StartUtc) throw new ArgumentException("Data de fim tem de ser maior que data de início.");
 
         var memberIds = await _db.FamilyMembers.AsNoTracking()
             .Where(m => m.FamilyId == familyId)
@@ -363,7 +418,7 @@ public sealed class CalendarService : ICalendarService
         // --- Reminders update (se pedido) ---
         if (reminderOffsetsMinutes is not null)
         {
-            if (reminderOffsetsMinutes.Any(x => x < 0)) throw new ArgumentException("OffsetMinutes não pode ser negativo.");
+            if (reminderOffsetsMinutes.Any(x => x < 0)) throw new ArgumentException("Minutos não podem ser negativos.");
 
             var existing = await _db.CalendarEventReminders.Where(r => r.EventId == eventId).ToListAsync(ct);
             _db.CalendarEventReminders.RemoveRange(existing);
@@ -420,7 +475,7 @@ public sealed class CalendarService : ICalendarService
         var role = await EnsureMemberAsync(userId, familyId, ct);
         EnsureNotViewer(role);
 
-        if (newEndUtc <= newStartUtc) throw new ArgumentException("NewEndUtc tem de ser maior que NewStartUtc.");
+        if (newEndUtc <= newStartUtc) throw new ArgumentException("Data de fim tem de ser maior que data de início.");
 
         var src = await _db.CalendarEvents.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == eventId && x.FamilyId == familyId, ct);
@@ -456,7 +511,7 @@ public sealed class CalendarService : ICalendarService
             Location = src.Location,
             Note = src.Note,
             ColorHex = src.ColorHex,
-            RecurrenceRule = null, // ✅ recomendo: duplicar sem recorrência
+            RecurrenceRule = null, // duplicar sem recorrência
             RecurrenceUntilUtc = null,
             RecurrenceCount = null,
             TimezoneId = src.TimezoneId,
@@ -634,13 +689,16 @@ public sealed class CalendarService : ICalendarService
         var role = await EnsureMemberAsync(userId, familyId, ct);
         EnsureNotViewer(role);
 
-        var parent = await _db.CalendarEvents.FirstOrDefaultAsync(e => e.Id == eventId && e.FamilyId == familyId, ct);
+        var parent = await _db.CalendarEvents.FirstOrDefaultAsync(e => e.Id == eventId && e.FamilyId == familyId && e.ParentEventId == null, ct);
+
+        if (parent is null) throw new KeyNotFoundException("Evento não encontrado.");
+
         if (parent is null) throw new KeyNotFoundException("Evento não encontrado.");
 
         var isRecurring = !string.IsNullOrWhiteSpace(parent.RecurrenceRule);
 
         if (scope != CalendarEditScope.AllOccurrences && !occurrenceStartUtc.HasValue)
-            throw new ArgumentException("OccurrenceStartUtc é obrigatório para ThisOccurrence/ThisAndFuture.");
+            throw new ArgumentException("A data da ocorrência é obrigatório para esta ou futuras ocorrências.");
 
         if (scope == CalendarEditScope.AllOccurrences || !isRecurring)
         {
@@ -656,7 +714,7 @@ public sealed class CalendarService : ICalendarService
                 visibleToUserIds,
                 reminderOffsetsMinutes,
                 location, note, colorHex,
-                recurrenceRule: null,         // aqui não mexemos no RRULE no patch (podes adicionar depois)
+                recurrenceRule: null,
                 recurrenceUntilUtc: null,
                 recurrenceCount: null,
                 timezoneId,
@@ -683,7 +741,7 @@ public sealed class CalendarService : ICalendarService
 
         // ThisAndFuture:
         // 1) encurta o pai com UNTIL = occurrenceStartUtc - 1 tick
-        // 2) cria novo evento pai a partir da ocorrência, com mesmo RRULE (podes ajustar depois)
+        // 2) cria novo evento pai a partir da ocorrência, com mesmo RRULE
         var occStart = occurrenceStartUtc!.Value;
 
         parent.RecurrenceUntilUtc = occStart.AddTicks(-1);
@@ -702,7 +760,7 @@ public sealed class CalendarService : ICalendarService
             Note = note ?? parent.Note,
             ColorHex = colorHex ?? parent.ColorHex,
             TimezoneId = timezoneId ?? parent.TimezoneId,
-            RecurrenceRule = parent.RecurrenceRule,      // mantém regra
+            RecurrenceRule = parent.RecurrenceRule,      // mesma regra
             RecurrenceUntilUtc = null,
             RecurrenceCount = null,
             CreatedByUserId = userId,
@@ -729,7 +787,147 @@ public sealed class CalendarService : ICalendarService
         }, ct);
     }
 
-    // --- Helpers (igual estilo que tens no CategoryService) ---
+    public async Task<CalendarEventExportModel> GetEventExportAsync(
+        Guid userId,
+        Guid familyId,
+        Guid eventId,
+        DateTime? occurrenceStartUtc,
+        CancellationToken ct)
+    {
+        await EnsureMemberAsync(userId, familyId, ct);
+
+        // base event (pai) visível para o user
+        var baseEvent = await _db.CalendarEvents
+            .AsNoTracking()
+            .Where(e => e.FamilyId == familyId)
+            .Where(e => e.Id == eventId)
+            .Where(e => e.ParentEventId == null)
+            .Where(e => _db.CalendarEventVisibilities.Any(v => v.EventId == e.Id && v.UserId == userId))
+            .Select(e => new
+            {
+                e.Id,
+                e.Title,
+                e.IsAllDay,
+                e.StartUtc,
+                e.EndUtc,
+                e.Location,
+                e.Note,
+                e.CreatedByUserId,
+                e.RecurrenceRule
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (baseEvent is null)
+            throw new KeyNotFoundException("Evento não encontrado (ou não tens permissões).");
+
+        // Organizer
+        var organizer = await _db.Users.AsNoTracking()
+            .Where(u => u.Id == baseEvent.CreatedByUserId)
+            .Select(u => new UserContactModel(u.Id, u.Name, u.Email))
+            .FirstAsync(ct);
+
+        // Participants (attendees)
+        var participantIds = await _db.CalendarEventParticipants.AsNoTracking()
+            .Where(p => p.EventId == baseEvent.Id)
+            .Select(p => p.UserId)
+            .ToListAsync(ct);
+
+        var attendees = await _db.Users.AsNoTracking()
+            .Where(u => participantIds.Contains(u.Id))
+            .Select(u => new UserContactModel(u.Id, u.Name, u.Email))
+            .ToListAsync(ct);
+
+        // calcular ocorrência
+        var start = occurrenceStartUtc ?? baseEvent.StartUtc;
+        var duration = baseEvent.EndUtc - baseEvent.StartUtc;
+        var end = occurrenceStartUtc.HasValue ? start.Add(duration) : baseEvent.EndUtc;
+
+        // exceção / cancelamento (se for export de ocorrência específica)
+        Guid? exceptionId = null;
+        bool isCancelled = false;
+
+        if (occurrenceStartUtc.HasValue)
+        {
+            // Regra: exceção tem ParentEventId == baseEvent.Id e StartUtc == occurrenceStartUtc
+            // (se no futuro suportares all-day com DateOnly, ajustamos para comparar por Date)
+            var ex = await _db.CalendarEvents.AsNoTracking()
+                .Where(x => x.ParentEventId == baseEvent.Id)
+                .Where(x => x.RecurrenceIdUtc == occurrenceStartUtc.Value)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.IsCancelled,
+                    x.Title,
+                    x.IsAllDay,
+                    x.StartUtc,
+                    x.EndUtc,
+                    x.Location,
+                    x.Note
+                })
+                .FirstOrDefaultAsync(ct);
+
+            if (ex is not null)
+            {
+                exceptionId = ex.Id;
+                isCancelled = ex.IsCancelled;
+
+                // Se não estiver cancelado, a exceção pode “substituir” campos
+                if (!ex.IsCancelled)
+                {
+                    start = ex.StartUtc;
+                    end = ex.EndUtc;
+                    return new CalendarEventExportModel(
+                        EventId: baseEvent.Id,
+                        ExceptionEventId: exceptionId,
+                        IsExceptionCancelled: false,
+                        Title: ex.Title,
+                        IsAllDay: ex.IsAllDay,
+                        OccurrenceStartUtc: start,
+                        OccurrenceEndUtc: end,
+                        Location: ex.Location,
+                        Note: ex.Note,
+                        Organizer: organizer,
+                        Attendees: attendees,
+                        RecurrenceIdUtc: occurrenceStartUtc.Value
+                    );
+                }
+
+                // Cancelado: exportamos com STATUS:CANCELLED
+                return new CalendarEventExportModel(
+                    EventId: baseEvent.Id,
+                    ExceptionEventId: exceptionId,
+                    IsExceptionCancelled: true,
+                    Title: baseEvent.Title,
+                    IsAllDay: baseEvent.IsAllDay,
+                    OccurrenceStartUtc: start,
+                    OccurrenceEndUtc: end,
+                    Location: baseEvent.Location,
+                    Note: baseEvent.Note,
+                    Organizer: organizer,
+                    Attendees: attendees,
+                    RecurrenceIdUtc: occurrenceStartUtc.Value
+                );
+            }
+        }
+
+        return new CalendarEventExportModel(
+            EventId: baseEvent.Id,
+            ExceptionEventId: null,
+            IsExceptionCancelled: false,
+            Title: baseEvent.Title,
+            IsAllDay: baseEvent.IsAllDay,
+            OccurrenceStartUtc: start,
+            OccurrenceEndUtc: end,
+            Location: baseEvent.Location,
+            Note: baseEvent.Note,
+            Organizer: organizer,
+            Attendees: attendees,
+            RecurrenceIdUtc: occurrenceStartUtc
+        );
+    }
+
+
+    // --- Helpers ---
 
     private async Task<FamilyRole> EnsureMemberAsync(Guid userId, Guid familyId, CancellationToken ct)
     {
@@ -771,7 +969,7 @@ public sealed class CalendarService : ICalendarService
     CancellationToken ct)
     {
         var existing = await _db.CalendarEvents
-            .FirstOrDefaultAsync(e => e.ParentEventId == parent.Id && e.StartUtc == occurrenceStartUtc, ct);
+            .FirstOrDefaultAsync(e => e.ParentEventId == parent.Id && e.RecurrenceIdUtc == occurrenceStartUtc, ct);
 
         var duration = parent.EndUtc - parent.StartUtc;
         var now = DateTime.UtcNow;
@@ -783,6 +981,7 @@ public sealed class CalendarService : ICalendarService
                 Id = Guid.NewGuid(),
                 FamilyId = familyId,
                 ParentEventId = parent.Id,
+                RecurrenceIdUtc = occurrenceStartUtc,
                 RecurrenceRule = null,
                 RecurrenceUntilUtc = null,
                 RecurrenceCount = null,
@@ -800,6 +999,11 @@ public sealed class CalendarService : ICalendarService
             existing.IsAllDay = parent.IsAllDay;
             existing.StartUtc = occurrenceStartUtc;
             existing.EndUtc = occurrenceStartUtc.Add(duration);
+            existing.Location = parent.Location;
+            existing.Note = parent.Note;
+            existing.ColorHex = parent.ColorHex;
+            existing.TimezoneId = parent.TimezoneId;
+
         }
         else
         {
@@ -810,7 +1014,7 @@ public sealed class CalendarService : ICalendarService
             var s = newStartUtc ?? occurrenceStartUtc;
             var e = newEndUtc ?? s.Add(duration);
 
-            if (e <= s) throw new ArgumentException("EndUtc tem de ser maior que StartUtc.");
+            if (e <= s) throw new ArgumentException("Data de fim tem de ser maior que a data de início.");
 
             existing.StartUtc = s;
             existing.EndUtc = e;
@@ -852,13 +1056,9 @@ public sealed class CalendarService : ICalendarService
         CancellationToken ct)
     {
         // limpar links atuais do target
-        var pOld = await _db.CalendarEventParticipants.Where(x => x.EventId == targetEventId).ToListAsync(ct);
-        var vOld = await _db.CalendarEventVisibilities.Where(x => x.EventId == targetEventId).ToListAsync(ct);
-        var rOld = await _db.CalendarEventReminders.Where(x => x.EventId == targetEventId).ToListAsync(ct);
-
-        _db.CalendarEventParticipants.RemoveRange(pOld);
-        _db.CalendarEventVisibilities.RemoveRange(vOld);
-        _db.CalendarEventReminders.RemoveRange(rOld);
+        await _db.CalendarEventParticipants.Where(x => x.EventId == targetEventId).ExecuteDeleteAsync(ct);
+        await _db.CalendarEventVisibilities.Where(x => x.EventId == targetEventId).ExecuteDeleteAsync(ct);
+        await _db.CalendarEventReminders.Where(x => x.EventId == targetEventId).ExecuteDeleteAsync(ct);
 
         var now = DateTime.UtcNow;
 
