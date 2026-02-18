@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace DomusUnify.Api.Controllers;
 
+/// <summary>
+/// Endpoints de gestão de listas (ex.: compras/tarefas) e respetivos itens na família atual.
+/// </summary>
 [ApiController]
 [Route("api/v1/lists")]
 [Authorize]
@@ -91,6 +94,15 @@ public class ListsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Elimina uma lista existente.
+    /// </summary>
+    /// <remarks>
+    /// Ao eliminar uma lista, são eliminados também os respetivos itens.
+    /// </remarks>
+    /// <param name="listId">O ID da lista a eliminar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpDelete("{listId:guid}")]
     public async Task<IActionResult> DeleteList(Guid listId, CancellationToken ct)
     {

@@ -7,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DomusUnify.Application.Calendar;
 
+/// <summary>
+/// Implementação do serviço de definições do calendário.
+/// </summary>
 public sealed class CalendarSettingsService : ICalendarSettingsService
 {
     private readonly IAppDbContext _db;
@@ -20,6 +23,7 @@ public sealed class CalendarSettingsService : ICalendarSettingsService
 
     // ---------------- FAMILY SETTINGS ----------------
 
+    /// <inheritdoc />
     public async Task<FamilyCalendarSettingsModel> GetFamilySettingsAsync(
         Guid userId,
         Guid familyId,
@@ -55,6 +59,7 @@ public sealed class CalendarSettingsService : ICalendarSettingsService
         );
     }
 
+    /// <inheritdoc />
     public async Task<FamilyCalendarSettingsModel> UpdateFamilySettingsAsync(
         Guid userId,
         Guid familyId,
@@ -110,6 +115,7 @@ public sealed class CalendarSettingsService : ICalendarSettingsService
 
     // ---------------- USER SETTINGS ----------------
 
+    /// <inheritdoc />
     public async Task<UserCalendarSettingsModel> GetUserSettingsAsync(Guid userId, CancellationToken ct)
     {
         var entity = await _db.UserCalendarSettings
@@ -138,6 +144,7 @@ public sealed class CalendarSettingsService : ICalendarSettingsService
         );
     }
 
+    /// <inheritdoc />
     public async Task<UserCalendarSettingsModel> UpdateUserSettingsAsync(
         Guid userId,
         UpdateUserCalendarSettingsModel model,
@@ -179,6 +186,7 @@ public sealed class CalendarSettingsService : ICalendarSettingsService
 
     // ---------------- CLEANUP (4.2) ----------------
 
+    /// <inheritdoc />
     public async Task<int> CleanupAsync(
         Guid userId,
         Guid familyId,

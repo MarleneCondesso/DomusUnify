@@ -8,6 +8,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DomusUnify.Api.Controllers;
 
+/// <summary>
+/// Endpoints para gestão de transações financeiras dentro de um orçamento.
+/// </summary>
+/// <remarks>
+/// Estes endpoints operam sempre no contexto de uma família (família atual do utilizador) e de um orçamento
+/// identificado por <c>{budgetId}</c>.
+/// </remarks>
 [ApiController]
 [Route("api/v1/budgets/{budgetId:guid}/transactions")]
 [Authorize]
@@ -22,6 +29,18 @@ public sealed class FinanceTransactionsController : ControllerBase
         _svc = svc;
     }
 
+    /// <summary>
+    /// Obtém a lista de transações do orçamento.
+    /// </summary>
+    /// <remarks>
+    /// Pode filtrar por intervalo de datas usando <paramref name="from"/> e <paramref name="to"/>.
+    /// A ordenação respeita a configuração do orçamento (mais recente primeiro ou mais antigo primeiro).
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="from">Data inicial (inclusive), opcional.</param>
+    /// <param name="to">Data final (inclusive), opcional.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista de transações.</returns>
     [HttpGet]
     public async Task<ActionResult<List<FinanceTransactionResponse>>> Get(
         Guid budgetId,
@@ -35,6 +54,24 @@ public sealed class FinanceTransactionsController : ControllerBase
         return Ok(rows.Select(ToResponse).ToList());
     }
 
+    /// <summary>
+    /// Obtém os totais do orçamento para o período corrente.
+    /// </summary>
+    /// <remarks>
+    /// Calcula:
+    /// <list type="bullet">
+    /// <item><description>Rendimento do período</description></item>
+    /// <item><description>Despesas do período</description></item>
+    /// <item><description>Saldo do período</description></item>
+    /// <item><description>Saldo do dia (hoje)</description></item>
+    /// <item><description>Despesas totais (acumuladas)</description></item>
+    /// </list>
+    /// O período é determinado pela configuração do orçamento (recorrente) ou pelas datas do orçamento (único).
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="referenceDate">Data de referência (por omissão, hoje em UTC).</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Os totais calculados.</returns>
     [HttpGet("totals")]
     public async Task<ActionResult<BudgetTotalsResponse>> Totals(
         Guid budgetId,
@@ -63,6 +100,19 @@ public sealed class FinanceTransactionsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Obtém um resumo por categorias (percentagem e total) para um tipo de transação.
+    /// </summary>
+    /// <remarks>
+    /// Usa <paramref name="type"/> para escolher <c>Expense</c> (despesas) ou <c>Income</c> (rendimentos).
+    /// O intervalo é opcional; quando omitido, considera todas as transações.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="type">Tipo de transação: <c>Expense</c> ou <c>Income</c>.</param>
+    /// <param name="from">Data inicial (inclusive), opcional.</param>
+    /// <param name="to">Data final (inclusive), opcional.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Lista de totais por categoria.</returns>
     [HttpGet("summary/categories")]
     public async Task<ActionResult<List<CategorySummaryResponse>>> SummaryByCategories(
         Guid budgetId,
@@ -90,6 +140,18 @@ public sealed class FinanceTransactionsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Obtém um resumo por membros (percentagem e total) para um tipo de transação.
+    /// </summary>
+    /// <remarks>
+    /// Agrupa por <c>Pago por</c> (membro que pagou/recebeu).
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="type">Tipo de transação: <c>Expense</c> ou <c>Income</c>.</param>
+    /// <param name="from">Data inicial (inclusive), opcional.</param>
+    /// <param name="to">Data final (inclusive), opcional.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Lista de totais por membro.</returns>
     [HttpGet("summary/members")]
     public async Task<ActionResult<List<MemberSummaryResponse>>> SummaryByMembers(
         Guid budgetId,
@@ -116,6 +178,18 @@ public sealed class FinanceTransactionsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Obtém um resumo por contas (percentagem e total) para um tipo de transação.
+    /// </summary>
+    /// <remarks>
+    /// Agrupa por conta (ex.: conta corrente, dinheiro, cartão de crédito).
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="type">Tipo de transação: <c>Expense</c> ou <c>Income</c>.</param>
+    /// <param name="from">Data inicial (inclusive), opcional.</param>
+    /// <param name="to">Data final (inclusive), opcional.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Lista de totais por conta.</returns>
     [HttpGet("summary/accounts")]
     public async Task<ActionResult<List<AccountSummaryResponse>>> SummaryByAccounts(
         Guid budgetId,
@@ -142,6 +216,19 @@ public sealed class FinanceTransactionsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Exporta as transações do orçamento para um ficheiro CSV.
+    /// </summary>
+    /// <remarks>
+    /// O intervalo <paramref name="from"/>/<paramref name="to"/> é obrigatório.
+    /// O delimitador por omissão é <c>;</c>.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="from">Data inicial (inclusive).</param>
+    /// <param name="to">Data final (inclusive).</param>
+    /// <param name="delimiter">Delimitador opcional (ex.: <c>;</c> ou <c>,</c>).</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Um ficheiro CSV para download.</returns>
     [HttpGet("export")]
     public async Task<IActionResult> Export(
         Guid budgetId,
@@ -161,6 +248,17 @@ public sealed class FinanceTransactionsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Cria uma nova transação no orçamento.
+    /// </summary>
+    /// <remarks>
+    /// A transação pode ser do tipo <c>Expense</c> (despesa) ou <c>Income</c> (rendimento), e deve ter categoria e conta
+    /// válidas da família atual. Também pode ser marcada como paga e configurada com repetição/lembretes.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="request">Dados da transação a criar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>A transação criada.</returns>
     [HttpPost]
     public async Task<ActionResult<FinanceTransactionResponse>> Create(Guid budgetId, CreateFinanceTransactionRequest request, CancellationToken ct)
     {
@@ -198,6 +296,17 @@ public sealed class FinanceTransactionsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Atualiza uma transação existente do orçamento.
+    /// </summary>
+    /// <remarks>
+    /// Permite alterar valor, título, tipo, categoria, conta, data, estado de pago, repetição/lembretes e nota.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="transactionId">Identificador da transação.</param>
+    /// <param name="request">Dados a atualizar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>A transação atualizada.</returns>
     [HttpPatch("{transactionId:guid}")]
     public async Task<ActionResult<FinanceTransactionResponse>> Update(Guid budgetId, Guid transactionId, UpdateFinanceTransactionRequest request, CancellationToken ct)
     {
@@ -237,6 +346,16 @@ public sealed class FinanceTransactionsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Elimina uma transação do orçamento.
+    /// </summary>
+    /// <remarks>
+    /// Devolve <c>404 Not Found</c> se a transação não existir no orçamento indicado.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="transactionId">Identificador da transação.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpDelete("{transactionId:guid}")]
     public async Task<IActionResult> Delete(Guid budgetId, Guid transactionId, CancellationToken ct)
     {
@@ -250,6 +369,15 @@ public sealed class FinanceTransactionsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Marca todas as transações do orçamento como pagas.
+    /// </summary>
+    /// <remarks>
+    /// Útil para garantir consistência quando a preferência de cálculo considera apenas transações pagas.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpPost("mark-all-paid")]
     public async Task<IActionResult> MarkAllPaid(Guid budgetId, CancellationToken ct)
     {
@@ -262,6 +390,15 @@ public sealed class FinanceTransactionsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Remove todas as transações do orçamento.
+    /// </summary>
+    /// <remarks>
+    /// Esta ação é destrutiva e não pode ser revertida.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpPost("clear")]
     public async Task<IActionResult> Clear(Guid budgetId, CancellationToken ct)
     {
@@ -316,4 +453,3 @@ public sealed class FinanceTransactionsController : ControllerBase
         return parsed;
     }
 }
-

@@ -6,12 +6,16 @@ using System.Text;
 
 namespace DomusUnify.Api.Services.Auth;
 
+/// <summary>
+/// Implementação de <see cref="IJwtTokenService"/> baseada na configuração da aplicação.
+/// </summary>
 public sealed class JwtTokenService : IJwtTokenService
 {
     private readonly IConfiguration _config;
 
     public JwtTokenService(IConfiguration config) => _config = config;
 
+    /// <inheritdoc />
     public (string token, DateTime expiresAtUtc) CreateToken(User user)
     {
         var jwt = _config.GetSection("Jwt");

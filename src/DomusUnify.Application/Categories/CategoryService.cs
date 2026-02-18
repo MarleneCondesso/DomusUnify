@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DomusUnify.Application.Categories;
 
+/// <summary>
+/// Implementação do serviço de categorias de itens.
+/// </summary>
 public sealed class CategoryService : ICategoryService
 {
     private static readonly Regex IconKeyRegex = new("^[a-z0-9_-]{1,40}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -24,6 +27,7 @@ public sealed class CategoryService : ICategoryService
 
 // ---------------- ITEM CATEGORIES ----------------
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<CategoryModel>> GetItemCategoriesAsync(Guid userId, Guid familyId, CancellationToken ct)
     {
         await EnsureMemberAsync(userId, familyId, ct);
@@ -37,6 +41,7 @@ public sealed class CategoryService : ICategoryService
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<CategoryModel> CreateItemCategoryAsync(Guid userId, Guid familyId, string name, string iconKey, int sortOrder, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -73,6 +78,7 @@ public sealed class CategoryService : ICategoryService
         return model;
     }
 
+    /// <inheritdoc />
     public async Task<CategoryModel> UpdateItemCategoryAsync(Guid userId, Guid familyId, Guid categoryId, string? name, string? iconKey, int? sortOrder, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -106,6 +112,7 @@ public sealed class CategoryService : ICategoryService
         return model;
     }
 
+    /// <inheritdoc />
     public async Task DeleteItemCategoryAsync(Guid userId, Guid familyId, Guid categoryId, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);

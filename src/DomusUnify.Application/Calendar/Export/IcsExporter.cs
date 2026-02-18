@@ -3,8 +3,16 @@ using DomusUnify.Application.Calendar.Models;
 
 namespace DomusUnify.Application.Calendar.Export;
 
+/// <summary>
+/// Exportador de eventos de calendário para o formato iCalendar (<c>.ics</c>).
+/// </summary>
 public static class IcsExporter
 {
+    /// <summary>
+    /// Gera o conteúdo <c>.ics</c> para um evento/ocorrência.
+    /// </summary>
+    /// <param name="e">Modelo de exportação do evento.</param>
+    /// <returns>Conteúdo iCalendar pronto a ser gravado num ficheiro <c>.ics</c>.</returns>
     public static string Generate(CalendarEventExportModel e)
     {
         var sb = new StringBuilder();

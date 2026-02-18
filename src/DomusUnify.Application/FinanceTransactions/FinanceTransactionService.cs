@@ -9,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DomusUnify.Application.FinanceTransactions;
 
+/// <summary>
+/// Implementação do serviço de transações financeiras.
+/// </summary>
 public sealed class FinanceTransactionService : IFinanceTransactionService
 {
     private readonly IAppDbContext _db;
@@ -20,6 +23,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         _rt = rt;
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<FinanceTransactionModel>> GetAsync(
         Guid userId,
         Guid familyId,
@@ -69,6 +73,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<FinanceTransactionModel> CreateAsync(
         Guid userId,
         Guid familyId,
@@ -138,6 +143,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         return await GetByIdModelAsync(entity.Id, ct);
     }
 
+    /// <inheritdoc />
     public async Task<FinanceTransactionModel> UpdateAsync(
         Guid userId,
         Guid familyId,
@@ -252,6 +258,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         return await GetByIdModelAsync(entity.Id, ct);
     }
 
+    /// <inheritdoc />
     public async Task DeleteAsync(Guid userId, Guid familyId, Guid budgetId, Guid transactionId, CancellationToken ct)
     {
         var (_, role) = await EnsureBudgetAccessAsync(userId, familyId, budgetId, requireEdit: true, ct);
@@ -271,6 +278,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         }, ct);
     }
 
+    /// <inheritdoc />
     public async Task<BudgetTotalsModel> GetTotalsAsync(Guid userId, Guid familyId, Guid budgetId, DateOnly? referenceDate, CancellationToken ct)
     {
         var (budget, _) = await EnsureBudgetAccessAsync(userId, familyId, budgetId, requireEdit: false, ct);
@@ -312,6 +320,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
             totalExpenses);
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<CategorySummaryModel>> GetCategorySummaryAsync(
         Guid userId,
         Guid familyId,
@@ -357,6 +366,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<MemberSummaryModel>> GetMemberSummaryAsync(
         Guid userId,
         Guid familyId,
@@ -400,6 +410,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<AccountSummaryModel>> GetAccountSummaryAsync(
         Guid userId,
         Guid familyId,
@@ -443,6 +454,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<CsvExportModel> ExportCsvAsync(
         Guid userId,
         Guid familyId,
@@ -518,6 +530,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         return new CsvExportModel(fileName, "text/csv; charset=utf-8", bytes);
     }
 
+    /// <inheritdoc />
     public async Task MarkAllPaidAsync(Guid userId, Guid familyId, Guid budgetId, CancellationToken ct)
     {
         var (_, role) = await EnsureBudgetAccessAsync(userId, familyId, budgetId, requireEdit: true, ct);
@@ -539,6 +552,7 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         }, ct);
     }
 
+    /// <inheritdoc />
     public async Task ClearAsync(Guid userId, Guid familyId, Guid budgetId, CancellationToken ct)
     {
         var (_, role) = await EnsureBudgetAccessAsync(userId, familyId, budgetId, requireEdit: true, ct);

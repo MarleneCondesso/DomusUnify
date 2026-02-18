@@ -8,10 +8,17 @@ using Microsoft.Extensions.Options;
 
 namespace DomusUnify.Application.Family;
 
+/// <summary>
+/// Implementação do serviço de convites para famílias.
+/// </summary>
+/// <remarks>
+/// Os tokens são gerados aleatoriamente e apenas o seu hash é persistido, para reduzir o impacto em caso de fuga de
+/// dados. A URL pública do convite é construída a partir da configuração.
+/// </remarks>
 public sealed class FamilyInviteService : IFamilyInviteService
 {
     private readonly IAppDbContext _db;
-    private readonly string _publicAppBaseUrl; // vem de config
+    private readonly string _publicAppBaseUrl; // vem de configuração
 
     public FamilyInviteService(IAppDbContext db, IOptions<FamilyInviteOptions> opt)
     {
@@ -22,6 +29,7 @@ public sealed class FamilyInviteService : IFamilyInviteService
             throw new InvalidOperationException("FamilyInvites:PublicAppBaseUrl não está configurado.");
     }
 
+    /// <inheritdoc />
     public async Task<CreateInviteResult> CreateInviteAsync(Guid userId, Guid familyId, int daysValid, int? maxUses, CancellationToken ct)
     {
         // só admin/editor cria
@@ -58,6 +66,7 @@ public sealed class FamilyInviteService : IFamilyInviteService
         return new CreateInviteResult(url, expires);
     }
 
+    /// <inheritdoc />
     public async Task<InvitePreviewModel> PreviewInviteAsync(Guid userId, string token, CancellationToken ct)
     {
         var tokenHash = HashToken(token);
@@ -93,6 +102,7 @@ public sealed class FamilyInviteService : IFamilyInviteService
         );
     }
 
+    /// <inheritdoc />
     public async Task JoinByInviteAsync(Guid userId, string token, CancellationToken ct)
     {
         var tokenHash = HashToken(token);
@@ -116,7 +126,7 @@ public sealed class FamilyInviteService : IFamilyInviteService
                 Id = Guid.NewGuid(),
                 FamilyId = invite.FamilyId,
                 UserId = userId,
-                Role = FamilyRole.Member, // ou Editor se quiseres
+                Role = FamilyRole.Member, // ou Editor, conforme a regra pretendida
                 CreatedAtUtc = DateTime.UtcNow
             });
 
@@ -135,6 +145,10 @@ public sealed class FamilyInviteService : IFamilyInviteService
         await _db.SaveChangesAsync(ct);
     }
 
+    /// <summary>
+    /// Gera um token aleatório (URL-safe) para um convite.
+    /// </summary>
+    /// <returns>Token gerado.</returns>
     private static string GenerateToken()
     {
         Span<byte> bytes = stackalloc byte[32];
@@ -142,12 +156,22 @@ public sealed class FamilyInviteService : IFamilyInviteService
         return Base64Url(bytes);
     }
 
+    /// <summary>
+    /// Calcula o hash SHA-256 de um token.
+    /// </summary>
+    /// <param name="token">Token em texto simples.</param>
+    /// <returns>Hash do token em hexadecimal.</returns>
     private static string HashToken(string token)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
         return Convert.ToHexString(bytes); // string hex
     }
 
+    /// <summary>
+    /// Codifica bytes em Base64 URL-safe (sem padding).
+    /// </summary>
+    /// <param name="bytes">Bytes a codificar.</param>
+    /// <returns>String Base64 URL-safe.</returns>
     private static string Base64Url(ReadOnlySpan<byte> bytes)
     {
         var s = Convert.ToBase64String(bytes);

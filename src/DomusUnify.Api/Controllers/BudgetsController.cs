@@ -8,6 +8,17 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DomusUnify.Api.Controllers;
 
+/// <summary>
+/// Endpoints para gestão de orçamentos (recorrentes e únicos) na família atual.
+/// </summary>
+/// <remarks>
+/// Um orçamento pertence a uma família e pode ter visibilidade:
+/// <list type="bullet">
+/// <item><description><c>Private</c> — apenas o dono.</description></item>
+/// <item><description><c>AllMembers</c> — todos os membros da família.</description></item>
+/// <item><description><c>SpecificMembers</c> — apenas membros selecionados.</description></item>
+/// </list>
+/// </remarks>
 [ApiController]
 [Route("api/v1/budgets")]
 [Authorize]
@@ -22,6 +33,14 @@ public sealed class BudgetsController : ControllerBase
         _svc = svc;
     }
 
+    /// <summary>
+    /// Obtém a lista de orçamentos a que o utilizador tem acesso na família atual.
+    /// </summary>
+    /// <remarks>
+    /// Apenas devolve orçamentos visíveis para o utilizador autenticado, de acordo com a configuração de visibilidade.
+    /// </remarks>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista de orçamentos.</returns>
     [HttpGet]
     public async Task<ActionResult<List<BudgetSummaryResponse>>> Get(CancellationToken ct)
     {
@@ -39,6 +58,16 @@ public sealed class BudgetsController : ControllerBase
         }).ToList());
     }
 
+    /// <summary>
+    /// Obtém os detalhes de um orçamento pelo seu identificador.
+    /// </summary>
+    /// <remarks>
+    /// Devolve <c>404 Not Found</c> se o orçamento não existir na família atual, e <c>403 Forbidden</c> se o utilizador
+    /// não tiver permissões para aceder a este orçamento.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Os detalhes do orçamento.</returns>
     [HttpGet("{budgetId:guid}")]
     public async Task<ActionResult<BudgetDetailResponse>> GetById(Guid budgetId, CancellationToken ct)
     {
@@ -53,6 +82,16 @@ public sealed class BudgetsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Cria um novo orçamento na família atual.
+    /// </summary>
+    /// <remarks>
+    /// Para orçamentos <c>Recurring</c> é obrigatório indicar o período e a data de início.
+    /// Pode ainda definir limites por categoria (despesas) e um limite global de gastos.
+    /// </remarks>
+    /// <param name="request">Dados do orçamento a criar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Os detalhes do orçamento criado.</returns>
     [HttpPost]
     public async Task<ActionResult<BudgetDetailResponse>> Create(CreateBudgetRequest request, CancellationToken ct)
     {
@@ -91,6 +130,16 @@ public sealed class BudgetsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Atualiza as configurações de um orçamento existente.
+    /// </summary>
+    /// <remarks>
+    /// Permite alterar nome/ícone, período (se recorrente), moeda, visibilidade e opções de exibição.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="request">Dados a atualizar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Os detalhes do orçamento após atualização.</returns>
     [HttpPatch("{budgetId:guid}")]
     public async Task<ActionResult<BudgetDetailResponse>> Update(Guid budgetId, UpdateBudgetRequest request, CancellationToken ct)
     {
@@ -129,6 +178,15 @@ public sealed class BudgetsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Elimina um orçamento da família atual.
+    /// </summary>
+    /// <remarks>
+    /// Ao eliminar um orçamento são eliminadas também as suas transações e limites associados.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpDelete("{budgetId:guid}")]
     public async Task<IActionResult> Delete(Guid budgetId, CancellationToken ct)
     {
@@ -142,6 +200,16 @@ public sealed class BudgetsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Obtém a lista de membros associados ao orçamento.
+    /// </summary>
+    /// <remarks>
+    /// Para orçamentos com visibilidade <c>AllMembers</c>, devolve todos os membros da família.
+    /// Para <c>Private</c> ou <c>SpecificMembers</c>, devolve apenas os membros com acesso.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista de membros do orçamento.</returns>
     [HttpGet("{budgetId:guid}/members")]
     public async Task<ActionResult<List<BudgetMemberResponse>>> GetMembers(Guid budgetId, CancellationToken ct)
     {
@@ -161,6 +229,15 @@ public sealed class BudgetsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Obtém os limites por categoria (despesas) definidos para um orçamento.
+    /// </summary>
+    /// <remarks>
+    /// Esta lista é usada para configurar quanto se pretende gastar por categoria dentro do orçamento.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista de limites por categoria.</returns>
     [HttpGet("{budgetId:guid}/category-limits")]
     public async Task<ActionResult<List<BudgetCategoryLimitResponse>>> GetCategoryLimits(Guid budgetId, CancellationToken ct)
     {
@@ -183,6 +260,16 @@ public sealed class BudgetsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Atualiza os limites por categoria (despesas) de um orçamento.
+    /// </summary>
+    /// <remarks>
+    /// Envia a lista de categorias e respetivos limites. Os valores devem ser maiores ou iguais a zero.
+    /// </remarks>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="request">Pedido com a lista de limites a atualizar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpPut("{budgetId:guid}/category-limits")]
     public async Task<IActionResult> UpdateCategoryLimits(Guid budgetId, UpdateBudgetCategoryLimitsRequest request, CancellationToken ct)
     {
@@ -228,4 +315,3 @@ public sealed class BudgetsController : ControllerBase
         return parsed;
     }
 }
-

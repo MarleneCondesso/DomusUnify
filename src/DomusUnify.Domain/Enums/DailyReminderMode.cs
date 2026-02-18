@@ -1,7 +1,17 @@
 namespace DomusUnify.Domain.Enums;
 
+/// <summary>
+/// Define o modo do lembrete diário.
+/// </summary>
 public enum DailyReminderMode
 {
-    SameDay = 1,        // no próprio dia
-    DayBefore = 2       // dia anterior
+    /// <summary>
+    /// No próprio dia.
+    /// </summary>
+    SameDay = 1,
+
+    /// <summary>
+    /// No dia anterior.
+    /// </summary>
+    DayBefore = 2
 }

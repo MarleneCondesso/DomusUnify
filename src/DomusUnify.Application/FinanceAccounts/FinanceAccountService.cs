@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DomusUnify.Application.FinanceAccounts;
 
+/// <summary>
+/// Implementação do serviço de contas financeiras.
+/// </summary>
 public sealed class FinanceAccountService : IFinanceAccountService
 {
     private static readonly Regex IconKeyRegex = new("^[a-z0-9_-]{1,40}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -21,6 +24,7 @@ public sealed class FinanceAccountService : IFinanceAccountService
         _rt = rt;
     }
 
+    /// <inheritdoc />
     public async Task EnsureDefaultsAsync(Guid familyId, CancellationToken ct)
     {
         var any = await _db.FinanceAccounts.AsNoTracking().AnyAsync(a => a.FamilyId == familyId, ct);
@@ -39,6 +43,7 @@ public sealed class FinanceAccountService : IFinanceAccountService
         }
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<FinanceAccountModel>> GetAsync(Guid userId, Guid familyId, CancellationToken ct)
     {
         await EnsureMemberAsync(userId, familyId, ct);
@@ -53,6 +58,7 @@ public sealed class FinanceAccountService : IFinanceAccountService
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<FinanceAccountModel> CreateAsync(
         Guid userId,
         Guid familyId,
@@ -102,6 +108,7 @@ public sealed class FinanceAccountService : IFinanceAccountService
         return model;
     }
 
+    /// <inheritdoc />
     public async Task<FinanceAccountModel> UpdateAsync(
         Guid userId,
         Guid familyId,
@@ -143,6 +150,7 @@ public sealed class FinanceAccountService : IFinanceAccountService
         return model;
     }
 
+    /// <inheritdoc />
     public async Task DeleteAsync(Guid userId, Guid familyId, Guid accountId, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);

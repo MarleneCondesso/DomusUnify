@@ -6,6 +6,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DomusUnify.Api.Controllers;
 
+/// <summary>
+/// Endpoints para gestão de contas financeiras (ex.: conta corrente, dinheiro, cartão de crédito) na família atual.
+/// </summary>
+/// <remarks>
+/// As contas financeiras são usadas para classificar transações por origem/destino do dinheiro.
+/// </remarks>
 [ApiController]
 [Route("api/v1/finance-accounts")]
 [Authorize]
@@ -20,6 +26,14 @@ public sealed class FinanceAccountsController : ControllerBase
         _svc = svc;
     }
 
+    /// <summary>
+    /// Obtém as contas financeiras da família atual.
+    /// </summary>
+    /// <remarks>
+    /// Se não existirem contas ainda, o serviço cria automaticamente um conjunto de contas por defeito.
+    /// </remarks>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista de contas financeiras.</returns>
     [HttpGet]
     public async Task<ActionResult<List<FinanceAccountResponse>>> Get(CancellationToken ct)
     {
@@ -36,6 +50,15 @@ public sealed class FinanceAccountsController : ControllerBase
         }).ToList());
     }
 
+    /// <summary>
+    /// Cria uma nova conta financeira na família atual.
+    /// </summary>
+    /// <remarks>
+    /// O utilizador deve ter permissões de edição na família (por exemplo, não pode ser <c>Viewer</c>).
+    /// </remarks>
+    /// <param name="request">Dados da conta a criar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>A conta criada.</returns>
     [HttpPost]
     public async Task<ActionResult<FinanceAccountResponse>> Create(CreateFinanceAccountRequest request, CancellationToken ct)
     {
@@ -58,6 +81,16 @@ public sealed class FinanceAccountsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Atualiza uma conta financeira existente.
+    /// </summary>
+    /// <remarks>
+    /// Permite alterar nome/ícone e reordenar a conta via <c>SortOrder</c>.
+    /// </remarks>
+    /// <param name="accountId">Identificador da conta.</param>
+    /// <param name="request">Dados a atualizar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>A conta atualizada.</returns>
     [HttpPatch("{accountId:guid}")]
     public async Task<ActionResult<FinanceAccountResponse>> Update(Guid accountId, UpdateFinanceAccountRequest request, CancellationToken ct)
     {
@@ -81,6 +114,15 @@ public sealed class FinanceAccountsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    /// <summary>
+    /// Elimina uma conta financeira.
+    /// </summary>
+    /// <remarks>
+    /// A operação falha com conflito se a conta estiver a ser usada por transações.
+    /// </remarks>
+    /// <param name="accountId">Identificador da conta.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpDelete("{accountId:guid}")]
     public async Task<IActionResult> Delete(Guid accountId, CancellationToken ct)
     {
@@ -95,4 +137,3 @@ public sealed class FinanceAccountsController : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 }
-

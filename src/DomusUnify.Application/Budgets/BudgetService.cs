@@ -10,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DomusUnify.Application.Budgets;
 
+/// <summary>
+/// Implementação do serviço de orçamentos.
+/// </summary>
 public sealed class BudgetService : IBudgetService
 {
     private static readonly Regex IconKeyRegex = new("^[a-z0-9_-]{1,40}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -28,6 +31,7 @@ public sealed class BudgetService : IBudgetService
         _accounts = accounts;
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<BudgetSummaryModel>> GetAsync(Guid userId, Guid familyId, CancellationToken ct)
     {
         await EnsureMemberAsync(userId, familyId, ct);
@@ -50,6 +54,7 @@ public sealed class BudgetService : IBudgetService
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<BudgetDetailModel> GetByIdAsync(Guid userId, Guid familyId, Guid budgetId, CancellationToken ct)
     {
         await EnsureMemberAsync(userId, familyId, ct);
@@ -65,6 +70,7 @@ public sealed class BudgetService : IBudgetService
         return ToDetailModel(budget);
     }
 
+    /// <inheritdoc />
     public async Task<BudgetDetailModel> CreateAsync(Guid userId, Guid familyId, BudgetCreateInput input, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -231,6 +237,7 @@ public sealed class BudgetService : IBudgetService
         return model;
     }
 
+    /// <inheritdoc />
     public async Task<BudgetDetailModel> UpdateAsync(Guid userId, Guid familyId, Guid budgetId, BudgetUpdateInput input, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -400,6 +407,7 @@ public sealed class BudgetService : IBudgetService
         return model;
     }
 
+    /// <inheritdoc />
     public async Task DeleteAsync(Guid userId, Guid familyId, Guid budgetId, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -421,6 +429,7 @@ public sealed class BudgetService : IBudgetService
         }, ct);
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<BudgetMemberModel>> GetMembersAsync(Guid userId, Guid familyId, Guid budgetId, CancellationToken ct)
     {
         await EnsureMemberAsync(userId, familyId, ct);
@@ -471,6 +480,7 @@ public sealed class BudgetService : IBudgetService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<BudgetCategoryLimitModel>> GetCategoryLimitsAsync(Guid userId, Guid familyId, Guid budgetId, CancellationToken ct)
     {
         await EnsureMemberAsync(userId, familyId, ct);
@@ -500,6 +510,7 @@ public sealed class BudgetService : IBudgetService
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task UpdateCategoryLimitsAsync(Guid userId, Guid familyId, Guid budgetId, IReadOnlyList<BudgetCategoryLimitInput> limits, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);

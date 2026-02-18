@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DomusUnify.Api.Services.CurrentUser;
 
+/// <summary>
+/// Implementação do contexto do utilizador atual baseada no <see cref="IHttpContextAccessor"/>.
+/// </summary>
 public sealed class CurrentUserContext : ICurrentUserContext
 {
     private readonly DomusUnifyDbContext _db;
@@ -15,8 +18,10 @@ public sealed class CurrentUserContext : ICurrentUserContext
         _http = http;
     }
 
+    /// <inheritdoc />
     public Guid UserId => _http.HttpContext!.User.GetUserId();
 
+    /// <inheritdoc />
     public async Task<Guid> GetCurrentFamilyIdAsync(CancellationToken ct = default)
     {
         var userId = UserId;

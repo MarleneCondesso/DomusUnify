@@ -5,8 +5,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DomusUnify.Infrastructure.Persistence;
 
+/// <summary>
+/// Utilitário para semear dados iniciais na base de dados.
+/// </summary>
 public static class DbSeeder
 {
+    /// <summary>
+    /// Aplica migrações e cria um conjunto mínimo de dados (se a base de dados estiver vazia).
+    /// </summary>
+    /// <remarks>
+    /// Cria um utilizador administrador e uma família por defeito, para facilitar ambientes de desenvolvimento.
+    /// </remarks>
+    /// <param name="db">Contexto de base de dados.</param>
     public static async Task SeedAsync(DomusUnifyDbContext db)
     {
         // garante migrations aplicadas (opcional se já corres "database update")

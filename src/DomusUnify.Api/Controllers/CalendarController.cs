@@ -8,6 +8,9 @@ using DomusUnify.Application.Recurrence;
 
 namespace DomusUnify.Api.Controllers;
 
+/// <summary>
+/// Endpoints do módulo de calendário para a família atual.
+/// </summary>
 [ApiController]
 [Route("api/v1/calendar")]
 [Authorize]
@@ -26,7 +29,7 @@ public sealed class CalendarController : ControllerBase
     /// Lista eventos do calendário visíveis para o utilizador autenticado.
     /// </summary>
     /// <remarks>
-    /// Podes filtrar por:
+    /// Pode filtrar por:
     /// - dateUtc (dia inteiro, UTC)
     /// - intervalo (fromUtc/toUtc)
     /// - search (parte do título)
@@ -34,6 +37,12 @@ public sealed class CalendarController : ControllerBase
     ///
     /// Se nenhum filtro for fornecido, devolve uma janela default (ex: últimos 7 dias + próximos 30).
     /// </remarks>
+    /// <param name="fromUtc">Data/hora inicial (UTC) para filtrar por intervalo, opcional.</param>
+    /// <param name="toUtc">Data/hora final (UTC) para filtrar por intervalo, opcional.</param>
+    /// <param name="dateUtc">Dia (UTC) para filtrar por dia inteiro, opcional.</param>
+    /// <param name="search">Texto para procurar no título, opcional.</param>
+    /// <param name="participantUserId">Filtra por participante específico, opcional.</param>
+    /// <param name="ct">Token de cancelamento.</param>
     /// <returns>Uma lista de respostas de eventos do calendário.</returns>
     // GET api/v1/calendar/events?dateUtc=2026-02-04&search=...&participantUserId=...
     [HttpGet("events")]
@@ -77,11 +86,14 @@ public sealed class CalendarController : ControllerBase
 
 
     /// <summary>
-    /// Devolve os detalhes de um evento do calendario pelo seu ID.
+    /// Devolve os detalhes de um evento do calendário pelo seu ID.
     /// </summary>
     /// <remarks>
-    /// Retorna <c>404 Not Found</c> se o evento nao existir ou nao for visivel para o utilizador autenticado na familia atual.
+    /// Retorna <c>404 Not Found</c> se o evento não existir ou não for visível para o utilizador autenticado na família atual.
     /// </remarks>
+    /// <param name="eventId">O ID do evento.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Os detalhes do evento.</returns>
     // GET api/v1/calendar/events/{eventId}
     [HttpGet("events/{eventId:guid}")]
     public async Task<ActionResult<CalendarEventDetailResponse>> GetEventById(Guid eventId, CancellationToken ct)
@@ -247,11 +259,14 @@ public sealed class CalendarController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes a calendar event.
+    /// Elimina um evento do calendário.
     /// </summary>
-    /// <param name="eventId">The ID of the event to delete.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>No content if successful.</returns>
+    /// <remarks>
+    /// O utilizador deve ter permissões para editar o evento na família atual.
+    /// </remarks>
+    /// <param name="eventId">O ID do evento a eliminar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteúdo se bem-sucedido.</returns>
     [HttpDelete("events/{eventId:guid}")]
     public async Task<IActionResult> DeleteEvent(Guid eventId, CancellationToken ct)
     {
@@ -305,12 +320,15 @@ public sealed class CalendarController : ControllerBase
     }
 
     /// <summary>
-    /// Copies a calendar event to multiple specified dates.
+    /// Copia um evento do calendário para várias datas.
     /// </summary>
-    /// <param name="eventId">The ID of the event to copy.</param>
-    /// <param name="request">The request containing the list of dates to copy to.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A list of copied calendar event responses.</returns>
+    /// <remarks>
+    /// Cria novas instâncias do evento nas datas indicadas (UTC).
+    /// </remarks>
+    /// <param name="eventId">O ID do evento a copiar.</param>
+    /// <param name="request">Pedido com a lista de datas para onde copiar.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista com os eventos copiados.</returns>
     [HttpPost("events/{eventId:guid}/copy")]
     public async Task<ActionResult<List<CalendarEventResponse>>> CopyEvent(
         Guid eventId,
@@ -389,20 +407,20 @@ public sealed class CalendarController : ControllerBase
     }
 
     /// <summary>
-    /// Exporta um evento do calendário como um arquivo ICS para importação em aplicações de calendário.
+    /// Exporta um evento do calendário para um ficheiro ICS (iCalendar).
     /// </summary>
     /// <remarks>
-    /// Para eventos recorrentes, você pode especificar <c>occurrenceStartUtc</c> para exportar uma ocorrência específica.
+    /// Para eventos recorrentes, podes especificar <paramref name="occurrenceStartUtc"/> para exportar uma ocorrência específica.
     /// Retorna <c>404 Not Found</c> se o evento não existir ou não for visível para o utilizador autenticado na família atual.
     /// </remarks>
     /// <param name="eventId">O ID do evento a exportar.</param>
-    /// <param name="occurrenceStartUtc">A hora de início (UTC) de uma ocorrência específica para eventos recorrentes. Se não fornecido, usa a ocorrência padrão.</param>
+    /// <param name="occurrenceStartUtc">Hora de início (UTC) de uma ocorrência específica (opcional).</param>
     /// <param name="ct">Token de cancelamento.</param>
-    /// <returns>Um arquivo ICS contendo os detalhes do evento.</returns>
+    /// <returns>Um ficheiro ICS contendo os detalhes do evento.</returns>
     // GET api/v1/calendar/events/{eventId}/export?occurrenceStartUtc=2026-02-04T10:00:00Z
     [HttpGet("events/{eventId:guid}/export")]
     public async Task<IActionResult> ExportIcs(
-     Guid eventId,
+      Guid eventId,
      [FromQuery] DateTime? occurrenceStartUtc,
      CancellationToken ct)
     {

@@ -4,34 +4,86 @@ using DomusUnify.Application.Common.Interfaces;
 
 namespace DomusUnify.Infrastructure.Persistence;
 
+/// <summary>
+/// Contexto EF Core (SQL Server) da aplicação.
+/// </summary>
+/// <remarks>
+/// Implementa <see cref="IAppDbContext"/> para ser consumido pela camada de aplicação.
+/// </remarks>
 public class DomusUnifyDbContext : DbContext, IAppDbContext
 {
+    /// <summary>
+    /// Inicializa uma nova instância do contexto.
+    /// </summary>
+    /// <param name="options">Opções de configuração do EF Core.</param>
     public DomusUnifyDbContext(DbContextOptions<DomusUnifyDbContext> options)
         : base(options) { }
 
+    /// <inheritdoc />
     public DbSet<User> Users => Set<User>();
+
+    /// <inheritdoc />
     public DbSet<Family> Families => Set<Family>();
+
+    /// <inheritdoc />
     public DbSet<FamilyMember> FamilyMembers => Set<FamilyMember>();
+
+    /// <inheritdoc />
     public DbSet<FamilyInvite> FamilyInvites => Set<FamilyInvite>();
+
+    /// <inheritdoc />
     public DbSet<SharedList> Lists => Set<SharedList>();
+
+    /// <inheritdoc />
     public DbSet<ListItem> ListItems => Set<ListItem>();
+
+    /// <inheritdoc />
     public DbSet<ItemCategory> ItemCategories => Set<ItemCategory>();
+
+    /// <inheritdoc />
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
+
+    /// <inheritdoc />
     public DbSet<CalendarEventParticipant> CalendarEventParticipants => Set<CalendarEventParticipant>();
+
+    /// <inheritdoc />
     public DbSet<CalendarEventVisibility> CalendarEventVisibilities => Set<CalendarEventVisibility>();
+
+    /// <inheritdoc />
     public DbSet<CalendarEventReminder> CalendarEventReminders => Set<CalendarEventReminder>();
+
+    /// <inheritdoc />
     public DbSet<FamilyCalendarSettings> FamilyCalendarSettings => Set<FamilyCalendarSettings>();
+
+    /// <inheritdoc />
     public DbSet<UserCalendarSettings> UserCalendarSettings => Set<UserCalendarSettings>();
 
     // BUDGET / FINANCE
+    /// <inheritdoc />
     public DbSet<Budget> Budgets => Set<Budget>();
+
+    /// <inheritdoc />
     public DbSet<BudgetUserAccess> BudgetUserAccess => Set<BudgetUserAccess>();
+
+    /// <inheritdoc />
     public DbSet<BudgetUserSettings> BudgetUserSettings => Set<BudgetUserSettings>();
+
+    /// <inheritdoc />
     public DbSet<BudgetCategoryLimit> BudgetCategoryLimits => Set<BudgetCategoryLimit>();
+
+    /// <inheritdoc />
     public DbSet<FinanceCategory> FinanceCategories => Set<FinanceCategory>();
+
+    /// <inheritdoc />
     public DbSet<FinanceAccount> FinanceAccounts => Set<FinanceAccount>();
+
+    /// <inheritdoc />
     public DbSet<FinanceTransaction> FinanceTransactions => Set<FinanceTransaction>();
 
+    /// <summary>
+    /// Configura o mapeamento das entidades (tabelas, chaves, índices e relações).
+    /// </summary>
+    /// <param name="modelBuilder">Construtor de modelo EF Core.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

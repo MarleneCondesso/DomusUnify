@@ -11,6 +11,12 @@ using DomusUnify.Application.Family;
 
 namespace DomusUnify.Api.Controllers;
 
+/// <summary>
+/// Endpoints de gestão de famílias (criação, seleção da família atual e listagens).
+/// </summary>
+/// <remarks>
+/// A maioria dos endpoints opera sobre a “família atual” do utilizador autenticado, definida em <c>/set-current</c>.
+/// </remarks>
 [ApiController]
 [Route("api/v1/families")]
 [Authorize]
@@ -69,6 +75,18 @@ public class FamiliesController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Cria um convite para uma família.
+    /// </summary>
+    /// <remarks>
+    /// O utilizador autenticado deve ter permissões na família indicada. O convite tem validade limitada e pode ter um
+    /// número máximo de utilizações.
+    /// </remarks>
+    /// <param name="familyId">Identificador da família.</param>
+    /// <param name="daysValid">Número de dias de validade do convite (por omissão, 7).</param>
+    /// <param name="maxUses">Número máximo de utilizações (opcional).</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Dados do convite criado.</returns>
     [HttpPost("{familyId:guid}/invites")]
     public async Task<ActionResult<CreateInviteResult>> CreateInvite(Guid familyId, [FromQuery] int daysValid = 7, [FromQuery] int? maxUses = null, CancellationToken ct = default)
     {
@@ -173,6 +191,11 @@ public class FamiliesController : ControllerBase
     /// <summary>
     /// Lista os membros da família atual (para seleções como "visível para" e "pago por").
     /// </summary>
+    /// <remarks>
+    /// Devolve os utilizadores membros da família atual, com o respetivo papel (Admin/Member/Viewer).
+    /// </remarks>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Uma lista de membros da família atual.</returns>
     [HttpGet("members")]
     public async Task<ActionResult<List<FamilyMemberResponse>>> GetCurrentFamilyMembers(CancellationToken ct)
     {

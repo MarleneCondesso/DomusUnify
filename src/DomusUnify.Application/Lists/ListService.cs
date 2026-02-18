@@ -7,6 +7,9 @@ using DomusUnify.Application.Common.Realtime;
 
 namespace DomusUnify.Application.Lists;
 
+/// <summary>
+/// Implementação do serviço de listas e itens.
+/// </summary>
 public sealed class ListService : IListService
 {
     private readonly IAppDbContext _db;
@@ -18,6 +21,7 @@ public sealed class ListService : IListService
         _rt = rt;
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<ListSummary>> GetListsAsync(Guid userId, Guid familyId, CancellationToken ct)
     {
         await EnsureMemberAsync(userId, familyId, ct);
@@ -49,6 +53,7 @@ public sealed class ListService : IListService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<ListSummary> CreateListAsync(Guid userId, Guid familyId, string name, string colorHex, string type, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -87,6 +92,7 @@ public sealed class ListService : IListService
         return new ListSummary(list.Id, list.Name, list.ColorHex, list.Type.ToString(), 0, 0);
     }
 
+    /// <inheritdoc />
     public async Task UpdateListAsync(Guid userId, Guid familyId, Guid listId, string newName, string colorHex, string type, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -121,6 +127,7 @@ public sealed class ListService : IListService
         }, ct);
     }
 
+    /// <inheritdoc />
     public async Task DeleteListAsync(Guid userId, Guid familyId, Guid listId, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -143,6 +150,7 @@ public sealed class ListService : IListService
     }
 
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<ListItemModel>> GetItemsAsync(Guid userId, Guid familyId, Guid listId, CancellationToken ct)
     {
         await EnsureMemberAsync(userId, familyId, ct);
@@ -170,6 +178,7 @@ public sealed class ListService : IListService
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<ListItemModel> AddItemAsync(Guid userId, Guid familyId, Guid listId, string name, Guid? categoryId, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -223,6 +232,7 @@ public sealed class ListService : IListService
         return new ListItemModel(item.Id, item.SharedListId, item.Name, item.CategoryId, item.IsCompleted, item.CompletedAtUtc, item.CompletedByUserId);
     }
 
+    /// <inheritdoc />
     public async Task UpdateItemAsync(
       Guid userId,
       Guid familyId,
@@ -306,6 +316,7 @@ public sealed class ListService : IListService
         }, ct);
     }
 
+    /// <inheritdoc />
     public async Task DeleteItemAsync(Guid userId, Guid familyId, Guid itemId, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);

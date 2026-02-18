@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DomusUnify.Application.FinanceCategories;
 
+/// <summary>
+/// Implementação do serviço de categorias financeiras.
+/// </summary>
 public sealed class FinanceCategoryService : IFinanceCategoryService
 {
     private static readonly Regex IconKeyRegex = new("^[a-z0-9_-]{1,40}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -21,6 +24,7 @@ public sealed class FinanceCategoryService : IFinanceCategoryService
         _rt = rt;
     }
 
+    /// <inheritdoc />
     public async Task EnsureDefaultsAsync(Guid familyId, CancellationToken ct)
     {
         var any = await _db.FinanceCategories.AsNoTracking().AnyAsync(c => c.FamilyId == familyId, ct);
@@ -39,6 +43,7 @@ public sealed class FinanceCategoryService : IFinanceCategoryService
         }
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<FinanceCategoryModel>> GetAsync(
         Guid userId,
         Guid familyId,
@@ -66,6 +71,7 @@ public sealed class FinanceCategoryService : IFinanceCategoryService
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<FinanceCategoryModel> CreateAsync(
         Guid userId,
         Guid familyId,
@@ -115,6 +121,7 @@ public sealed class FinanceCategoryService : IFinanceCategoryService
         return model;
     }
 
+    /// <inheritdoc />
     public async Task<FinanceCategoryModel> UpdateAsync(
         Guid userId,
         Guid familyId,
@@ -156,6 +163,7 @@ public sealed class FinanceCategoryService : IFinanceCategoryService
         return model;
     }
 
+    /// <inheritdoc />
     public async Task DeleteAsync(Guid userId, Guid familyId, Guid categoryId, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);

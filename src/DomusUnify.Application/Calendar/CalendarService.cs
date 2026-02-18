@@ -7,6 +7,9 @@ using DomusUnify.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 namespace DomusUnify.Application.Calendar;
 
+/// <summary>
+/// Implementação do serviço de calendário.
+/// </summary>
 public sealed class CalendarService : ICalendarService
 {
     private readonly IAppDbContext _db;
@@ -20,6 +23,7 @@ public sealed class CalendarService : ICalendarService
     }
 
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<CalendarEventInstanceModel>> GetEventsAsync(
         Guid userId,
         Guid familyId,
@@ -157,6 +161,7 @@ public sealed class CalendarService : ICalendarService
             .ToList();
     }
 
+    /// <inheritdoc />
     public async Task<CalendarEventDetailModel> GetEventByIdAsync(
         Guid userId,
         Guid familyId,
@@ -213,6 +218,7 @@ public sealed class CalendarService : ICalendarService
         return model;
     }
 
+    /// <inheritdoc />
     public async Task<CalendarEventModel> CreateEventAsync(
         Guid userId,
         Guid familyId,
@@ -309,6 +315,7 @@ public sealed class CalendarService : ICalendarService
         );
     }
 
+    /// <inheritdoc />
     public async Task<CalendarEventModel> UpdateEventAsync(
         Guid userId,
         Guid familyId,
@@ -469,6 +476,7 @@ public sealed class CalendarService : ICalendarService
             participants, visible, reminders);
     }
 
+    /// <inheritdoc />
     public async Task<CalendarEventModel> DuplicateEventAsync(
         Guid userId, Guid familyId, Guid eventId, DateTime newStartUtc, DateTime newEndUtc, CancellationToken ct)
     {
@@ -548,6 +556,7 @@ public sealed class CalendarService : ICalendarService
             participants, visible, reminders);
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<CalendarEventModel>> CopyEventToDatesAsync(
         Guid userId, Guid familyId, Guid eventId, IReadOnlyList<DateOnly> datesUtc, CancellationToken ct)
     {
@@ -641,6 +650,7 @@ public sealed class CalendarService : ICalendarService
     }
 
 
+    /// <inheritdoc />
     public async Task DeleteEventAsync(Guid userId, Guid familyId, Guid eventId, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
@@ -664,6 +674,7 @@ public sealed class CalendarService : ICalendarService
         }, ct);
     }
 
+    /// <inheritdoc />
     public async Task UpdateRecurringEventAsync(
         Guid userId,
         Guid familyId,
@@ -787,6 +798,7 @@ public sealed class CalendarService : ICalendarService
         }, ct);
     }
 
+    /// <inheritdoc />
     public async Task<CalendarEventExportModel> GetEventExportAsync(
         Guid userId,
         Guid familyId,

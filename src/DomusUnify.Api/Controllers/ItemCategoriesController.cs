@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DomusUnify.Api.Controllers;
 
+/// <summary>
+/// Endpoints para gestão de categorias de itens (listas) na família atual.
+/// </summary>
 [ApiController]
 [Route("api/v1/item-categories")]
 [Authorize]
@@ -77,12 +80,15 @@ public class ItemCategoriesController : ControllerBase
     }
 
     /// <summary>
-    /// Updates an existing item category.
+    /// Atualiza uma categoria de itens existente.
     /// </summary>
-    /// <param name="categoryId">The ID of the category to update.</param>
-    /// <param name="request">The request containing updated category details.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The updated category response.</returns>
+    /// <remarks>
+    /// Permite alterar nome/ícone e reordenar a categoria via <c>SortOrder</c>.
+    /// </remarks>
+    /// <param name="categoryId">O ID da categoria a atualizar.</param>
+    /// <param name="request">O pedido contendo detalhes atualizados da categoria.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>A resposta da categoria atualizada.</returns>
     [HttpPatch("{categoryId:guid}")]
     public async Task<ActionResult<CategoryResponse>> Update(Guid categoryId, UpdateCategoryRequest request, CancellationToken ct)
     {
