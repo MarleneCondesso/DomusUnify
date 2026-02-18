@@ -70,9 +70,20 @@ builder.Services.AddSwaggerGen(c =>
         Example = new Microsoft.OpenApi.Any.OpenApiString("2026-02-04")
     });
 
-    var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-    c.IncludeXmlComments(xmlPath);
+    var xmlDocFiles = new[]
+    {
+        $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml",
+        "DomusUnify.Application.xml",
+        "DomusUnify.Domain.xml",
+        "DomusUnify.Infrastructure.xml"
+    };
+
+    foreach (var xmlFile in xmlDocFiles)
+    {
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
+            c.IncludeXmlComments(xmlPath);
+    }
 
 });
 

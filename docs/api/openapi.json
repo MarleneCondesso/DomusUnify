@@ -1,0 +1,4871 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "DomusUnify API",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Registra um novo utilizador com os detalhes fornecidos.",
+        "description": "O email deve ser único. A palavra-passe é encriptada antes de ser armazenada.",
+        "requestBody": {
+          "description": "O pedido de registo contendo nome, email e palavra-passe.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Autentica um utilizador existente e retorna um token de acesso.",
+        "description": "Verifica as credenciais fornecidas. Se inválidas, retorna erro de não autorizado.",
+        "requestBody": {
+          "description": "O pedido de login contendo email e palavra-passe.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets": {
+      "get": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Obtém a lista de orçamentos a que o utilizador tem acesso na família atual.",
+        "description": "Apenas devolve orçamentos visíveis para o utilizador autenticado, de acordo com a configuração de visibilidade.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetSummaryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetSummaryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetSummaryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Cria um novo orçamento na família atual.",
+        "description": "Para orçamentos `Recurring` é obrigatório indicar o período e a data de início.\r\nPode ainda definir limites por categoria (despesas) e um limite global de gastos.",
+        "requestBody": {
+          "description": "Dados do orçamento a criar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBudgetRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBudgetRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBudgetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetDetailResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetDetailResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}": {
+      "get": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Obtém os detalhes de um orçamento pelo seu identificador.",
+        "description": "Devolve `404 Not Found` se o orçamento não existir na família atual, e `403 Forbidden` se o utilizador\r\nnão tiver permissões para aceder a este orçamento.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetDetailResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetDetailResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Atualiza as configurações de um orçamento existente.",
+        "description": "Permite alterar nome/ícone, período (se recorrente), moeda, visibilidade e opções de exibição.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Dados a atualizar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBudgetRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBudgetRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBudgetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetDetailResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetDetailResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Elimina um orçamento da família atual.",
+        "description": "Ao eliminar um orçamento são eliminadas também as suas transações e limites associados.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/members": {
+      "get": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Obtém a lista de membros associados ao orçamento.",
+        "description": "Para orçamentos com visibilidade `AllMembers`, devolve todos os membros da família.\r\nPara `Private` ou `SpecificMembers`, devolve apenas os membros com acesso.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetMemberResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetMemberResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetMemberResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/category-limits": {
+      "get": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Obtém os limites por categoria (despesas) definidos para um orçamento.",
+        "description": "Esta lista é usada para configurar quanto se pretende gastar por categoria dentro do orçamento.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetCategoryLimitResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetCategoryLimitResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetCategoryLimitResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Atualiza os limites por categoria (despesas) de um orçamento.",
+        "description": "Envia a lista de categorias e respetivos limites. Os valores devem ser maiores ou iguais a zero.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Pedido com a lista de limites a atualizar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBudgetCategoryLimitsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBudgetCategoryLimitsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBudgetCategoryLimitsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/calendar/events": {
+      "get": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "Lista eventos do calendário visíveis para o utilizador autenticado.",
+        "description": "Pode filtrar por:\r\n- dateUtc (dia inteiro, UTC)\r\n- intervalo (fromUtc/toUtc)\r\n- search (parte do título)\r\n- participantUserId (participante específico)\r\n            \r\nSe nenhum filtro for fornecido, devolve uma janela default (ex: últimos 7 dias + próximos 30).",
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "description": "Data/hora inicial (UTC) para filtrar por intervalo, opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "description": "Data/hora final (UTC) para filtrar por intervalo, opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "dateUtc",
+            "in": "query",
+            "description": "Dia (UTC) para filtrar por dia inteiro, opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Texto para procurar no título, opcional.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "participantUserId",
+            "in": "query",
+            "description": "Filtra por participante específico, opcional.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarEventResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarEventResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarEventResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "Cria um novo evento do calendário para a família atual.",
+        "description": "Permite definir participantes, visibilidade, lembretes, recorrência, etc. O utilizador deve ter permissões na família.",
+        "requestBody": {
+          "description": "O pedido contendo detalhes do evento como título, datas, participantes, etc.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCalendarEventRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCalendarEventRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCalendarEventRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calendar/events/{eventId}": {
+      "get": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "Devolve os detalhes de um evento do calendário pelo seu ID.",
+        "description": "Retorna `404 Not Found` se o evento não existir ou não for visível para o utilizador autenticado na família atual.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "O ID do evento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventDetailResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventDetailResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "Atualiza um evento do calendário existente.",
+        "description": "Permite alterar título, datas, participantes, etc. O utilizador deve ter permissões para editar o evento.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "O ID do evento a atualizar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "O pedido contendo detalhes atualizados do evento.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCalendarEventRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCalendarEventRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCalendarEventRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "Elimina um evento do calendário.",
+        "description": "O utilizador deve ter permissões para editar o evento na família atual.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "O ID do evento a eliminar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/calendar/events/{eventId}/duplicate": {
+      "post": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "Duplica um evento do calendário com novas horas de início e fim.",
+        "description": "Cria uma cópia do evento com datas ajustadas. O utilizador deve ter permissões na família.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "O ID do evento a duplicar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "O pedido contendo novas horas de início e fim.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateCalendarEventRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateCalendarEventRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateCalendarEventRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEventResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calendar/events/{eventId}/copy": {
+      "post": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "Copia um evento do calendário para várias datas.",
+        "description": "Cria novas instâncias do evento nas datas indicadas (UTC).",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "O ID do evento a copiar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Pedido com a lista de datas para onde copiar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyCalendarEventRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyCalendarEventRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyCalendarEventRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarEventResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarEventResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarEventResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calendar/events/{eventId}/recurrence": {
+      "patch": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "Atualiza um evento recorrente do calendário.",
+        "description": "Permite editar a série recorrente ou uma ocorrência específica. O scope define se é toda a série ou apenas uma ocorrência.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "O ID do evento recorrente.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "O pedido contendo detalhes da atualização recorrente.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRecurringEventRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRecurringEventRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRecurringEventRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/calendar/events/{eventId}/export": {
+      "get": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "Exporta um evento do calendário para um ficheiro ICS (iCalendar).",
+        "description": "Para eventos recorrentes, podes especificar occurrenceStartUtc para exportar uma ocorrência específica.\r\nRetorna `404 Not Found` se o evento não existir ou não for visível para o utilizador autenticado na família atual.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "O ID do evento a exportar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "occurrenceStartUtc",
+            "in": "query",
+            "description": "Hora de início (UTC) de uma ocorrência específica (opcional).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/families": {
+      "post": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Cria uma nova família e atribui o utilizador autenticado como administrador.",
+        "description": "O nome da família é obrigatório. O utilizador torna-se membro com papel de admin.",
+        "requestBody": {
+          "description": "O pedido contendo o nome da família.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFamilyRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFamilyRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFamilyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/invites": {
+      "post": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Cria um convite para uma família.",
+        "description": "O utilizador autenticado deve ter permissões na família indicada. O convite tem validade limitada e pode ter um\r\nnúmero máximo de utilizações.",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "description": "Identificador da família.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "daysValid",
+            "in": "query",
+            "description": "Número de dias de validade do convite (por omissão, 7).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 7
+            }
+          },
+          {
+            "name": "maxUses",
+            "in": "query",
+            "description": "Número máximo de utilizações (opcional).",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateInviteResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateInviteResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateInviteResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/me": {
+      "get": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Obtém a família atual do utilizador autenticado.",
+        "description": "Retorna a família definida como atual. Se não houver família ativa, sugere usar /api/v1/families/my para selecionar uma.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/my": {
+      "get": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Obtém todas as famílias das quais o utilizador autenticado é membro.",
+        "description": "Lista todas as famílias associadas ao utilizador, ordenadas por nome.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/set-current": {
+      "post": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Define a família atual para o utilizador autenticado.",
+        "description": "O utilizador deve ser membro da família especificada. Caso contrário, retorna erro de proibido.",
+        "requestBody": {
+          "description": "O pedido contendo o ID da família a definir como atual.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCurrentFamilyRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCurrentFamilyRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCurrentFamilyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/families/members": {
+      "get": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Lista os membros da família atual (para seleções como \"visível para\" e \"pago por\").",
+        "description": "Devolve os utilizadores membros da família atual, com o respetivo papel (Admin/Member/Viewer).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyMemberResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyMemberResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyMemberResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/invites/preview": {
+      "get": {
+        "tags": [
+          "FamilyInvites"
+        ],
+        "summary": "Pré-visualiza um convite de família.",
+        "description": "Útil para mostrar ao utilizador a que família pertence o token antes de confirmar a adesão.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "Token do convite.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitePreviewModel"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitePreviewModel"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitePreviewModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/invites/join": {
+      "post": {
+        "tags": [
+          "FamilyInvites"
+        ],
+        "summary": "Junta o utilizador autenticado à família associada ao token.",
+        "description": "Se o token for inválido/expirado ou exceder o número máximo de utilizações, devolve erro.",
+        "requestBody": {
+          "description": "Pedido com o token do convite.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinInviteRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinInviteRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/finance-accounts": {
+      "get": {
+        "tags": [
+          "FinanceAccounts"
+        ],
+        "summary": "Obtém as contas financeiras da família atual.",
+        "description": "Se não existirem contas ainda, o serviço cria automaticamente um conjunto de contas por defeito.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceAccountResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceAccountResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceAccountResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinanceAccounts"
+        ],
+        "summary": "Cria uma nova conta financeira na família atual.",
+        "description": "O utilizador deve ter permissões de edição na família (por exemplo, não pode ser `Viewer`).",
+        "requestBody": {
+          "description": "Dados da conta a criar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinanceAccountRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinanceAccountRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinanceAccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceAccountResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceAccountResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceAccountResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/finance-accounts/{accountId}": {
+      "patch": {
+        "tags": [
+          "FinanceAccounts"
+        ],
+        "summary": "Atualiza uma conta financeira existente.",
+        "description": "Permite alterar nome/ícone e reordenar a conta via `SortOrder`.",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Identificador da conta.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Dados a atualizar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFinanceAccountRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFinanceAccountRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFinanceAccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceAccountResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceAccountResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceAccountResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "FinanceAccounts"
+        ],
+        "summary": "Elimina uma conta financeira.",
+        "description": "A operação falha com conflito se a conta estiver a ser usada por transações.",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Identificador da conta.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/finance-categories": {
+      "get": {
+        "tags": [
+          "FinanceCategories"
+        ],
+        "summary": "Obtém as categorias financeiras da família atual.",
+        "description": "Por omissão, devolve todas as categorias (despesas e rendimentos). Pode filtrar por type.",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filtro opcional por tipo: `Expense` ou `Income`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceCategoryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceCategoryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceCategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinanceCategories"
+        ],
+        "summary": "Cria uma nova categoria financeira na família atual.",
+        "description": "O utilizador deve ter permissões de edição na família (por exemplo, não pode ser `Viewer`).",
+        "requestBody": {
+          "description": "Dados da categoria a criar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinanceCategoryRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinanceCategoryRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinanceCategoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceCategoryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceCategoryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceCategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/finance-categories/{categoryId}": {
+      "patch": {
+        "tags": [
+          "FinanceCategories"
+        ],
+        "summary": "Atualiza uma categoria financeira existente.",
+        "description": "Permite alterar nome/ícone e reordenar a categoria via `SortOrder`.",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "description": "Identificador da categoria.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Dados a atualizar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFinanceCategoryRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFinanceCategoryRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFinanceCategoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceCategoryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceCategoryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceCategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "FinanceCategories"
+        ],
+        "summary": "Elimina uma categoria financeira.",
+        "description": "A operação falha com conflito se a categoria estiver a ser usada por transações ou limites de orçamento.",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "description": "Identificador da categoria.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/transactions": {
+      "get": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Obtém a lista de transações do orçamento.",
+        "description": "Pode filtrar por intervalo de datas usando from e to.\r\nA ordenação respeita a configuração do orçamento (mais recente primeiro ou mais antigo primeiro).",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Data inicial (inclusive), opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Data final (inclusive), opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceTransactionResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceTransactionResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceTransactionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Cria uma nova transação no orçamento.",
+        "description": "A transação pode ser do tipo `Expense` (despesa) ou `Income` (rendimento), e deve ter categoria e conta\r\nválidas da família atual. Também pode ser marcada como paga e configurada com repetição/lembretes.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Dados da transação a criar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinanceTransactionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinanceTransactionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFinanceTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceTransactionResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceTransactionResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceTransactionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/transactions/totals": {
+      "get": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Obtém os totais do orçamento para o período corrente.",
+        "description": "Calcula:\r\n<list type=\"bullet\"><item><description>Rendimento do período</description></item><item><description>Despesas do período</description></item><item><description>Saldo do período</description></item><item><description>Saldo do dia (hoje)</description></item><item><description>Despesas totais (acumuladas)</description></item></list>\r\nO período é determinado pela configuração do orçamento (recorrente) ou pelas datas do orçamento (único).",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "referenceDate",
+            "in": "query",
+            "description": "Data de referência (por omissão, hoje em UTC).",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetTotalsResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetTotalsResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetTotalsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/transactions/summary/categories": {
+      "get": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Obtém um resumo por categorias (percentagem e total) para um tipo de transação.",
+        "description": "Usa type para escolher `Expense` (despesas) ou `Income` (rendimentos).\r\nO intervalo é opcional; quando omitido, considera todas as transações.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Tipo de transação: `Expense` ou `Income`.",
+            "schema": {
+              "type": "string",
+              "default": "Expense"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Data inicial (inclusive), opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Data final (inclusive), opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategorySummaryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategorySummaryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategorySummaryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/transactions/summary/members": {
+      "get": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Obtém um resumo por membros (percentagem e total) para um tipo de transação.",
+        "description": "Agrupa por `Pago por` (membro que pagou/recebeu).",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Tipo de transação: `Expense` ou `Income`.",
+            "schema": {
+              "type": "string",
+              "default": "Expense"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Data inicial (inclusive), opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Data final (inclusive), opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberSummaryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberSummaryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberSummaryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/transactions/summary/accounts": {
+      "get": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Obtém um resumo por contas (percentagem e total) para um tipo de transação.",
+        "description": "Agrupa por conta (ex.: conta corrente, dinheiro, cartão de crédito).",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Tipo de transação: `Expense` ou `Income`.",
+            "schema": {
+              "type": "string",
+              "default": "Expense"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Data inicial (inclusive), opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Data final (inclusive), opcional.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountSummaryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountSummaryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountSummaryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/transactions/export": {
+      "get": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Exporta as transações do orçamento para um ficheiro CSV.",
+        "description": "O intervalo from/to é obrigatório.\r\nO delimitador por omissão é `;`.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Data inicial (inclusive).",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Data final (inclusive).",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          },
+          {
+            "name": "delimiter",
+            "in": "query",
+            "description": "Delimitador opcional (ex.: `;` ou `,`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/transactions/{transactionId}": {
+      "patch": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Atualiza uma transação existente do orçamento.",
+        "description": "Permite alterar valor, título, tipo, categoria, conta, data, estado de pago, repetição/lembretes e nota.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transactionId",
+            "in": "path",
+            "description": "Identificador da transação.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Dados a atualizar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFinanceTransactionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFinanceTransactionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFinanceTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceTransactionResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceTransactionResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceTransactionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Elimina uma transação do orçamento.",
+        "description": "Devolve `404 Not Found` se a transação não existir no orçamento indicado.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transactionId",
+            "in": "path",
+            "description": "Identificador da transação.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/transactions/mark-all-paid": {
+      "post": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Marca todas as transações do orçamento como pagas.",
+        "description": "Útil para garantir consistência quando a preferência de cálculo considera apenas transações pagas.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/transactions/clear": {
+      "post": {
+        "tags": [
+          "FinanceTransactions"
+        ],
+        "summary": "Remove todas as transações do orçamento.",
+        "description": "Esta ação é destrutiva e não pode ser revertida.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "description": "Identificador do orçamento.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/item-categories": {
+      "get": {
+        "tags": [
+          "ItemCategories"
+        ],
+        "summary": "Obtém todas as categorias de itens para a família atual.",
+        "description": "Lista todas as categorias visíveis para o utilizador na família atual.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ItemCategories"
+        ],
+        "summary": "Cria uma nova categoria de itens para a família atual.",
+        "description": "Permite definir nome, ícone e ordem de classificação. O utilizador deve ter permissões na família.",
+        "requestBody": {
+          "description": "O pedido contendo detalhes da categoria a criar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/item-categories/{categoryId}": {
+      "patch": {
+        "tags": [
+          "ItemCategories"
+        ],
+        "summary": "Atualiza uma categoria de itens existente.",
+        "description": "Permite alterar nome/ícone e reordenar a categoria via `SortOrder`.",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "description": "O ID da categoria a atualizar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "O pedido contendo detalhes atualizados da categoria.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ItemCategories"
+        ],
+        "summary": "Elimina uma categoria de itens.",
+        "description": "Remove a categoria se não estiver em uso. O utilizador deve ter permissões na família.",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "description": "O ID da categoria a eliminar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/lists": {
+      "get": {
+        "tags": [
+          "Lists"
+        ],
+        "summary": "Obtém todas as listas para a família atual.",
+        "description": "Lista todas as listas visíveis para o utilizador, incluindo contagem de itens e completados.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Lists"
+        ],
+        "summary": "Cria uma nova lista para a família atual.",
+        "description": "Permite definir nome, cor e tipo da lista. O utilizador deve ter permissões na família.",
+        "requestBody": {
+          "description": "O pedido contendo detalhes da lista a criar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{listId}": {
+      "patch": {
+        "tags": [
+          "Lists"
+        ],
+        "summary": "Atualiza uma lista existente.",
+        "description": "Permite alterar nome, cor e tipo da lista. O utilizador deve ter permissões na família.",
+        "parameters": [
+          {
+            "name": "listId",
+            "in": "path",
+            "description": "O ID da lista a atualizar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "O pedido contendo detalhes atualizados da lista.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Lists"
+        ],
+        "summary": "Elimina uma lista existente.",
+        "description": "Ao eliminar uma lista, são eliminados também os respetivos itens.",
+        "parameters": [
+          {
+            "name": "listId",
+            "in": "path",
+            "description": "O ID da lista a eliminar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{listId}/items": {
+      "get": {
+        "tags": [
+          "Lists"
+        ],
+        "summary": "Obtém todos os itens de uma lista.",
+        "description": "Lista todos os itens da lista especificada, incluindo estado de conclusão e categoria.",
+        "parameters": [
+          {
+            "name": "listId",
+            "in": "path",
+            "description": "O ID da lista.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListItemResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListItemResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListItemResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Lists"
+        ],
+        "summary": "Adiciona um novo item a uma lista.",
+        "description": "Permite definir nome e categoria opcional do item. O utilizador deve ter permissões na família.",
+        "parameters": [
+          {
+            "name": "listId",
+            "in": "path",
+            "description": "O ID da lista.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "O pedido contendo detalhes do item a adicionar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListItemResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListItemResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lists/items/{itemId}": {
+      "patch": {
+        "tags": [
+          "Lists"
+        ],
+        "summary": "Atualiza um item de lista existente.",
+        "description": "Permite alterar nome, estado de conclusão e categoria. CategoryId pode ser null para remover categoria.",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "description": "O ID do item a atualizar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "O pedido contendo detalhes atualizados do item.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Lists"
+        ],
+        "summary": "Elimina um item de lista existente.",
+        "description": "Remove o item da lista. O utilizador deve ter permissões na família.",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "description": "O ID do item a eliminar.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccountSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "Identificador da conta.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome da conta.",
+            "nullable": true
+          },
+          "total": {
+            "type": "number",
+            "description": "Total agregado para a conta, no intervalo considerado.",
+            "format": "double"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Percentagem do total em relação ao somatório do intervalo (0–100).",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com resumo de despesas/rendimentos por conta."
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "Token JWT de acesso.",
+            "nullable": true
+          },
+          "expiresAtUtc": {
+            "type": "string",
+            "description": "Data/hora de expiração do token (UTC).",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta de autenticação com token de acesso."
+      },
+      "BudgetCategoryLimitRequest": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "description": "Identificador da categoria financeira (do tipo despesa).",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Valor máximo a gastar na categoria para o período do orçamento.",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para definir/atualizar um limite de despesa por categoria num orçamento."
+      },
+      "BudgetCategoryLimitResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador do limite.",
+            "format": "uuid"
+          },
+          "categoryId": {
+            "type": "string",
+            "description": "Identificador da categoria financeira.",
+            "format": "uuid"
+          },
+          "categoryName": {
+            "type": "string",
+            "description": "Nome da categoria.",
+            "nullable": true
+          },
+          "categoryIconKey": {
+            "type": "string",
+            "description": "Chave do ícone da categoria.",
+            "nullable": true
+          },
+          "categorySortOrder": {
+            "type": "integer",
+            "description": "Ordem de apresentação da categoria.",
+            "format": "int32"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Valor máximo definido para a categoria.",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de um limite de despesa por categoria num orçamento."
+      },
+      "BudgetDetailResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador do orçamento.",
+            "format": "uuid"
+          },
+          "familyId": {
+            "type": "string",
+            "description": "Identificador da família proprietária do orçamento.",
+            "format": "uuid"
+          },
+          "ownerUserId": {
+            "type": "string",
+            "description": "Identificador do utilizador proprietário (criador) do orçamento.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome do orçamento.",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Chave do ícone do orçamento.",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo do orçamento (`Recurring` ou `OneTime`).",
+            "nullable": true
+          },
+          "periodType": {
+            "type": "string",
+            "description": "Período do orçamento (apenas para orçamento recorrente).",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Data de início do orçamento (para orçamento único) ou data de início de referência (para recorrente).",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Data de fim do orçamento (apenas para orçamento único).",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "semiMonthlyPattern": {
+            "type": "string",
+            "description": "Padrão semi-mensal (apenas quando DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.PeriodType é `SemiMonthly`).",
+            "nullable": true
+          },
+          "spendingLimit": {
+            "type": "number",
+            "description": "Limite global de gastos do orçamento (opcional).",
+            "format": "double",
+            "nullable": true
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "Código ISO da moeda do orçamento (ex.: `EUR`).",
+            "nullable": true
+          },
+          "visibilityMode": {
+            "type": "string",
+            "description": "Modo de visibilidade do orçamento (`Private`, `AllMembers` ou `SpecificMembers`).",
+            "nullable": true
+          },
+          "allowedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores com acesso quando a visibilidade é `SpecificMembers`.",
+            "nullable": true
+          },
+          "mainIndicator": {
+            "type": "string",
+            "description": "Indicador principal a apresentar no topo do orçamento.",
+            "nullable": true
+          },
+          "onlyPaidInTotals": {
+            "type": "boolean",
+            "description": "Quando true, apenas transações marcadas como pagas entram nos totais."
+          },
+          "transactionOrder": {
+            "type": "string",
+            "description": "Ordenação da lista de transações (`MostRecentFirst` ou `OldestFirst`).",
+            "nullable": true
+          },
+          "upcomingDisplayMode": {
+            "type": "string",
+            "description": "Forma de apresentação das próximas transações (`Expanded` ou `Collapsed`).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com o detalhe completo de um orçamento."
+      },
+      "BudgetMemberResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Identificador do utilizador.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome do utilizador.",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "description": "Papel do utilizador no contexto do orçamento/família.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de um membro associado ao orçamento."
+      },
+      "BudgetSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador do orçamento.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome do orçamento.",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Chave do ícone do orçamento.",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo do orçamento (`Recurring` ou `OneTime`).",
+            "nullable": true
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "Código ISO da moeda do orçamento (ex.: `EUR`).",
+            "nullable": true
+          },
+          "visibilityMode": {
+            "type": "string",
+            "description": "Modo de visibilidade do orçamento.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação resumida de um orçamento."
+      },
+      "BudgetTotalsResponse": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "description": "Data de hoje (UTC) usada no cálculo.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "periodStart": {
+            "type": "string",
+            "description": "Data de início do período calculado.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "periodEnd": {
+            "type": "string",
+            "description": "Data de fim do período calculado.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "incomeThisPeriod": {
+            "type": "number",
+            "description": "Rendimentos do período.",
+            "format": "double"
+          },
+          "expensesThisPeriod": {
+            "type": "number",
+            "description": "Despesas do período.",
+            "format": "double"
+          },
+          "balanceThisPeriod": {
+            "type": "number",
+            "description": "Saldo do período (rendimentos - despesas).",
+            "format": "double"
+          },
+          "balanceToday": {
+            "type": "number",
+            "description": "Saldo do dia (hoje).",
+            "format": "double"
+          },
+          "totalExpenses": {
+            "type": "number",
+            "description": "Despesas totais acumuladas (sem limitar ao período).",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com totais e saldos de um orçamento para um período."
+      },
+      "CalendarEditScope": {
+        "enum": [
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "description": "Define o âmbito de edição de um evento recorrente.",
+        "format": "int32"
+      },
+      "CalendarEventDetailResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador do evento.",
+            "format": "uuid"
+          },
+          "familyId": {
+            "type": "string",
+            "description": "Identificador da família do evento.",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título do evento.",
+            "nullable": true
+          },
+          "isAllDay": {
+            "type": "boolean",
+            "description": "Indica se o evento é de dia inteiro."
+          },
+          "startUtc": {
+            "type": "string",
+            "description": "Data/hora de início (UTC).",
+            "format": "date-time"
+          },
+          "endUtc": {
+            "type": "string",
+            "description": "Data/hora de fim (UTC).",
+            "format": "date-time"
+          },
+          "location": {
+            "type": "string",
+            "description": "Localização do evento (opcional).",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nota/descrição do evento (opcional).",
+            "nullable": true
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Cor do evento em hexadecimal (ex.: `#FFAA00`), opcional.",
+            "nullable": true
+          },
+          "timezoneId": {
+            "type": "string",
+            "description": "Identificador do fuso horário (IANA), opcional.",
+            "nullable": true
+          },
+          "recurrenceRule": {
+            "type": "string",
+            "description": "Regra de recorrência (`RRULE`) do evento, opcional.",
+            "nullable": true
+          },
+          "recurrenceUntilUtc": {
+            "type": "string",
+            "description": "Limite de recorrência por data/hora (UTC), opcional.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "recurrenceCount": {
+            "type": "integer",
+            "description": "Limite de recorrência por número de ocorrências, opcional.",
+            "format": "int32",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "description": "Identificador do utilizador que criou o evento.",
+            "format": "uuid"
+          },
+          "createdByName": {
+            "type": "string",
+            "description": "Nome do utilizador que criou o evento.",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "description": "Data/hora de criação (UTC).",
+            "format": "date-time"
+          },
+          "updatedAtUtc": {
+            "type": "string",
+            "description": "Data/hora da última atualização (UTC), se existir.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "participantUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores participantes no evento.",
+            "nullable": true
+          },
+          "visibleToUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores que conseguem ver o evento.",
+            "nullable": true
+          },
+          "reminderOffsetsMinutes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Lembretes em minutos antes do início da ocorrência.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com o detalhe de um evento de calendário."
+      },
+      "CalendarEventResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador do evento pai.",
+            "format": "uuid"
+          },
+          "exceptionEventId": {
+            "type": "string",
+            "description": "Identificador do evento de exceção (instância alterada/cancelada), se aplicável.",
+            "format": "uuid",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "description": "Título do evento.",
+            "nullable": true
+          },
+          "isAllDay": {
+            "type": "boolean",
+            "description": "Indica se o evento é de dia inteiro."
+          },
+          "startUtc": {
+            "type": "string",
+            "description": "Início da ocorrência (UTC).",
+            "format": "date-time"
+          },
+          "endUtc": {
+            "type": "string",
+            "description": "Fim da ocorrência (UTC).",
+            "format": "date-time"
+          },
+          "location": {
+            "type": "string",
+            "description": "Localização do evento (opcional).",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nota/descrição do evento (opcional).",
+            "nullable": true
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Cor do evento em hexadecimal (opcional).",
+            "nullable": true
+          },
+          "recurrenceRule": {
+            "type": "string",
+            "description": "Regra de recorrência (`RRULE`) do evento, opcional.",
+            "nullable": true
+          },
+          "recurrenceUntilUtc": {
+            "type": "string",
+            "description": "Limite de recorrência por data/hora (UTC), opcional.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "recurrenceCount": {
+            "type": "integer",
+            "description": "Limite de recorrência por número de ocorrências, opcional.",
+            "format": "int32",
+            "nullable": true
+          },
+          "timezoneId": {
+            "type": "string",
+            "description": "Identificador do fuso horário (IANA), opcional.",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "description": "Identificador do utilizador que criou o evento.",
+            "format": "uuid"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "description": "Data/hora de criação (UTC).",
+            "format": "date-time"
+          },
+          "updatedAtUtc": {
+            "type": "string",
+            "description": "Data/hora da última atualização (UTC), se existir.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "participantUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores participantes no evento.",
+            "nullable": true
+          },
+          "visibleToUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores que conseguem ver o evento.",
+            "nullable": true
+          },
+          "reminderOffsetsMinutes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Lembretes em minutos antes do início da ocorrência.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de uma ocorrência de evento de calendário."
+      },
+      "CategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador da categoria.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome da categoria.",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Chave do ícone da categoria.",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Ordem de apresentação.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de uma categoria de itens (listas)."
+      },
+      "CategorySummaryResponse": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "description": "Identificador da categoria.",
+            "format": "uuid"
+          },
+          "categoryName": {
+            "type": "string",
+            "description": "Nome da categoria.",
+            "nullable": true
+          },
+          "categoryIconKey": {
+            "type": "string",
+            "description": "Chave do ícone da categoria.",
+            "nullable": true
+          },
+          "total": {
+            "type": "number",
+            "description": "Total agregado para a categoria, no intervalo considerado.",
+            "format": "double"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Percentagem do total em relação ao somatório do intervalo (0–100).",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com resumo de despesas/rendimentos por categoria."
+      },
+      "CopyCalendarEventRequest": {
+        "type": "object",
+        "properties": {
+          "datesUtc": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            },
+            "description": "Datas (UTC) para as quais o evento deve ser copiado.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para copiar um evento para um conjunto de datas."
+      },
+      "CreateBudgetRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome do orçamento.",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Chave do ícone do orçamento.",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo do orçamento (`Recurring` ou `OneTime`).",
+            "nullable": true
+          },
+          "periodType": {
+            "type": "string",
+            "description": "Período do orçamento recorrente (`Monthly`, `Weekly`, `BiWeekly`, `SemiMonthly` ou `Yearly`).",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Data de início do orçamento (para orçamento único) ou data de início de referência (para recorrente).",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Data de fim do orçamento (apenas para orçamento único).",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "semiMonthlyPattern": {
+            "type": "string",
+            "description": "Padrão semi-mensal (`FirstAndFifteenth` ou `FifteenthAndLastDay`).",
+            "nullable": true
+          },
+          "spendingLimit": {
+            "type": "number",
+            "description": "Limite global de gastos do orçamento (opcional).",
+            "format": "double",
+            "nullable": true
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "Código ISO da moeda do orçamento (ex.: `EUR`).",
+            "nullable": true
+          },
+          "visibilityMode": {
+            "type": "string",
+            "description": "Modo de visibilidade do orçamento (`Private`, `AllMembers` ou `SpecificMembers`).",
+            "nullable": true
+          },
+          "allowedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores com acesso quando a visibilidade é `SpecificMembers`.",
+            "nullable": true
+          },
+          "mainIndicator": {
+            "type": "string",
+            "description": "Indicador principal a apresentar no topo do orçamento (`TotalIncome`, `TotalExpenses`, `Balance` ou `BalanceToday`).",
+            "nullable": true
+          },
+          "onlyPaidInTotals": {
+            "type": "boolean",
+            "description": "Quando true, apenas transações marcadas como pagas entram nos totais.",
+            "nullable": true
+          },
+          "transactionOrder": {
+            "type": "string",
+            "description": "Ordenação da lista de transações (`MostRecentFirst` ou `OldestFirst`).",
+            "nullable": true
+          },
+          "upcomingDisplayMode": {
+            "type": "string",
+            "description": "Forma de apresentação das próximas transações (`Expanded` ou `Collapsed`).",
+            "nullable": true
+          },
+          "categoryLimits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetCategoryLimitRequest"
+            },
+            "description": "Limites por categoria (despesas) a aplicar no orçamento (opcional).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para criar um novo orçamento."
+      },
+      "CreateCalendarEventRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Título do evento.",
+            "nullable": true
+          },
+          "isAllDay": {
+            "type": "boolean",
+            "description": "Indica se o evento é de dia inteiro."
+          },
+          "startUtc": {
+            "type": "string",
+            "description": "Data/hora de início (UTC).",
+            "format": "date-time"
+          },
+          "endUtc": {
+            "type": "string",
+            "description": "Data/hora de fim (UTC).",
+            "format": "date-time"
+          },
+          "participantsAllMembers": {
+            "type": "boolean",
+            "description": "Quando true, adiciona todos os membros da família como participantes."
+          },
+          "participantUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de participantes (quando DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.ParticipantsAllMembers é false).",
+            "nullable": true
+          },
+          "visibleToAllMembers": {
+            "type": "boolean",
+            "description": "Quando true, o evento fica visível para todos os membros da família."
+          },
+          "visibleToUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores com visibilidade (quando DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.VisibleToAllMembers é false).",
+            "nullable": true
+          },
+          "reminderOffsetsMinutes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Lembretes em minutos antes do início do evento.",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "description": "Localização do evento (opcional).",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nota/descrição do evento (opcional).",
+            "nullable": true
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Cor do evento em hexadecimal (opcional).",
+            "nullable": true
+          },
+          "recurrenceRule": {
+            "type": "string",
+            "description": "Regra de recorrência (`RRULE`) para criar um evento recorrente (opcional).",
+            "nullable": true
+          },
+          "recurrenceUntilUtc": {
+            "type": "string",
+            "description": "Limite de recorrência por data/hora (UTC), opcional.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "recurrenceCount": {
+            "type": "integer",
+            "description": "Limite de recorrência por número de ocorrências, opcional.",
+            "format": "int32",
+            "nullable": true
+          },
+          "timezoneId": {
+            "type": "string",
+            "description": "Identificador do fuso horário (IANA), opcional.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para criar um novo evento de calendário."
+      },
+      "CreateCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome da categoria.",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Chave do ícone da categoria.",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Ordem de apresentação (opcional).",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para criar uma nova categoria de itens (listas)."
+      },
+      "CreateFamilyRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome da família.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para criar uma nova família."
+      },
+      "CreateFinanceAccountRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Tipo de conta (ex.: `Checking`, `Cash`, `CreditCard`, etc.).",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome da conta.",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Chave do ícone da conta.",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Ordem de apresentação.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para criar uma nova conta financeira."
+      },
+      "CreateFinanceCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Tipo de categoria (`Expense` ou `Income`).",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome da categoria.",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Chave do ícone da categoria.",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Ordem de apresentação.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para criar uma nova categoria financeira."
+      },
+      "CreateFinanceTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Valor monetário da transação.",
+            "format": "double"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título/descrição curta da transação.",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de transação (`Expense` ou `Income`).",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "description": "Identificador da categoria financeira.",
+            "format": "uuid"
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Identificador da conta associada.",
+            "format": "uuid"
+          },
+          "paidByUserId": {
+            "type": "string",
+            "description": "Identificador do membro que pagou/recebeu a transação.",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "description": "Data da transação (opcional). Quando omitida, pode ser assumida a data atual.",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "isPaid": {
+            "type": "boolean",
+            "description": "Indica se a transação está marcada como paga."
+          },
+          "repeatType": {
+            "type": "string",
+            "description": "Tipo de repetição (por omissão `None`).",
+            "nullable": true
+          },
+          "repeatInterval": {
+            "type": "integer",
+            "description": "Intervalo de repetição quando DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.RepeatType é `Custom`.",
+            "format": "int32",
+            "nullable": true
+          },
+          "repeatUnit": {
+            "type": "string",
+            "description": "Unidade de repetição quando DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.RepeatType é `Custom`.",
+            "nullable": true
+          },
+          "reminderType": {
+            "type": "string",
+            "description": "Tipo de lembrete (por omissão `None`).",
+            "nullable": true
+          },
+          "reminderValue": {
+            "type": "integer",
+            "description": "Valor do lembrete quando DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.ReminderType é `Custom`.",
+            "format": "int32",
+            "nullable": true
+          },
+          "reminderUnit": {
+            "type": "string",
+            "description": "Unidade do lembrete quando DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.ReminderType é `Custom`.",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nota adicional (opcional).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para criar uma nova transação financeira."
+      },
+      "CreateInviteResult": {
+        "type": "object",
+        "properties": {
+          "inviteUrl": {
+            "type": "string",
+            "description": "URL público do convite.",
+            "nullable": true
+          },
+          "expiresAtUtc": {
+            "type": "string",
+            "description": "Data/hora de expiração do convite (UTC).",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resultado da criação de um convite de família."
+      },
+      "CreateListItemRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome do item.",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "description": "Identificador da categoria do item (opcional).",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para criar um novo item numa lista."
+      },
+      "CreateListRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome da lista.",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de lista (`Shopping`, `Tasks` ou `Custom`).",
+            "nullable": true
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Cor da lista em hexadecimal (ex.: `#FFAA00`).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para criar uma nova lista."
+      },
+      "DuplicateCalendarEventRequest": {
+        "type": "object",
+        "properties": {
+          "newStartUtc": {
+            "type": "string",
+            "description": "Novo início (UTC) para o evento duplicado.",
+            "format": "date-time"
+          },
+          "newEndUtc": {
+            "type": "string",
+            "description": "Novo fim (UTC) para o evento duplicado.",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para duplicar um evento numa nova data/hora."
+      },
+      "FamilyMemberResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Identificador do utilizador.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome do utilizador.",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "Email do utilizador.",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "description": "Papel do utilizador na família.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de um membro de uma família."
+      },
+      "FamilyResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador da família.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome da família.",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "description": "Papel do utilizador autenticado na família.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de uma família no contexto do utilizador autenticado."
+      },
+      "FinanceAccountResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador da conta.",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de conta.",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome da conta.",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Chave do ícone da conta.",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Ordem de apresentação.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de uma conta financeira."
+      },
+      "FinanceCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador da categoria.",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de categoria (`Expense` ou `Income`).",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome da categoria.",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Chave do ícone da categoria.",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Ordem de apresentação.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de uma categoria financeira."
+      },
+      "FinanceTransactionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador da transação.",
+            "format": "uuid"
+          },
+          "budgetId": {
+            "type": "string",
+            "description": "Identificador do orçamento.",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Valor monetário da transação.",
+            "format": "double"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título/descrição curta da transação.",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de transação (`Expense` ou `Income`).",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "description": "Identificador da categoria financeira.",
+            "format": "uuid"
+          },
+          "categoryName": {
+            "type": "string",
+            "description": "Nome da categoria.",
+            "nullable": true
+          },
+          "categoryIconKey": {
+            "type": "string",
+            "description": "Chave do ícone da categoria.",
+            "nullable": true
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Identificador da conta.",
+            "format": "uuid"
+          },
+          "accountName": {
+            "type": "string",
+            "description": "Nome da conta.",
+            "nullable": true
+          },
+          "accountIconKey": {
+            "type": "string",
+            "description": "Chave do ícone da conta.",
+            "nullable": true
+          },
+          "paidByUserId": {
+            "type": "string",
+            "description": "Identificador do membro que pagou/recebeu a transação.",
+            "format": "uuid"
+          },
+          "paidByUserName": {
+            "type": "string",
+            "description": "Nome do membro que pagou/recebeu a transação.",
+            "nullable": true
+          },
+          "date": {
+            "type": "string",
+            "description": "Data da transação.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "isPaid": {
+            "type": "boolean",
+            "description": "Indica se a transação está marcada como paga."
+          },
+          "paidAtUtc": {
+            "type": "string",
+            "description": "Data/hora (UTC) em que a transação foi marcada como paga, se aplicável.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "repeatType": {
+            "type": "string",
+            "description": "Tipo de repetição.",
+            "nullable": true
+          },
+          "repeatInterval": {
+            "type": "integer",
+            "description": "Intervalo de repetição quando aplicável.",
+            "format": "int32",
+            "nullable": true
+          },
+          "repeatUnit": {
+            "type": "string",
+            "description": "Unidade de repetição quando aplicável.",
+            "nullable": true
+          },
+          "reminderType": {
+            "type": "string",
+            "description": "Tipo de lembrete.",
+            "nullable": true
+          },
+          "reminderValue": {
+            "type": "integer",
+            "description": "Valor do lembrete quando aplicável.",
+            "format": "int32",
+            "nullable": true
+          },
+          "reminderUnit": {
+            "type": "string",
+            "description": "Unidade do lembrete quando aplicável.",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nota adicional (opcional).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de uma transação financeira."
+      },
+      "InvitePreviewModel": {
+        "type": "object",
+        "properties": {
+          "familyId": {
+            "type": "string",
+            "description": "Identificador da família.",
+            "format": "uuid"
+          },
+          "familyName": {
+            "type": "string",
+            "description": "Nome da família.",
+            "nullable": true
+          },
+          "invitedByUserId": {
+            "type": "string",
+            "description": "Identificador do utilizador que criou o convite.",
+            "format": "uuid"
+          },
+          "invitedByName": {
+            "type": "string",
+            "description": "Nome do utilizador que criou o convite.",
+            "nullable": true
+          },
+          "expiresAtUtc": {
+            "type": "string",
+            "description": "Data/hora de expiração do convite (UTC).",
+            "format": "date-time"
+          },
+          "isExpired": {
+            "type": "boolean",
+            "description": "Indica se o convite está expirado (ou se atingiu o limite de utilizações)."
+          },
+          "isRevoked": {
+            "type": "boolean",
+            "description": "Indica se o convite foi revogado."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Informação de pré-visualização de um convite de família."
+      },
+      "JoinInviteRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token do convite.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para aderir a uma família através de convite."
+      },
+      "ListItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador do item.",
+            "format": "uuid"
+          },
+          "listId": {
+            "type": "string",
+            "description": "Identificador da lista.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome do item.",
+            "nullable": true
+          },
+          "isCompleted": {
+            "type": "boolean",
+            "description": "Indica se o item está concluído."
+          },
+          "categoryId": {
+            "type": "string",
+            "description": "Identificador da categoria do item (opcional).",
+            "format": "uuid",
+            "nullable": true
+          },
+          "completedAtUtc": {
+            "type": "string",
+            "description": "Data/hora de conclusão (UTC), se concluído.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "completedByUserId": {
+            "type": "string",
+            "description": "Identificador do utilizador que concluiu o item, se aplicável.",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de um item de lista."
+      },
+      "ListResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador da lista.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome da lista.",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de lista (`Shopping`, `Tasks` ou `Custom`).",
+            "nullable": true
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Cor da lista em hexadecimal.",
+            "nullable": true
+          },
+          "itemsCount": {
+            "type": "integer",
+            "description": "Número total de itens na lista.",
+            "format": "int32"
+          },
+          "completedCount": {
+            "type": "integer",
+            "description": "Número de itens concluídos.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação de uma lista."
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email do utilizador.",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "description": "Palavra-passe do utilizador.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido de autenticação (login)."
+      },
+      "MemberSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Identificador do utilizador/membro.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome do membro.",
+            "nullable": true
+          },
+          "total": {
+            "type": "number",
+            "description": "Total agregado para o membro, no intervalo considerado.",
+            "format": "double"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Percentagem do total em relação ao somatório do intervalo (0–100).",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com resumo de despesas/rendimentos por membro (pago por)."
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome do utilizador.",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "Email do utilizador.",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "description": "Palavra-passe do utilizador.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido de registo de utilizador."
+      },
+      "SetCurrentFamilyRequest": {
+        "type": "object",
+        "properties": {
+          "familyId": {
+            "type": "string",
+            "description": "Identificador da família a definir como ativa.",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para definir a família ativa (contexto atual) do utilizador autenticado."
+      },
+      "UpdateBudgetCategoryLimitsRequest": {
+        "type": "object",
+        "properties": {
+          "limits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetCategoryLimitRequest"
+            },
+            "description": "Lista de limites a aplicar.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar os limites por categoria (despesas) de um orçamento."
+      },
+      "UpdateBudgetRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Novo nome do orçamento (opcional).",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Nova chave do ícone do orçamento (opcional).",
+            "nullable": true
+          },
+          "periodType": {
+            "type": "string",
+            "description": "Novo período do orçamento recorrente (opcional).",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Nova data de início (opcional).",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Nova data de fim (opcional).",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "semiMonthlyPattern": {
+            "type": "string",
+            "description": "Novo padrão semi-mensal (opcional).",
+            "nullable": true
+          },
+          "spendingLimit": {
+            "type": "number",
+            "description": "Novo limite global de gastos (opcional).",
+            "format": "double",
+            "nullable": true
+          },
+          "spendingLimitChangeRequested": {
+            "type": "boolean",
+            "description": "Indica explicitamente que o limite deve ser limpo/alterado, mesmo que o valor seja null."
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "Novo código ISO da moeda do orçamento (opcional).",
+            "nullable": true
+          },
+          "visibilityMode": {
+            "type": "string",
+            "description": "Novo modo de visibilidade (opcional).",
+            "nullable": true
+          },
+          "allowedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores com acesso, quando aplicável (opcional).",
+            "nullable": true
+          },
+          "mainIndicator": {
+            "type": "string",
+            "description": "Novo indicador principal (opcional).",
+            "nullable": true
+          },
+          "onlyPaidInTotals": {
+            "type": "boolean",
+            "description": "Indica se apenas transações pagas entram nos totais (opcional).",
+            "nullable": true
+          },
+          "transactionOrder": {
+            "type": "string",
+            "description": "Nova ordenação da lista de transações (opcional).",
+            "nullable": true
+          },
+          "upcomingDisplayMode": {
+            "type": "string",
+            "description": "Nova forma de apresentação das próximas transações (opcional).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar propriedades de um orçamento."
+      },
+      "UpdateCalendarEventRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Novo título do evento (opcional).",
+            "nullable": true
+          },
+          "isAllDay": {
+            "type": "boolean",
+            "description": "Indica se o evento passa a ser de dia inteiro (opcional).",
+            "nullable": true
+          },
+          "startUtc": {
+            "type": "string",
+            "description": "Novo início (UTC), opcional.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endUtc": {
+            "type": "string",
+            "description": "Novo fim (UTC), opcional.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "participantsAllMembers": {
+            "type": "boolean",
+            "description": "Quando definido, indica se todos os membros devem ser participantes (opcional).",
+            "nullable": true
+          },
+          "participantUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de participantes (opcional).",
+            "nullable": true
+          },
+          "visibleToAllMembers": {
+            "type": "boolean",
+            "description": "Quando definido, indica se o evento é visível para todos os membros (opcional).",
+            "nullable": true
+          },
+          "visibleToUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores com visibilidade (opcional).",
+            "nullable": true
+          },
+          "reminderOffsetsMinutes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Lembretes em minutos antes do início do evento (opcional).",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "description": "Nova localização (opcional).",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nova nota/descrição (opcional).",
+            "nullable": true
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Nova cor em hexadecimal (opcional).",
+            "nullable": true
+          },
+          "recurrenceRule": {
+            "type": "string",
+            "description": "Regra de recorrência (`RRULE`) do evento pai (opcional).",
+            "nullable": true
+          },
+          "recurrenceUntilUtc": {
+            "type": "string",
+            "description": "Limite de recorrência por data/hora (UTC), opcional.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "recurrenceCount": {
+            "type": "integer",
+            "description": "Limite de recorrência por número de ocorrências, opcional.",
+            "format": "int32",
+            "nullable": true
+          },
+          "timezoneId": {
+            "type": "string",
+            "description": "Identificador do fuso horário (IANA), opcional.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar um evento de calendário."
+      },
+      "UpdateCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Novo nome da categoria (opcional).",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Nova chave do ícone (opcional).",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Nova ordem de apresentação (opcional).",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar uma categoria de itens (listas)."
+      },
+      "UpdateFinanceAccountRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Novo nome (opcional).",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Nova chave do ícone (opcional).",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Nova ordem de apresentação (opcional).",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar uma conta financeira."
+      },
+      "UpdateFinanceCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Novo nome (opcional).",
+            "nullable": true
+          },
+          "iconKey": {
+            "type": "string",
+            "description": "Nova chave do ícone (opcional).",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Nova ordem de apresentação (opcional).",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar uma categoria financeira."
+      },
+      "UpdateFinanceTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Novo valor monetário (opcional).",
+            "format": "double",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "description": "Novo título/descrição (opcional).",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Novo tipo (`Expense` ou `Income`) (opcional).",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "description": "Nova categoria (opcional).",
+            "format": "uuid",
+            "nullable": true
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Nova conta (opcional).",
+            "format": "uuid",
+            "nullable": true
+          },
+          "paidByUserId": {
+            "type": "string",
+            "description": "Novo membro que pagou/recebeu (opcional).",
+            "format": "uuid",
+            "nullable": true
+          },
+          "date": {
+            "type": "string",
+            "description": "Nova data (opcional).",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "isPaid": {
+            "type": "boolean",
+            "description": "Indica se a transação passa a estar marcada como paga (opcional).",
+            "nullable": true
+          },
+          "repeatType": {
+            "type": "string",
+            "description": "Novo tipo de repetição (opcional).",
+            "nullable": true
+          },
+          "repeatInterval": {
+            "type": "integer",
+            "description": "Novo intervalo de repetição (opcional).",
+            "format": "int32",
+            "nullable": true
+          },
+          "repeatUnit": {
+            "type": "string",
+            "description": "Nova unidade de repetição (opcional).",
+            "nullable": true
+          },
+          "reminderType": {
+            "type": "string",
+            "description": "Novo tipo de lembrete (opcional).",
+            "nullable": true
+          },
+          "reminderValue": {
+            "type": "integer",
+            "description": "Novo valor do lembrete (opcional).",
+            "format": "int32",
+            "nullable": true
+          },
+          "reminderUnit": {
+            "type": "string",
+            "description": "Nova unidade do lembrete (opcional).",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nova nota (opcional).",
+            "nullable": true
+          },
+          "noteChangeRequested": {
+            "type": "boolean",
+            "description": "Indica explicitamente que a nota deve ser alterada/limpa, mesmo que o valor seja null."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar uma transação financeira."
+      },
+      "UpdateListItemRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Novo nome do item (opcional).",
+            "nullable": true
+          },
+          "isCompleted": {
+            "type": "boolean",
+            "description": "Indica se o item passa a estar concluído (opcional).",
+            "nullable": true
+          },
+          "categoryId": {
+            "description": "Identificador da categoria do item (opcional).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar um item de lista."
+      },
+      "UpdateListRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome da lista.",
+            "nullable": true
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Cor da lista em hexadecimal (ex.: `#FFAA00`).",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de lista (`Shopping`, `Tasks` ou `Custom`).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar uma lista."
+      },
+      "UpdateRecurringEventRequest": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/CalendarEditScope"
+          },
+          "occurrenceStartUtc": {
+            "type": "string",
+            "description": "Início (UTC) da ocorrência a editar.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "description": "Novo título (opcional).",
+            "nullable": true
+          },
+          "isAllDay": {
+            "type": "boolean",
+            "description": "Indica se passa a ser de dia inteiro (opcional).",
+            "nullable": true
+          },
+          "newStartUtc": {
+            "type": "string",
+            "description": "Novo início (UTC) (opcional).",
+            "format": "date-time",
+            "nullable": true
+          },
+          "newEndUtc": {
+            "type": "string",
+            "description": "Novo fim (UTC) (opcional).",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancelThisOccurrence": {
+            "type": "boolean",
+            "description": "Quando true, cancela a ocorrência selecionada.",
+            "nullable": true
+          },
+          "participantsAllMembers": {
+            "type": "boolean",
+            "description": "Quando definido, indica se todos os membros devem ser participantes (opcional).",
+            "nullable": true
+          },
+          "participantUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de participantes (opcional).",
+            "nullable": true
+          },
+          "visibleToAllMembers": {
+            "type": "boolean",
+            "description": "Quando definido, indica se o evento é visível para todos os membros (opcional).",
+            "nullable": true
+          },
+          "visibleToUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores com visibilidade (opcional).",
+            "nullable": true
+          },
+          "reminderOffsetsMinutes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Lembretes em minutos antes do início do evento (opcional).",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "description": "Nova localização (opcional).",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nova nota/descrição (opcional).",
+            "nullable": true
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Nova cor em hexadecimal (opcional).",
+            "nullable": true
+          },
+          "timezoneId": {
+            "type": "string",
+            "description": "Identificador do fuso horário (IANA), opcional.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar um evento recorrente, com controlo de âmbito (ocorrência/serie/futuro)."
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "Insere o token JWT assim: **Bearer {token}**",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ]
+}

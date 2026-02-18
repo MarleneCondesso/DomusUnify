@@ -20,6 +20,11 @@ public sealed class FamilyInviteService : IFamilyInviteService
     private readonly IAppDbContext _db;
     private readonly string _publicAppBaseUrl; // vem de configuração
 
+    /// <summary>
+    /// Inicializa uma nova instância de <see cref="FamilyInviteService"/>.
+    /// </summary>
+    /// <param name="db">Contexto de base de dados.</param>
+    /// <param name="opt">Opções de convites de família.</param>
     public FamilyInviteService(IAppDbContext db, IOptions<FamilyInviteOptions> opt)
     {
         _db = db;

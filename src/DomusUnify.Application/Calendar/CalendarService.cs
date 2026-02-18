@@ -15,6 +15,13 @@ public sealed class CalendarService : ICalendarService
     private readonly IAppDbContext _db;
     private readonly IRealtimeNotifier _rt;
     private readonly IRecurrenceService _rec;
+
+    /// <summary>
+    /// Inicializa uma nova instância de <see cref="CalendarService"/>.
+    /// </summary>
+    /// <param name="db">Contexto de base de dados.</param>
+    /// <param name="rt">Notificador em tempo real.</param>
+    /// <param name="rec">Serviço de recorrência para expandir ocorrências.</param>
     public CalendarService(IAppDbContext db, IRealtimeNotifier rt, IRecurrenceService rec)
     {
         _db = db;

@@ -18,6 +18,11 @@ public sealed class FinanceAccountService : IFinanceAccountService
     private readonly IAppDbContext _db;
     private readonly IRealtimeNotifier _rt;
 
+    /// <summary>
+    /// Inicializa uma nova instância de <see cref="FinanceAccountService"/>.
+    /// </summary>
+    /// <param name="db">Contexto de base de dados.</param>
+    /// <param name="rt">Notificador em tempo real.</param>
     public FinanceAccountService(IAppDbContext db, IRealtimeNotifier rt)
     {
         _db = db;

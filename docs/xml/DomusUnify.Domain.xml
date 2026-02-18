@@ -1,0 +1,1508 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>DomusUnify.Domain</name>
+    </assembly>
+    <members>
+        <member name="T:DomusUnify.Domain.Common.BaseEntity">
+            <summary>
+            Entidade base com campos comuns (identificador e auditoria temporal).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Common.BaseEntity.Id">
+            <summary>
+            Identificador único da entidade.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Common.BaseEntity.CreatedAtUtc">
+            <summary>
+            Data/hora de criação (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Common.BaseEntity.UpdatedAtUtc">
+            <summary>
+            Data/hora da última atualização (UTC), se aplicável.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.CalendarEvent">
+            <summary>
+            Representa um evento de calendário (inclui suporte a recorrência e exceções).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.FamilyId">
+            <summary>
+            Identificador da família proprietária do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.Family">
+            <summary>
+            Família associada ao evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.Title">
+            <summary>
+            Título do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.IsAllDay">
+            <summary>
+            Indica se o evento é de dia inteiro.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.StartUtc">
+            <summary>
+            Data/hora de início do evento (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.EndUtc">
+            <summary>
+            Data/hora de fim do evento (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.RecurrenceIdUtc">
+            <summary>
+            Identificador de recorrência (UTC) da instância, usado apenas em exceções (<see cref="P:DomusUnify.Domain.Entities.CalendarEvent.ParentEventId"/> não nulo).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.RecurrenceRule">
+            <summary>
+            Regra de recorrência (<c>RRULE</c>) no formato iCalendar, se o evento for recorrente.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.RecurrenceUntilUtc">
+            <summary>
+            Limite de recorrência por data/hora (UTC), quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.RecurrenceCount">
+            <summary>
+            Limite de recorrência por número de ocorrências, quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.ParentEventId">
+            <summary>
+            Identificador do evento pai (quando este evento é uma exceção/instância alterada).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.IsCancelled">
+            <summary>
+            Indica se esta instância (exceção) está cancelada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.ParentEvent">
+            <summary>
+            Evento pai, quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.Location">
+            <summary>
+            Localização do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.Note">
+            <summary>
+            Nota/descrição do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.ColorHex">
+            <summary>
+            Cor do evento em hexadecimal (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.TimezoneId">
+            <summary>
+            Identificador do fuso horário (IANA), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.CreatedByUserId">
+            <summary>
+            Identificador do utilizador que criou o evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.CreatedByUser">
+            <summary>
+            Utilizador que criou o evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.Participants">
+            <summary>
+            Participantes associados ao evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.VisibleTo">
+            <summary>
+            Regras de visibilidade do evento por utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEvent.Reminders">
+            <summary>
+            Lembretes associados ao evento.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.CalendarEventParticipant">
+            <summary>
+            Representa a associação de um utilizador como participante de um evento de calendário.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventParticipant.Id">
+            <summary>
+            Identificador do registo.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventParticipant.EventId">
+            <summary>
+            Identificador do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventParticipant.Event">
+            <summary>
+            Evento associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventParticipant.UserId">
+            <summary>
+            Identificador do utilizador participante.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventParticipant.User">
+            <summary>
+            Utilizador participante.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventParticipant.CreatedAtUtc">
+            <summary>
+            Data/hora de criação (UTC).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.CalendarEventReminder">
+            <summary>
+            Representa um lembrete associado a um evento de calendário.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventReminder.Id">
+            <summary>
+            Identificador do registo.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventReminder.EventId">
+            <summary>
+            Identificador do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventReminder.Event">
+            <summary>
+            Evento associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventReminder.OffsetMinutes">
+            <summary>
+            Minutos antes do <c>StartUtc</c> para disparar o lembrete (0 = na hora).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventReminder.CreatedAtUtc">
+            <summary>
+            Data/hora de criação (UTC).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.CalendarEventVisibility">
+            <summary>
+            Representa uma regra de visibilidade de um evento de calendário para um utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventVisibility.Id">
+            <summary>
+            Identificador do registo.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventVisibility.EventId">
+            <summary>
+            Identificador do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventVisibility.Event">
+            <summary>
+            Evento associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventVisibility.UserId">
+            <summary>
+            Identificador do utilizador com acesso/visibilidade.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventVisibility.User">
+            <summary>
+            Utilizador com acesso/visibilidade.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.CalendarEventVisibility.CreatedAtUtc">
+            <summary>
+            Data/hora de criação (UTC).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.FamilyCalendarSettings">
+            <summary>
+            Definições de calendário ao nível da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyCalendarSettings.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyCalendarSettings.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyCalendarSettings.CalendarColorHex">
+            <summary>
+            Cor padrão do calendário em hexadecimal (ex.: <c>#FFAA00</c>), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyCalendarSettings.HolidaysCountryCode">
+            <summary>
+            Código do país para feriados (ex.: <c>PT</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyCalendarSettings.CleanupOlderThanMonths">
+            <summary>
+            Limpeza automática de eventos antigos após X meses (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyCalendarSettings.CleanupOlderThanYears">
+            <summary>
+            Limpeza automática de eventos antigos após X anos (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyCalendarSettings.DailyReminderEnabled">
+            <summary>
+            Indica se o lembrete diário global está ativo.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.UserCalendarSettings">
+            <summary>
+            Definições de calendário ao nível do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserCalendarSettings.UserId">
+            <summary>
+            Identificador do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserCalendarSettings.User">
+            <summary>
+            Utilizador associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserCalendarSettings.DailyReminderTime">
+            <summary>
+            Hora do lembrete diário (por omissão 09:00).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserCalendarSettings.DailyReminderMode">
+            <summary>
+            Modo do lembrete diário.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserCalendarSettings.DefaultEventReminderMinutes">
+            <summary>
+            Lembrete por defeito para eventos, em minutos (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.Expense">
+            <summary>
+            Representa uma despesa simples associada a uma família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Expense.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Expense.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Expense.Amount">
+            <summary>
+            Valor monetário da despesa.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Expense.Category">
+            <summary>
+            Categoria da despesa.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Expense.Description">
+            <summary>
+            Descrição opcional da despesa.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Expense.DateUtc">
+            <summary>
+            Data/hora da despesa (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Expense.CreatedByUserId">
+            <summary>
+            Identificador do utilizador que criou o registo.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Expense.CreatedByUser">
+            <summary>
+            Utilizador que criou o registo.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.Family">
+            <summary>
+            Representa uma família (grupo) dentro da aplicação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Family.Name">
+            <summary>
+            Nome da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Family.Members">
+            <summary>
+            Membros da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Family.CalendarEvents">
+            <summary>
+            Eventos de calendário associados à família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Family.Lists">
+            <summary>
+            Listas partilhadas da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Family.Budgets">
+            <summary>
+            Orçamentos da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Family.FinanceCategories">
+            <summary>
+            Categorias financeiras da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Family.FinanceAccounts">
+            <summary>
+            Contas financeiras da família.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.FamilyInvite">
+            <summary>
+            Representa um convite para aderir a uma família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyInvite.FamilyId">
+            <summary>
+            Identificador da família a que o convite pertence.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyInvite.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyInvite.InvitedByUserId">
+            <summary>
+            Identificador do utilizador que criou o convite.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyInvite.InvitedByUser">
+            <summary>
+            Utilizador que criou o convite.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyInvite.TokenHash">
+            <summary>
+            Hash do token do convite (o token em texto simples não é persistido).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyInvite.ExpiresAtUtc">
+            <summary>
+            Data/hora de expiração do convite (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyInvite.MaxUses">
+            <summary>
+            Número máximo de utilizações permitidas (opcional; <see langword="null"/> significa ilimitado).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyInvite.Uses">
+            <summary>
+            Número de utilizações já consumidas.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyInvite.IsRevoked">
+            <summary>
+            Indica se o convite foi revogado.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.FamilyMember">
+            <summary>
+            Representa a associação de um utilizador a uma família (membro).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyMember.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyMember.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyMember.UserId">
+            <summary>
+            Identificador do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyMember.User">
+            <summary>
+            Utilizador associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FamilyMember.Role">
+            <summary>
+            Papel/permissões do utilizador na família.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.Budget">
+            <summary>
+            Representa um orçamento financeiro dentro de uma família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.FamilyId">
+            <summary>
+            Identificador da família proprietária do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.OwnerUserId">
+            <summary>
+            Identificador do utilizador proprietário (criador).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.OwnerUser">
+            <summary>
+            Utilizador proprietário (criador).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.Name">
+            <summary>
+            Nome do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.IconKey">
+            <summary>
+            Chave do ícone do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.Type">
+            <summary>
+            Tipo do orçamento (recorrente ou único).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.PeriodType">
+            <summary>
+            Período do orçamento recorrente (apenas quando <see cref="P:DomusUnify.Domain.Entities.Budget.Type"/> é recorrente).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.StartDate">
+            <summary>
+            Data de início (para orçamento único) ou referência de início (para recorrente).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.SemiMonthlyPattern">
+            <summary>
+            Padrão semi-mensal, quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.EndDate">
+            <summary>
+            Data de fim (apenas para orçamento único).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.SpendingLimit">
+            <summary>
+            Limite global de gastos do orçamento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.CurrencyCode">
+            <summary>
+            Código ISO da moeda do orçamento (ex.: <c>EUR</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.MainIndicator">
+            <summary>
+            Indicador principal a apresentar no topo do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.OnlyPaidInTotals">
+            <summary>
+            Quando <see langword="true"/>, apenas transações marcadas como pagas entram nos totais.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.TransactionOrder">
+            <summary>
+            Ordenação da lista de transações.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.UpcomingDisplayMode">
+            <summary>
+            Modo de apresentação das próximas transações.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.VisibilityMode">
+            <summary>
+            Modo de visibilidade do orçamento dentro da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.AllowedUsers">
+            <summary>
+            Lista de utilizadores com acesso explícito quando a visibilidade é por membros específicos.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.CategoryLimits">
+            <summary>
+            Limites por categoria (despesas) do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.Transactions">
+            <summary>
+            Transações associadas ao orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.Budget.UserSettings">
+            <summary>
+            Preferências por utilizador no contexto do orçamento (notificações, etc.).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.BudgetCategoryLimit">
+            <summary>
+            Representa um limite de despesa por categoria num orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetCategoryLimit.BudgetId">
+            <summary>
+            Identificador do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetCategoryLimit.Budget">
+            <summary>
+            Orçamento associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetCategoryLimit.CategoryId">
+            <summary>
+            Identificador da categoria financeira (despesa).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetCategoryLimit.Category">
+            <summary>
+            Categoria financeira associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetCategoryLimit.Amount">
+            <summary>
+            Valor máximo definido para a categoria.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.BudgetUserAccess">
+            <summary>
+            Representa o acesso explícito de um utilizador a um orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserAccess.Id">
+            <summary>
+            Identificador do registo.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserAccess.BudgetId">
+            <summary>
+            Identificador do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserAccess.Budget">
+            <summary>
+            Orçamento associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserAccess.UserId">
+            <summary>
+            Identificador do utilizador com acesso.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserAccess.User">
+            <summary>
+            Utilizador com acesso.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserAccess.CreatedAtUtc">
+            <summary>
+            Data/hora de criação (UTC).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.BudgetUserSettings">
+            <summary>
+            Representa definições específicas de um utilizador num orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserSettings.BudgetId">
+            <summary>
+            Identificador do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserSettings.Budget">
+            <summary>
+            Orçamento associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserSettings.UserId">
+            <summary>
+            Identificador do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserSettings.User">
+            <summary>
+            Utilizador associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserSettings.DailyReminderEnabled">
+            <summary>
+            Indica se o lembrete diário de transações está ativo para este orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.BudgetUserSettings.DailyReminderTime">
+            <summary>
+            Hora do lembrete diário (por omissão 21:00).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.FinanceAccount">
+            <summary>
+            Representa uma conta financeira na família (ex.: conta corrente, numerário, cartão de crédito).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceAccount.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceAccount.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceAccount.Type">
+            <summary>
+            Tipo de conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceAccount.Name">
+            <summary>
+            Nome da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceAccount.IconKey">
+            <summary>
+            Chave do ícone da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceAccount.SortOrder">
+            <summary>
+            Ordem de apresentação.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.FinanceCategory">
+            <summary>
+            Representa uma categoria financeira (despesa ou rendimento) na família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceCategory.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceCategory.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceCategory.Type">
+            <summary>
+            Tipo de categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceCategory.Name">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceCategory.IconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceCategory.SortOrder">
+            <summary>
+            Ordem de apresentação.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.FinanceTransaction">
+            <summary>
+            Representa uma transação financeira associada a um orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.BudgetId">
+            <summary>
+            Identificador do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.Budget">
+            <summary>
+            Orçamento associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.Amount">
+            <summary>
+            Valor monetário da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.Title">
+            <summary>
+            Título/descrição curta da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.Type">
+            <summary>
+            Tipo da transação (despesa ou rendimento).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.CategoryId">
+            <summary>
+            Identificador da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.Category">
+            <summary>
+            Categoria associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.AccountId">
+            <summary>
+            Identificador da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.Account">
+            <summary>
+            Conta associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.PaidByUserId">
+            <summary>
+            Identificador do membro que pagou/recebeu.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.PaidByUser">
+            <summary>
+            Utilizador que pagou/recebeu.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.Date">
+            <summary>
+            Data da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.IsPaid">
+            <summary>
+            Indica se a transação está marcada como paga.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.PaidAtUtc">
+            <summary>
+            Data/hora (UTC) em que a transação foi marcada como paga, se aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.RepeatType">
+            <summary>
+            Tipo de repetição da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.RepeatInterval">
+            <summary>
+            Intervalo de repetição quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.RepeatUnit">
+            <summary>
+            Unidade de repetição quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.ReminderType">
+            <summary>
+            Tipo de lembrete da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.ReminderValue">
+            <summary>
+            Valor do lembrete quando <see cref="P:DomusUnify.Domain.Entities.FinanceTransaction.ReminderType"/> é <see cref="F:DomusUnify.Domain.Enums.TransactionReminderType.Custom"/>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.ReminderUnit">
+            <summary>
+            Unidade do lembrete quando <see cref="P:DomusUnify.Domain.Entities.FinanceTransaction.ReminderType"/> é <see cref="F:DomusUnify.Domain.Enums.TransactionReminderType.Custom"/>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.Note">
+            <summary>
+            Nota adicional (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.CreatedByUserId">
+            <summary>
+            Identificador do utilizador que criou a transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.CreatedByUser">
+            <summary>
+            Utilizador que criou a transação.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.ItemCategory">
+            <summary>
+            Representa uma categoria de itens de listas na família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ItemCategory.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ItemCategory.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ItemCategory.Name">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ItemCategory.IconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ItemCategory.SortOrder">
+            <summary>
+            Ordem de apresentação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ItemCategory.Items">
+            <summary>
+            Itens associados a esta categoria.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.ListCategory">
+            <summary>
+            Representa uma categoria de listas (agrupamento) na família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListCategory.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListCategory.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListCategory.Name">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListCategory.IconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListCategory.ColorHex">
+            <summary>
+            Cor em hexadecimal (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListCategory.SortOrder">
+            <summary>
+            Ordem de apresentação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListCategory.Lists">
+            <summary>
+            Listas associadas a esta categoria.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.ListItem">
+            <summary>
+            Representa um item numa lista partilhada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.SharedListId">
+            <summary>
+            Identificador da lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.SharedList">
+            <summary>
+            Lista associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.Name">
+            <summary>
+            Nome do item.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.IsCompleted">
+            <summary>
+            Indica se o item está concluído.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.CompletedByUserId">
+            <summary>
+            Identificador do utilizador que concluiu o item, se aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.CompletedByUser">
+            <summary>
+            Utilizador que concluiu o item, se aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.CategoryId">
+            <summary>
+            Identificador da categoria do item (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.Category">
+            <summary>
+            Categoria do item (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.CompletedAtUtc">
+            <summary>
+            Data/hora de conclusão (UTC), se aplicável.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.SharedList">
+            <summary>
+            Representa uma lista partilhada numa família (ex.: compras, tarefas, personalizada).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.ColorHex">
+            <summary>
+            Cor da lista em hexadecimal (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.Name">
+            <summary>
+            Nome da lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.Type">
+            <summary>
+            Tipo de lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.Items">
+            <summary>
+            Itens da lista.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.User">
+            <summary>
+            Representa um utilizador da aplicação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.Name">
+            <summary>
+            Nome do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.Email">
+            <summary>
+            Endereço de email (único).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.PasswordHash">
+            <summary>
+            Hash da palavra-passe.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.CurrentFamilyId">
+            <summary>
+            Identificador da família atualmente ativa para este utilizador (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.CurrentFamily">
+            <summary>
+            Família atualmente ativa (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.FamilyMemberships">
+            <summary>
+            Associações do utilizador a famílias.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.CreatedEvents">
+            <summary>
+            Eventos de calendário criados pelo utilizador.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.BudgetMainIndicator">
+            <summary>
+            Define o indicador principal a apresentar no topo da visão do orçamento.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetMainIndicator.TotalIncome">
+            <summary>
+            Rendimento total do período.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetMainIndicator.TotalExpenses">
+            <summary>
+            Despesas totais do período.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetMainIndicator.Balance">
+            <summary>
+            Saldo do período (rendimentos - despesas).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetMainIndicator.BalanceToday">
+            <summary>
+            Saldo do dia (hoje).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.BudgetPeriodType">
+            <summary>
+            Define o período de um orçamento recorrente.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetPeriodType.Monthly">
+            <summary>
+            Mensal.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetPeriodType.Weekly">
+            <summary>
+            Semanal.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetPeriodType.BiWeekly">
+            <summary>
+            Quinzenal (a cada 2 semanas).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetPeriodType.SemiMonthly">
+            <summary>
+            Semi-mensal (duas "metades" por mês, conforme padrão).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetPeriodType.Yearly">
+            <summary>
+            Anual.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.BudgetSemiMonthlyPattern">
+            <summary>
+            Define o padrão para um orçamento semi-mensal.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetSemiMonthlyPattern.FirstAndFifteenth">
+            <summary>
+            Do dia 1 ao dia 15.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetSemiMonthlyPattern.FifteenthAndLastDay">
+            <summary>
+            Do dia 15 ao último dia do mês.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.BudgetTransactionOrder">
+            <summary>
+            Define a ordenação da lista de transações no orçamento.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetTransactionOrder.MostRecentFirst">
+            <summary>
+            Mais recentes primeiro.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetTransactionOrder.OldestFirst">
+            <summary>
+            Mais antigas primeiro.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.BudgetType">
+            <summary>
+            Define o tipo de orçamento.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetType.Recurring">
+            <summary>
+            Orçamento recorrente (com período configurável).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetType.OneTime">
+            <summary>
+            Orçamento único (com intervalo de datas definido).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.BudgetUpcomingDisplayMode">
+            <summary>
+            Define como as próximas transações são apresentadas na lista.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetUpcomingDisplayMode.Expanded">
+            <summary>
+            Transações futuras exibidas individualmente.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetUpcomingDisplayMode.Collapsed">
+            <summary>
+            Transações futuras agrupadas numa única etiqueta/resumo.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.BudgetVisibilityMode">
+            <summary>
+            Define a visibilidade e acesso de um orçamento dentro da família.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetVisibilityMode.Private">
+            <summary>
+            Apenas o proprietário tem acesso.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetVisibilityMode.AllMembers">
+            <summary>
+            Todos os membros da família têm acesso.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.BudgetVisibilityMode.SpecificMembers">
+            <summary>
+            Apenas membros específicos têm acesso.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.DailyReminderMode">
+            <summary>
+            Define o modo do lembrete diário.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.DailyReminderMode.SameDay">
+            <summary>
+            No próprio dia.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.DailyReminderMode.DayBefore">
+            <summary>
+            No dia anterior.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.ExpenseCategory">
+            <summary>
+            Categoria de despesa (enum simples para uso interno/expansão futura).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ExpenseCategory.Other">
+            <summary>
+            Diversos.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ExpenseCategory.Groceries">
+            <summary>
+            Mercearias.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ExpenseCategory.Housing">
+            <summary>
+            Habitação.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ExpenseCategory.Transport">
+            <summary>
+            Transporte.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ExpenseCategory.Health">
+            <summary>
+            Saúde.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ExpenseCategory.Education">
+            <summary>
+            Educação.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ExpenseCategory.Pets">
+            <summary>
+            Animais de estimação.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ExpenseCategory.Leisure">
+            <summary>
+            Lazer/Entretenimento.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.FamilyRole">
+            <summary>
+            Define o papel/permissões de um utilizador numa família.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FamilyRole.Admin">
+            <summary>
+            Administrador da família (permissões totais).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FamilyRole.Member">
+            <summary>
+            Membro com permissões de edição (consoante regras da aplicação).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FamilyRole.Viewer">
+            <summary>
+            Apenas leitura (sem permissões de edição).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.FinanceAccountType">
+            <summary>
+            Define o tipo de conta financeira.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceAccountType.Checking">
+            <summary>
+            Conta à ordem / conta corrente.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceAccountType.Cash">
+            <summary>
+            Dinheiro (numerário).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceAccountType.CreditCard">
+            <summary>
+            Cartão de crédito.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceAccountType.Savings">
+            <summary>
+            Conta poupança.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceAccountType.Credit">
+            <summary>
+            Conta de crédito (linha de crédito/financiamento).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceAccountType.Joint">
+            <summary>
+            Conta conjunta.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.FinanceCategoryType">
+            <summary>
+            Define o tipo de categoria financeira.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceCategoryType.Expense">
+            <summary>
+            Categoria de despesa.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceCategoryType.Income">
+            <summary>
+            Categoria de rendimento.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.FinanceTransactionType">
+            <summary>
+            Define o tipo de transação financeira.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceTransactionType.Expense">
+            <summary>
+            Despesa.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.FinanceTransactionType.Income">
+            <summary>
+            Rendimento.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.ListType">
+            <summary>
+            Define o tipo de lista.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ListType.Shopping">
+            <summary>
+            Lista de compras.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ListType.Tasks">
+            <summary>
+            Lista de tarefas.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ListType.Custom">
+            <summary>
+            Lista personalizada.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.TransactionReminderType">
+            <summary>
+            Define o tipo de lembrete para uma transação.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionReminderType.None">
+            <summary>
+            Sem lembrete.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionReminderType.SameDayAt0900">
+            <summary>
+            No próprio dia às 09:00.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionReminderType.PreviousDayAt1800">
+            <summary>
+            No dia anterior às 18:00.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionReminderType.OneDayBeforeAt0900">
+            <summary>
+            1 dia antes às 09:00.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionReminderType.TwoDaysBeforeAt0900">
+            <summary>
+            2 dias antes às 09:00.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionReminderType.Custom">
+            <summary>
+            Lembrete personalizado (valor + unidade).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.TransactionReminderUnit">
+            <summary>
+            Unidade usada no lembrete personalizado de uma transação.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionReminderUnit.Minutes">
+            <summary>
+            Minutos.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionReminderUnit.Hours">
+            <summary>
+            Horas.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionReminderUnit.Days">
+            <summary>
+            Dias.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.TransactionRepeatType">
+            <summary>
+            Define o tipo de repetição de uma transação.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatType.None">
+            <summary>
+            Não se repete.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatType.Daily">
+            <summary>
+            Todos os dias.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatType.Weekdays">
+            <summary>
+            Dias úteis (segunda a sexta).
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatType.Weekly">
+            <summary>
+            Todas as semanas.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatType.BiWeekly">
+            <summary>
+            A cada 2 semanas.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatType.Monthly">
+            <summary>
+            Todos os meses.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatType.Yearly">
+            <summary>
+            Todos os anos.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatType.Custom">
+            <summary>
+            Repetição personalizada (intervalo + unidade).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.TransactionRepeatUnit">
+            <summary>
+            Unidade usada na repetição personalizada de uma transação.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatUnit.Days">
+            <summary>
+            Dias.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatUnit.Weeks">
+            <summary>
+            Semanas.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatUnit.Months">
+            <summary>
+            Meses.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.TransactionRepeatUnit.Years">
+            <summary>
+            Anos.
+            </summary>
+        </member>
+    </members>
+</doc>

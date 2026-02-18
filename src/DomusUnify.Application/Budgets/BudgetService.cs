@@ -23,6 +23,13 @@ public sealed class BudgetService : IBudgetService
     private readonly IFinanceCategoryService _cats;
     private readonly IFinanceAccountService _accounts;
 
+    /// <summary>
+    /// Inicializa uma nova instância de <see cref="BudgetService"/>.
+    /// </summary>
+    /// <param name="db">Contexto de base de dados.</param>
+    /// <param name="rt">Notificador em tempo real.</param>
+    /// <param name="cats">Serviço de categorias financeiras.</param>
+    /// <param name="accounts">Serviço de contas financeiras.</param>
     public BudgetService(IAppDbContext db, IRealtimeNotifier rt, IFinanceCategoryService cats, IFinanceAccountService accounts)
     {
         _db = db;

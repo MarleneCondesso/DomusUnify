@@ -32,4 +32,14 @@
     <ProjectReference Include="..\DomusUnify.Infrastructure\DomusUnify.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Copia XML docs das assemblies referenciadas para enriquecer o Swagger (schemas/DTOs). -->
+    <None Include="..\DomusUnify.Application\bin\$(Configuration)\$(TargetFramework)\DomusUnify.Application.xml"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\DomusUnify.Domain\bin\$(Configuration)\$(TargetFramework)\DomusUnify.Domain.xml"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\DomusUnify.Infrastructure\bin\$(Configuration)\$(TargetFramework)\DomusUnify.Infrastructure.xml"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

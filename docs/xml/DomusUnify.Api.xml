@@ -1,0 +1,2619 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>DomusUnify.Api</name>
+    </assembly>
+    <members>
+        <member name="T:DomusUnify.Api.Auth.ClaimsPrincipalExtensions">
+            <summary>
+            Extensões para ler informação do utilizador autenticado a partir de <see cref="T:System.Security.Claims.ClaimsPrincipal"/>.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Auth.ClaimsPrincipalExtensions.GetUserId(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Obtém o identificador do utilizador autenticado a partir dos claims do token.
+            </summary>
+            <remarks>
+            O identificador é esperado nos claims <see cref="F:System.Security.Claims.ClaimTypes.NameIdentifier"/> (recomendado) ou <c>sub</c>.
+            </remarks>
+            <param name="user">Principal autenticado.</param>
+            <returns>Identificador do utilizador.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.AuthController">
+            <summary>
+            Endpoints de autenticação e registo de utilizadores.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.AuthController.Register(DomusUnify.Api.DTOs.Auth.RegisterRequest)">
+            <summary>
+            Registra um novo utilizador com os detalhes fornecidos.
+            </summary>
+            <remarks>
+            O email deve ser único. A palavra-passe é encriptada antes de ser armazenada.
+            </remarks>
+            <param name="request">O pedido de registo contendo nome, email e palavra-passe.</param>
+            <returns>Uma resposta de autenticação com token de acesso e tempo de expiração.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.AuthController.Login(DomusUnify.Api.DTOs.Auth.LoginRequest)">
+            <summary>
+            Autentica um utilizador existente e retorna um token de acesso.
+            </summary>
+            <remarks>
+            Verifica as credenciais fornecidas. Se inválidas, retorna erro de não autorizado.
+            </remarks>
+            <param name="request">O pedido de login contendo email e palavra-passe.</param>
+            <returns>Uma resposta de autenticação com token de acesso e tempo de expiração.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.BudgetsController">
+            <summary>
+            Endpoints para gestão de orçamentos (recorrentes e únicos) na família atual.
+            </summary>
+            <remarks>
+            Um orçamento pertence a uma família e pode ter visibilidade:
+            <list type="bullet">
+            <item><description><c>Private</c> — apenas o dono.</description></item>
+            <item><description><c>AllMembers</c> — todos os membros da família.</description></item>
+            <item><description><c>SpecificMembers</c> — apenas membros selecionados.</description></item>
+            </list>
+            </remarks>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.BudgetsController.Get(System.Threading.CancellationToken)">
+            <summary>
+            Obtém a lista de orçamentos a que o utilizador tem acesso na família atual.
+            </summary>
+            <remarks>
+            Apenas devolve orçamentos visíveis para o utilizador autenticado, de acordo com a configuração de visibilidade.
+            </remarks>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de orçamentos.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.BudgetsController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Obtém os detalhes de um orçamento pelo seu identificador.
+            </summary>
+            <remarks>
+            Devolve <c>404 Not Found</c> se o orçamento não existir na família atual, e <c>403 Forbidden</c> se o utilizador
+            não tiver permissões para aceder a este orçamento.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Os detalhes do orçamento.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.BudgetsController.Create(DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest,System.Threading.CancellationToken)">
+            <summary>
+            Cria um novo orçamento na família atual.
+            </summary>
+            <remarks>
+            Para orçamentos <c>Recurring</c> é obrigatório indicar o período e a data de início.
+            Pode ainda definir limites por categoria (despesas) e um limite global de gastos.
+            </remarks>
+            <param name="request">Dados do orçamento a criar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Os detalhes do orçamento criado.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.BudgetsController.Update(System.Guid,DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza as configurações de um orçamento existente.
+            </summary>
+            <remarks>
+            Permite alterar nome/ícone, período (se recorrente), moeda, visibilidade e opções de exibição.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="request">Dados a atualizar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Os detalhes do orçamento após atualização.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.BudgetsController.Delete(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Elimina um orçamento da família atual.
+            </summary>
+            <remarks>
+            Ao eliminar um orçamento são eliminadas também as suas transações e limites associados.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.BudgetsController.GetMembers(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Obtém a lista de membros associados ao orçamento.
+            </summary>
+            <remarks>
+            Para orçamentos com visibilidade <c>AllMembers</c>, devolve todos os membros da família.
+            Para <c>Private</c> ou <c>SpecificMembers</c>, devolve apenas os membros com acesso.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de membros do orçamento.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.BudgetsController.GetCategoryLimits(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Obtém os limites por categoria (despesas) definidos para um orçamento.
+            </summary>
+            <remarks>
+            Esta lista é usada para configurar quanto se pretende gastar por categoria dentro do orçamento.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de limites por categoria.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.BudgetsController.UpdateCategoryLimits(System.Guid,DomusUnify.Api.DTOs.Budgets.UpdateBudgetCategoryLimitsRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza os limites por categoria (despesas) de um orçamento.
+            </summary>
+            <remarks>
+            Envia a lista de categorias e respetivos limites. Os valores devem ser maiores ou iguais a zero.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="request">Pedido com a lista de limites a atualizar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.CalendarController">
+            <summary>
+            Endpoints do módulo de calendário para a família atual.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.GetEvents(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateOnly},System.String,System.Nullable{System.Guid},System.Threading.CancellationToken)">
+             <summary>
+             Lista eventos do calendário visíveis para o utilizador autenticado.
+             </summary>
+             <remarks>
+             Pode filtrar por:
+             - dateUtc (dia inteiro, UTC)
+             - intervalo (fromUtc/toUtc)
+             - search (parte do título)
+             - participantUserId (participante específico)
+            
+             Se nenhum filtro for fornecido, devolve uma janela default (ex: últimos 7 dias + próximos 30).
+             </remarks>
+             <param name="fromUtc">Data/hora inicial (UTC) para filtrar por intervalo, opcional.</param>
+             <param name="toUtc">Data/hora final (UTC) para filtrar por intervalo, opcional.</param>
+             <param name="dateUtc">Dia (UTC) para filtrar por dia inteiro, opcional.</param>
+             <param name="search">Texto para procurar no título, opcional.</param>
+             <param name="participantUserId">Filtra por participante específico, opcional.</param>
+             <param name="ct">Token de cancelamento.</param>
+             <returns>Uma lista de respostas de eventos do calendário.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.GetEventById(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Devolve os detalhes de um evento do calendário pelo seu ID.
+            </summary>
+            <remarks>
+            Retorna <c>404 Not Found</c> se o evento não existir ou não for visível para o utilizador autenticado na família atual.
+            </remarks>
+            <param name="eventId">O ID do evento.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Os detalhes do evento.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.CreateEvent(DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest,System.Threading.CancellationToken)">
+            <summary>
+            Cria um novo evento do calendário para a família atual.
+            </summary>
+            <remarks>
+            Permite definir participantes, visibilidade, lembretes, recorrência, etc. O utilizador deve ter permissões na família.
+            </remarks>
+            <param name="request">O pedido contendo detalhes do evento como título, datas, participantes, etc.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A resposta do evento do calendário criado.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.UpdateEvent(System.Guid,DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza um evento do calendário existente.
+            </summary>
+            <remarks>
+            Permite alterar título, datas, participantes, etc. O utilizador deve ter permissões para editar o evento.
+            </remarks>
+            <param name="eventId">O ID do evento a atualizar.</param>
+            <param name="request">O pedido contendo detalhes atualizados do evento.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A resposta do evento do calendário atualizado.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.DeleteEvent(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Elimina um evento do calendário.
+            </summary>
+            <remarks>
+            O utilizador deve ter permissões para editar o evento na família atual.
+            </remarks>
+            <param name="eventId">O ID do evento a eliminar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.DuplicateEvent(System.Guid,DomusUnify.Api.DTOs.Calendar.DuplicateCalendarEventRequest,System.Threading.CancellationToken)">
+            <summary>
+            Duplica um evento do calendário com novas horas de início e fim.
+            </summary>
+            <remarks>
+            Cria uma cópia do evento com datas ajustadas. O utilizador deve ter permissões na família.
+            </remarks>
+            <param name="eventId">O ID do evento a duplicar.</param>
+            <param name="request">O pedido contendo novas horas de início e fim.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A resposta do evento do calendário duplicado.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.CopyEvent(System.Guid,DomusUnify.Api.DTOs.Calendar.CopyCalendarEventRequest,System.Threading.CancellationToken)">
+            <summary>
+            Copia um evento do calendário para várias datas.
+            </summary>
+            <remarks>
+            Cria novas instâncias do evento nas datas indicadas (UTC).
+            </remarks>
+            <param name="eventId">O ID do evento a copiar.</param>
+            <param name="request">Pedido com a lista de datas para onde copiar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista com os eventos copiados.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.UpdateRecurring(System.Guid,DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza um evento recorrente do calendário.
+            </summary>
+            <remarks>
+            Permite editar a série recorrente ou uma ocorrência específica. O scope define se é toda a série ou apenas uma ocorrência.
+            </remarks>
+            <param name="eventId">O ID do evento recorrente.</param>
+            <param name="request">O pedido contendo detalhes da atualização recorrente.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.ExportIcs(System.Guid,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
+            <summary>
+            Exporta um evento do calendário para um ficheiro ICS (iCalendar).
+            </summary>
+            <remarks>
+            Para eventos recorrentes, podes especificar <paramref name="occurrenceStartUtc"/> para exportar uma ocorrência específica.
+            Retorna <c>404 Not Found</c> se o evento não existir ou não for visível para o utilizador autenticado na família atual.
+            </remarks>
+            <param name="eventId">O ID do evento a exportar.</param>
+            <param name="occurrenceStartUtc">Hora de início (UTC) de uma ocorrência específica (opcional).</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Um ficheiro ICS contendo os detalhes do evento.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.BuildIcsExport(DomusUnify.Application.Calendar.Models.CalendarEventExportModel)">
+            <summary>
+            Constrói uma string ICS (iCalendar) para o evento do calendário, incluindo organizador, participantes e detalhes conforme RFC5545.
+            </summary>
+            <param name="e">O modelo de exportação do evento do calendário.</param>
+            <returns>Uma string formatada em ICS representando o evento com organizador e participantes.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.FamiliesController">
+            <summary>
+            Endpoints de gestão de famílias (criação, seleção da família atual e listagens).
+            </summary>
+            <remarks>
+            A maioria dos endpoints opera sobre a “família atual” do utilizador autenticado, definida em <c>/set-current</c>.
+            </remarks>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.CreateFamily(DomusUnify.Api.DTOs.Families.CreateFamilyRequest)">
+            <summary>
+            Cria uma nova família e atribui o utilizador autenticado como administrador.
+            </summary>
+            <remarks>
+            O nome da família é obrigatório. O utilizador torna-se membro com papel de admin.
+            </remarks>
+            <param name="request">O pedido contendo o nome da família.</param>
+            <returns>A resposta da família criada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.CreateInvite(System.Guid,System.Int32,System.Nullable{System.Int32},System.Threading.CancellationToken)">
+            <summary>
+            Cria um convite para uma família.
+            </summary>
+            <remarks>
+            O utilizador autenticado deve ter permissões na família indicada. O convite tem validade limitada e pode ter um
+            número máximo de utilizações.
+            </remarks>
+            <param name="familyId">Identificador da família.</param>
+            <param name="daysValid">Número de dias de validade do convite (por omissão, 7).</param>
+            <param name="maxUses">Número máximo de utilizações (opcional).</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Dados do convite criado.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.GetMyFamily">
+            <summary>
+            Obtém a família atual do utilizador autenticado.
+            </summary>
+            <remarks>
+            Retorna a família definida como atual. Se não houver família ativa, sugere usar /api/v1/families/my para selecionar uma.
+            </remarks>
+            <returns>A resposta da família atual.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.GetMyFamilies">
+            <summary>
+            Obtém todas as famílias das quais o utilizador autenticado é membro.
+            </summary>
+            <remarks>
+            Lista todas as famílias associadas ao utilizador, ordenadas por nome.
+            </remarks>
+            <returns>Uma lista de respostas de famílias.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.SetCurrentFamily(DomusUnify.Api.DTOs.Families.SetCurrentFamilyRequest)">
+            <summary>
+            Define a família atual para o utilizador autenticado.
+            </summary>
+            <remarks>
+            O utilizador deve ser membro da família especificada. Caso contrário, retorna erro de proibido.
+            </remarks>
+            <param name="request">O pedido contendo o ID da família a definir como atual.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.GetCurrentFamilyMembers(System.Threading.CancellationToken)">
+            <summary>
+            Lista os membros da família atual (para seleções como "visível para" e "pago por").
+            </summary>
+            <remarks>
+            Devolve os utilizadores membros da família atual, com o respetivo papel (Admin/Member/Viewer).
+            </remarks>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de membros da família atual.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.FamilyInvitesController">
+            <summary>
+            Endpoints para convites de família (pré-visualização e adesão).
+            </summary>
+            <remarks>
+            Permite ao utilizador autenticar-se e juntar-se a uma família através de um token de convite.
+            </remarks>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamilyInvitesController.Preview(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Pré-visualiza um convite de família.
+            </summary>
+            <remarks>
+            Útil para mostrar ao utilizador a que família pertence o token antes de confirmar a adesão.
+            </remarks>
+            <param name="token">Token do convite.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Informação de pré-visualização do convite.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.FamilyInvitesController.JoinInviteRequest">
+            <summary>
+            Pedido para aderir a uma família através de convite.
+            </summary>
+            <param name="Token">Token do convite.</param>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamilyInvitesController.JoinInviteRequest.#ctor(System.String)">
+            <summary>
+            Pedido para aderir a uma família através de convite.
+            </summary>
+            <param name="Token">Token do convite.</param>
+        </member>
+        <member name="P:DomusUnify.Api.Controllers.FamilyInvitesController.JoinInviteRequest.Token">
+            <summary>Token do convite.</summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamilyInvitesController.Join(DomusUnify.Api.Controllers.FamilyInvitesController.JoinInviteRequest,System.Threading.CancellationToken)">
+            <summary>
+            Junta o utilizador autenticado à família associada ao token.
+            </summary>
+            <remarks>
+            Se o token for inválido/expirado ou exceder o número máximo de utilizações, devolve erro.
+            </remarks>
+            <param name="req">Pedido com o token do convite.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se a adesão for bem-sucedida.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.FinanceAccountsController">
+            <summary>
+            Endpoints para gestão de contas financeiras (ex.: conta corrente, dinheiro, cartão de crédito) na família atual.
+            </summary>
+            <remarks>
+            As contas financeiras são usadas para classificar transações por origem/destino do dinheiro.
+            </remarks>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceAccountsController.Get(System.Threading.CancellationToken)">
+            <summary>
+            Obtém as contas financeiras da família atual.
+            </summary>
+            <remarks>
+            Se não existirem contas ainda, o serviço cria automaticamente um conjunto de contas por defeito.
+            </remarks>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de contas financeiras.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceAccountsController.Create(DomusUnify.Api.DTOs.Finance.CreateFinanceAccountRequest,System.Threading.CancellationToken)">
+            <summary>
+            Cria uma nova conta financeira na família atual.
+            </summary>
+            <remarks>
+            O utilizador deve ter permissões de edição na família (por exemplo, não pode ser <c>Viewer</c>).
+            </remarks>
+            <param name="request">Dados da conta a criar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A conta criada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceAccountsController.Update(System.Guid,DomusUnify.Api.DTOs.Finance.UpdateFinanceAccountRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza uma conta financeira existente.
+            </summary>
+            <remarks>
+            Permite alterar nome/ícone e reordenar a conta via <c>SortOrder</c>.
+            </remarks>
+            <param name="accountId">Identificador da conta.</param>
+            <param name="request">Dados a atualizar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A conta atualizada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceAccountsController.Delete(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Elimina uma conta financeira.
+            </summary>
+            <remarks>
+            A operação falha com conflito se a conta estiver a ser usada por transações.
+            </remarks>
+            <param name="accountId">Identificador da conta.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.FinanceCategoriesController">
+            <summary>
+            Endpoints para gestão de categorias financeiras (despesas e rendimentos) na família atual.
+            </summary>
+            <remarks>
+            As categorias financeiras são usadas nas transações do orçamento e podem ser do tipo:
+            <list type="bullet">
+            <item><description><c>Expense</c> — categoria de despesa.</description></item>
+            <item><description><c>Income</c> — categoria de rendimento.</description></item>
+            </list>
+            </remarks>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceCategoriesController.Get(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Obtém as categorias financeiras da família atual.
+            </summary>
+            <remarks>
+            Por omissão, devolve todas as categorias (despesas e rendimentos). Pode filtrar por <paramref name="type"/>.
+            </remarks>
+            <param name="type">Filtro opcional por tipo: <c>Expense</c> ou <c>Income</c>.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de categorias financeiras.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceCategoriesController.Create(DomusUnify.Api.DTOs.Finance.CreateFinanceCategoryRequest,System.Threading.CancellationToken)">
+            <summary>
+            Cria uma nova categoria financeira na família atual.
+            </summary>
+            <remarks>
+            O utilizador deve ter permissões de edição na família (por exemplo, não pode ser <c>Viewer</c>).
+            </remarks>
+            <param name="request">Dados da categoria a criar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A categoria criada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceCategoriesController.Update(System.Guid,DomusUnify.Api.DTOs.Finance.UpdateFinanceCategoryRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza uma categoria financeira existente.
+            </summary>
+            <remarks>
+            Permite alterar nome/ícone e reordenar a categoria via <c>SortOrder</c>.
+            </remarks>
+            <param name="categoryId">Identificador da categoria.</param>
+            <param name="request">Dados a atualizar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A categoria atualizada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceCategoriesController.Delete(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Elimina uma categoria financeira.
+            </summary>
+            <remarks>
+            A operação falha com conflito se a categoria estiver a ser usada por transações ou limites de orçamento.
+            </remarks>
+            <param name="categoryId">Identificador da categoria.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.FinanceTransactionsController">
+            <summary>
+            Endpoints para gestão de transações financeiras dentro de um orçamento.
+            </summary>
+            <remarks>
+            Estes endpoints operam sempre no contexto de uma família (família atual do utilizador) e de um orçamento
+            identificado por <c>{budgetId}</c>.
+            </remarks>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.Get(System.Guid,System.Nullable{System.DateOnly},System.Nullable{System.DateOnly},System.Threading.CancellationToken)">
+            <summary>
+            Obtém a lista de transações do orçamento.
+            </summary>
+            <remarks>
+            Pode filtrar por intervalo de datas usando <paramref name="from"/> e <paramref name="to"/>.
+            A ordenação respeita a configuração do orçamento (mais recente primeiro ou mais antigo primeiro).
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="from">Data inicial (inclusive), opcional.</param>
+            <param name="to">Data final (inclusive), opcional.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de transações.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.Totals(System.Guid,System.Nullable{System.DateOnly},System.Threading.CancellationToken)">
+            <summary>
+            Obtém os totais do orçamento para o período corrente.
+            </summary>
+            <remarks>
+            Calcula:
+            <list type="bullet">
+            <item><description>Rendimento do período</description></item>
+            <item><description>Despesas do período</description></item>
+            <item><description>Saldo do período</description></item>
+            <item><description>Saldo do dia (hoje)</description></item>
+            <item><description>Despesas totais (acumuladas)</description></item>
+            </list>
+            O período é determinado pela configuração do orçamento (recorrente) ou pelas datas do orçamento (único).
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="referenceDate">Data de referência (por omissão, hoje em UTC).</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Os totais calculados.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.SummaryByCategories(System.Guid,System.String,System.Nullable{System.DateOnly},System.Nullable{System.DateOnly},System.Threading.CancellationToken)">
+            <summary>
+            Obtém um resumo por categorias (percentagem e total) para um tipo de transação.
+            </summary>
+            <remarks>
+            Usa <paramref name="type"/> para escolher <c>Expense</c> (despesas) ou <c>Income</c> (rendimentos).
+            O intervalo é opcional; quando omitido, considera todas as transações.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="type">Tipo de transação: <c>Expense</c> ou <c>Income</c>.</param>
+            <param name="from">Data inicial (inclusive), opcional.</param>
+            <param name="to">Data final (inclusive), opcional.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de totais por categoria.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.SummaryByMembers(System.Guid,System.String,System.Nullable{System.DateOnly},System.Nullable{System.DateOnly},System.Threading.CancellationToken)">
+            <summary>
+            Obtém um resumo por membros (percentagem e total) para um tipo de transação.
+            </summary>
+            <remarks>
+            Agrupa por <c>Pago por</c> (membro que pagou/recebeu).
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="type">Tipo de transação: <c>Expense</c> ou <c>Income</c>.</param>
+            <param name="from">Data inicial (inclusive), opcional.</param>
+            <param name="to">Data final (inclusive), opcional.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de totais por membro.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.SummaryByAccounts(System.Guid,System.String,System.Nullable{System.DateOnly},System.Nullable{System.DateOnly},System.Threading.CancellationToken)">
+            <summary>
+            Obtém um resumo por contas (percentagem e total) para um tipo de transação.
+            </summary>
+            <remarks>
+            Agrupa por conta (ex.: conta corrente, dinheiro, cartão de crédito).
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="type">Tipo de transação: <c>Expense</c> ou <c>Income</c>.</param>
+            <param name="from">Data inicial (inclusive), opcional.</param>
+            <param name="to">Data final (inclusive), opcional.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de totais por conta.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.Export(System.Guid,System.DateOnly,System.DateOnly,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Exporta as transações do orçamento para um ficheiro CSV.
+            </summary>
+            <remarks>
+            O intervalo <paramref name="from"/>/<paramref name="to"/> é obrigatório.
+            O delimitador por omissão é <c>;</c>.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="from">Data inicial (inclusive).</param>
+            <param name="to">Data final (inclusive).</param>
+            <param name="delimiter">Delimitador opcional (ex.: <c>;</c> ou <c>,</c>).</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Um ficheiro CSV para download.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.Create(System.Guid,DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Cria uma nova transação no orçamento.
+            </summary>
+            <remarks>
+            A transação pode ser do tipo <c>Expense</c> (despesa) ou <c>Income</c> (rendimento), e deve ter categoria e conta
+            válidas da família atual. Também pode ser marcada como paga e configurada com repetição/lembretes.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="request">Dados da transação a criar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A transação criada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.Update(System.Guid,System.Guid,DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza uma transação existente do orçamento.
+            </summary>
+            <remarks>
+            Permite alterar valor, título, tipo, categoria, conta, data, estado de pago, repetição/lembretes e nota.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="transactionId">Identificador da transação.</param>
+            <param name="request">Dados a atualizar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A transação atualizada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.Delete(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Elimina uma transação do orçamento.
+            </summary>
+            <remarks>
+            Devolve <c>404 Not Found</c> se a transação não existir no orçamento indicado.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="transactionId">Identificador da transação.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.MarkAllPaid(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Marca todas as transações do orçamento como pagas.
+            </summary>
+            <remarks>
+            Útil para garantir consistência quando a preferência de cálculo considera apenas transações pagas.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FinanceTransactionsController.Clear(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Remove todas as transações do orçamento.
+            </summary>
+            <remarks>
+            Esta ação é destrutiva e não pode ser revertida.
+            </remarks>
+            <param name="budgetId">Identificador do orçamento.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.ItemCategoriesController">
+            <summary>
+            Endpoints para gestão de categorias de itens (listas) na família atual.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ItemCategoriesController.Get(System.Threading.CancellationToken)">
+            <summary>
+            Obtém todas as categorias de itens para a família atual.
+            </summary>
+            <remarks>
+            Lista todas as categorias visíveis para o utilizador na família atual.
+            </remarks>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de respostas de categorias.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ItemCategoriesController.Create(DomusUnify.Api.DTOs.Categories.CreateCategoryRequest,System.Threading.CancellationToken)">
+            <summary>
+            Cria uma nova categoria de itens para a família atual.
+            </summary>
+            <remarks>
+            Permite definir nome, ícone e ordem de classificação. O utilizador deve ter permissões na família.
+            </remarks>
+            <param name="request">O pedido contendo detalhes da categoria a criar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A resposta da categoria criada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ItemCategoriesController.Update(System.Guid,DomusUnify.Api.DTOs.Categories.UpdateCategoryRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza uma categoria de itens existente.
+            </summary>
+            <remarks>
+            Permite alterar nome/ícone e reordenar a categoria via <c>SortOrder</c>.
+            </remarks>
+            <param name="categoryId">O ID da categoria a atualizar.</param>
+            <param name="request">O pedido contendo detalhes atualizados da categoria.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A resposta da categoria atualizada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ItemCategoriesController.Delete(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Elimina uma categoria de itens.
+            </summary>
+            <remarks>
+            Remove a categoria se não estiver em uso. O utilizador deve ter permissões na família.
+            </remarks>
+            <param name="categoryId">O ID da categoria a eliminar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.ListsController">
+            <summary>
+            Endpoints de gestão de listas (ex.: compras/tarefas) e respetivos itens na família atual.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListsController.GetLists(System.Threading.CancellationToken)">
+            <summary>
+            Obtém todas as listas para a família atual.
+            </summary>
+            <remarks>
+            Lista todas as listas visíveis para o utilizador, incluindo contagem de itens e completados.
+            </remarks>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de respostas de listas.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListsController.CreateList(DomusUnify.Api.DTOs.Lists.CreateListRequest,System.Threading.CancellationToken)">
+            <summary>
+            Cria uma nova lista para a família atual.
+            </summary>
+            <remarks>
+            Permite definir nome, cor e tipo da lista. O utilizador deve ter permissões na família.
+            </remarks>
+            <param name="request">O pedido contendo detalhes da lista a criar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A resposta da lista criada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListsController.UpdateList(System.Guid,DomusUnify.Api.DTOs.Lists.UpdateListRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza uma lista existente.
+            </summary>
+            <remarks>
+            Permite alterar nome, cor e tipo da lista. O utilizador deve ter permissões na família.
+            </remarks>
+            <param name="listId">O ID da lista a atualizar.</param>
+            <param name="request">O pedido contendo detalhes atualizados da lista.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListsController.DeleteList(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Elimina uma lista existente.
+            </summary>
+            <remarks>
+            Ao eliminar uma lista, são eliminados também os respetivos itens.
+            </remarks>
+            <param name="listId">O ID da lista a eliminar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListsController.GetItems(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Obtém todos os itens de uma lista.
+            </summary>
+            <remarks>
+            Lista todos os itens da lista especificada, incluindo estado de conclusão e categoria.
+            </remarks>
+            <param name="listId">O ID da lista.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Uma lista de respostas de itens da lista.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListsController.AddItem(System.Guid,DomusUnify.Api.DTOs.Lists.CreateListItemRequest,System.Threading.CancellationToken)">
+            <summary>
+            Adiciona um novo item a uma lista.
+            </summary>
+            <remarks>
+            Permite definir nome e categoria opcional do item. O utilizador deve ter permissões na família.
+            </remarks>
+            <param name="listId">O ID da lista.</param>
+            <param name="request">O pedido contendo detalhes do item a adicionar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>A resposta do item da lista adicionado.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListsController.UpdateItem(System.Guid,DomusUnify.Api.DTOs.Lists.UpdateListItemRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza um item de lista existente.
+            </summary>
+            <remarks>
+            Permite alterar nome, estado de conclusão e categoria. CategoryId pode ser null para remover categoria.
+            </remarks>
+            <param name="itemId">O ID do item a atualizar.</param>
+            <param name="request">O pedido contendo detalhes atualizados do item.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListsController.DeleteItem(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Elimina um item de lista existente.
+            </summary>
+            <remarks>
+            Remove o item da lista. O utilizador deve ter permissões na família.
+            </remarks>
+            <param name="itemId">O ID do item a eliminar.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitRequest">
+            <summary>
+            Pedido para definir/atualizar um limite de despesa por categoria num orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitRequest.CategoryId">
+            <summary>
+            Identificador da categoria financeira (do tipo despesa).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitRequest.Amount">
+            <summary>
+            Valor máximo a gastar na categoria para o período do orçamento.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitResponse">
+            <summary>
+            Resposta com informação de um limite de despesa por categoria num orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitResponse.Id">
+            <summary>
+            Identificador do limite.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitResponse.CategoryId">
+            <summary>
+            Identificador da categoria financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitResponse.CategoryName">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitResponse.CategoryIconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitResponse.CategorySortOrder">
+            <summary>
+            Ordem de apresentação da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitResponse.Amount">
+            <summary>
+            Valor máximo definido para a categoria.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse">
+            <summary>
+            Resposta com o detalhe completo de um orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.Id">
+            <summary>
+            Identificador do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.FamilyId">
+            <summary>
+            Identificador da família proprietária do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.OwnerUserId">
+            <summary>
+            Identificador do utilizador proprietário (criador) do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.Name">
+            <summary>
+            Nome do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.IconKey">
+            <summary>
+            Chave do ícone do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.Type">
+            <summary>
+            Tipo do orçamento (<c>Recurring</c> ou <c>OneTime</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.PeriodType">
+            <summary>
+            Período do orçamento (apenas para orçamento recorrente).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.StartDate">
+            <summary>
+            Data de início do orçamento (para orçamento único) ou data de início de referência (para recorrente).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.EndDate">
+            <summary>
+            Data de fim do orçamento (apenas para orçamento único).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.SemiMonthlyPattern">
+            <summary>
+            Padrão semi-mensal (apenas quando <see cref="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.PeriodType"/> é <c>SemiMonthly</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.SpendingLimit">
+            <summary>
+            Limite global de gastos do orçamento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.CurrencyCode">
+            <summary>
+            Código ISO da moeda do orçamento (ex.: <c>EUR</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.VisibilityMode">
+            <summary>
+            Modo de visibilidade do orçamento (<c>Private</c>, <c>AllMembers</c> ou <c>SpecificMembers</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.AllowedUserIds">
+            <summary>
+            Lista de utilizadores com acesso quando a visibilidade é <c>SpecificMembers</c>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.MainIndicator">
+            <summary>
+            Indicador principal a apresentar no topo do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.OnlyPaidInTotals">
+            <summary>
+            Quando <see langword="true"/>, apenas transações marcadas como pagas entram nos totais.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.TransactionOrder">
+            <summary>
+            Ordenação da lista de transações (<c>MostRecentFirst</c> ou <c>OldestFirst</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetDetailResponse.UpcomingDisplayMode">
+            <summary>
+            Forma de apresentação das próximas transações (<c>Expanded</c> ou <c>Collapsed</c>).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Budgets.BudgetMemberResponse">
+            <summary>
+            Resposta com informação de um membro associado ao orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetMemberResponse.UserId">
+            <summary>
+            Identificador do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetMemberResponse.Name">
+            <summary>
+            Nome do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetMemberResponse.Role">
+            <summary>
+            Papel do utilizador no contexto do orçamento/família.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Budgets.BudgetSummaryResponse">
+            <summary>
+            Resposta com informação resumida de um orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetSummaryResponse.Id">
+            <summary>
+            Identificador do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetSummaryResponse.Name">
+            <summary>
+            Nome do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetSummaryResponse.IconKey">
+            <summary>
+            Chave do ícone do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetSummaryResponse.Type">
+            <summary>
+            Tipo do orçamento (<c>Recurring</c> ou <c>OneTime</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetSummaryResponse.CurrencyCode">
+            <summary>
+            Código ISO da moeda do orçamento (ex.: <c>EUR</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.BudgetSummaryResponse.VisibilityMode">
+            <summary>
+            Modo de visibilidade do orçamento.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest">
+            <summary>
+            Pedido para criar um novo orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.Name">
+            <summary>
+            Nome do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.IconKey">
+            <summary>
+            Chave do ícone do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.Type">
+            <summary>
+            Tipo do orçamento (<c>Recurring</c> ou <c>OneTime</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.PeriodType">
+            <summary>
+            Período do orçamento recorrente (<c>Monthly</c>, <c>Weekly</c>, <c>BiWeekly</c>, <c>SemiMonthly</c> ou <c>Yearly</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.StartDate">
+            <summary>
+            Data de início do orçamento (para orçamento único) ou data de início de referência (para recorrente).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.EndDate">
+            <summary>
+            Data de fim do orçamento (apenas para orçamento único).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.SemiMonthlyPattern">
+            <summary>
+            Padrão semi-mensal (<c>FirstAndFifteenth</c> ou <c>FifteenthAndLastDay</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.SpendingLimit">
+            <summary>
+            Limite global de gastos do orçamento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.CurrencyCode">
+            <summary>
+            Código ISO da moeda do orçamento (ex.: <c>EUR</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.VisibilityMode">
+            <summary>
+            Modo de visibilidade do orçamento (<c>Private</c>, <c>AllMembers</c> ou <c>SpecificMembers</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.AllowedUserIds">
+            <summary>
+            Lista de utilizadores com acesso quando a visibilidade é <c>SpecificMembers</c>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.MainIndicator">
+            <summary>
+            Indicador principal a apresentar no topo do orçamento (<c>TotalIncome</c>, <c>TotalExpenses</c>, <c>Balance</c> ou <c>BalanceToday</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.OnlyPaidInTotals">
+            <summary>
+            Quando <see langword="true"/>, apenas transações marcadas como pagas entram nos totais.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.TransactionOrder">
+            <summary>
+            Ordenação da lista de transações (<c>MostRecentFirst</c> ou <c>OldestFirst</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.UpcomingDisplayMode">
+            <summary>
+            Forma de apresentação das próximas transações (<c>Expanded</c> ou <c>Collapsed</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.CreateBudgetRequest.CategoryLimits">
+            <summary>
+            Limites por categoria (despesas) a aplicar no orçamento (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Budgets.UpdateBudgetCategoryLimitsRequest">
+            <summary>
+            Pedido para atualizar os limites por categoria (despesas) de um orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetCategoryLimitsRequest.Limits">
+            <summary>
+            Lista de limites a aplicar.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest">
+            <summary>
+            Pedido para atualizar propriedades de um orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.Name">
+            <summary>
+            Novo nome do orçamento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.IconKey">
+            <summary>
+            Nova chave do ícone do orçamento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.PeriodType">
+            <summary>
+            Novo período do orçamento recorrente (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.StartDate">
+            <summary>
+            Nova data de início (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.EndDate">
+            <summary>
+            Nova data de fim (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.SemiMonthlyPattern">
+            <summary>
+            Novo padrão semi-mensal (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.SpendingLimit">
+            <summary>
+            Novo limite global de gastos (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.SpendingLimitChangeRequested">
+            <summary>
+            Indica explicitamente que o limite deve ser limpo/alterado, mesmo que o valor seja <see langword="null"/>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.CurrencyCode">
+            <summary>
+            Novo código ISO da moeda do orçamento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.VisibilityMode">
+            <summary>
+            Novo modo de visibilidade (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.AllowedUserIds">
+            <summary>
+            Lista de utilizadores com acesso, quando aplicável (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.MainIndicator">
+            <summary>
+            Novo indicador principal (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.OnlyPaidInTotals">
+            <summary>
+            Indica se apenas transações pagas entram nos totais (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.TransactionOrder">
+            <summary>
+            Nova ordenação da lista de transações (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Budgets.UpdateBudgetRequest.UpcomingDisplayMode">
+            <summary>
+            Nova forma de apresentação das próximas transações (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse">
+            <summary>
+            Resposta com o detalhe de um evento de calendário.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.Id">
+            <summary>
+            Identificador do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.FamilyId">
+            <summary>
+            Identificador da família do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.Title">
+            <summary>
+            Título do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.IsAllDay">
+            <summary>
+            Indica se o evento é de dia inteiro.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.StartUtc">
+            <summary>
+            Data/hora de início (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.EndUtc">
+            <summary>
+            Data/hora de fim (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.Location">
+            <summary>
+            Localização do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.Note">
+            <summary>
+            Nota/descrição do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.ColorHex">
+            <summary>
+            Cor do evento em hexadecimal (ex.: <c>#FFAA00</c>), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.TimezoneId">
+            <summary>
+            Identificador do fuso horário (IANA), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.RecurrenceRule">
+            <summary>
+            Regra de recorrência (<c>RRULE</c>) do evento, opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.RecurrenceUntilUtc">
+            <summary>
+            Limite de recorrência por data/hora (UTC), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.RecurrenceCount">
+            <summary>
+            Limite de recorrência por número de ocorrências, opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.CreatedByUserId">
+            <summary>
+            Identificador do utilizador que criou o evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.CreatedByName">
+            <summary>
+            Nome do utilizador que criou o evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.CreatedAtUtc">
+            <summary>
+            Data/hora de criação (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.UpdatedAtUtc">
+            <summary>
+            Data/hora da última atualização (UTC), se existir.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.ParticipantUserIds">
+            <summary>
+            Lista de utilizadores participantes no evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.VisibleToUserIds">
+            <summary>
+            Lista de utilizadores que conseguem ver o evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventDetailResponse.ReminderOffsetsMinutes">
+            <summary>
+            Lembretes em minutos antes do início da ocorrência.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse">
+            <summary>
+            Resposta com informação de uma ocorrência de evento de calendário.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.Id">
+            <summary>
+            Identificador do evento pai.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.ExceptionEventId">
+            <summary>
+            Identificador do evento de exceção (instância alterada/cancelada), se aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.Title">
+            <summary>
+            Título do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.IsAllDay">
+            <summary>
+            Indica se o evento é de dia inteiro.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.StartUtc">
+            <summary>
+            Início da ocorrência (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.EndUtc">
+            <summary>
+            Fim da ocorrência (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.Location">
+            <summary>
+            Localização do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.Note">
+            <summary>
+            Nota/descrição do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.ColorHex">
+            <summary>
+            Cor do evento em hexadecimal (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.RecurrenceRule">
+            <summary>
+            Regra de recorrência (<c>RRULE</c>) do evento, opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.RecurrenceUntilUtc">
+            <summary>
+            Limite de recorrência por data/hora (UTC), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.RecurrenceCount">
+            <summary>
+            Limite de recorrência por número de ocorrências, opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.TimezoneId">
+            <summary>
+            Identificador do fuso horário (IANA), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.CreatedByUserId">
+            <summary>
+            Identificador do utilizador que criou o evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.CreatedAtUtc">
+            <summary>
+            Data/hora de criação (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.UpdatedAtUtc">
+            <summary>
+            Data/hora da última atualização (UTC), se existir.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.ParticipantUserIds">
+            <summary>
+            Lista de utilizadores participantes no evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.VisibleToUserIds">
+            <summary>
+            Lista de utilizadores que conseguem ver o evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CalendarEventResponse.ReminderOffsetsMinutes">
+            <summary>
+            Lembretes em minutos antes do início da ocorrência.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Calendar.CopyCalendarEventRequest">
+            <summary>
+            Pedido para copiar um evento para um conjunto de datas.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CopyCalendarEventRequest.DatesUtc">
+            <summary>
+            Datas (UTC) para as quais o evento deve ser copiado.
+            </summary>
+            <remarks>
+            Limite máximo recomendado: 30 datas por pedido.
+            </remarks>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest">
+            <summary>
+            Pedido para criar um novo evento de calendário.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.Title">
+            <summary>
+            Título do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.IsAllDay">
+            <summary>
+            Indica se o evento é de dia inteiro.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.StartUtc">
+            <summary>
+            Data/hora de início (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.EndUtc">
+            <summary>
+            Data/hora de fim (UTC).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.ParticipantsAllMembers">
+            <summary>
+            Quando <see langword="true"/>, adiciona todos os membros da família como participantes.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.ParticipantUserIds">
+            <summary>
+            Lista de participantes (quando <see cref="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.ParticipantsAllMembers"/> é <see langword="false"/>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.VisibleToAllMembers">
+            <summary>
+            Quando <see langword="true"/>, o evento fica visível para todos os membros da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.VisibleToUserIds">
+            <summary>
+            Lista de utilizadores com visibilidade (quando <see cref="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.VisibleToAllMembers"/> é <see langword="false"/>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.ReminderOffsetsMinutes">
+            <summary>
+            Lembretes em minutos antes do início do evento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.Location">
+            <summary>
+            Localização do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.Note">
+            <summary>
+            Nota/descrição do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.ColorHex">
+            <summary>
+            Cor do evento em hexadecimal (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.RecurrenceRule">
+            <summary>
+            Regra de recorrência (<c>RRULE</c>) para criar um evento recorrente (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.RecurrenceUntilUtc">
+            <summary>
+            Limite de recorrência por data/hora (UTC), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.RecurrenceCount">
+            <summary>
+            Limite de recorrência por número de ocorrências, opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.CreateCalendarEventRequest.TimezoneId">
+            <summary>
+            Identificador do fuso horário (IANA), opcional.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Calendar.DuplicateCalendarEventRequest">
+            <summary>
+            Pedido para duplicar um evento numa nova data/hora.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.DuplicateCalendarEventRequest.NewStartUtc">
+            <summary>
+            Novo início (UTC) para o evento duplicado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.DuplicateCalendarEventRequest.NewEndUtc">
+            <summary>
+            Novo fim (UTC) para o evento duplicado.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest">
+            <summary>
+            Pedido para atualizar um evento de calendário.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.Title">
+            <summary>
+            Novo título do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.IsAllDay">
+            <summary>
+            Indica se o evento passa a ser de dia inteiro (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.StartUtc">
+            <summary>
+            Novo início (UTC), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.EndUtc">
+            <summary>
+            Novo fim (UTC), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.ParticipantsAllMembers">
+            <summary>
+            Quando definido, indica se todos os membros devem ser participantes (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.ParticipantUserIds">
+            <summary>
+            Lista de participantes (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.VisibleToAllMembers">
+            <summary>
+            Quando definido, indica se o evento é visível para todos os membros (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.VisibleToUserIds">
+            <summary>
+            Lista de utilizadores com visibilidade (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.ReminderOffsetsMinutes">
+            <summary>
+            Lembretes em minutos antes do início do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.Location">
+            <summary>
+            Nova localização (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.Note">
+            <summary>
+            Nova nota/descrição (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.ColorHex">
+            <summary>
+            Nova cor em hexadecimal (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.RecurrenceRule">
+            <summary>
+            Regra de recorrência (<c>RRULE</c>) do evento pai (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.RecurrenceUntilUtc">
+            <summary>
+            Limite de recorrência por data/hora (UTC), opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.RecurrenceCount">
+            <summary>
+            Limite de recorrência por número de ocorrências, opcional.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateCalendarEventRequest.TimezoneId">
+            <summary>
+            Identificador do fuso horário (IANA), opcional.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest">
+            <summary>
+            Pedido para atualizar um evento recorrente, com controlo de âmbito (ocorrência/serie/futuro).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.Scope">
+            <summary>
+            Âmbito da alteração (ocorrência atual, todas as ocorrências, ou a partir da ocorrência atual).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.OccurrenceStartUtc">
+            <summary>
+            Início (UTC) da ocorrência a editar.
+            </summary>
+            <remarks>
+            Obrigatório quando <see cref="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.Scope"/> é <see cref="F:DomusUnify.Application.Recurrence.CalendarEditScope.ThisOccurrence"/> ou
+            <see cref="F:DomusUnify.Application.Recurrence.CalendarEditScope.ThisAndFuture"/>.
+            </remarks>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.Title">
+            <summary>
+            Novo título (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.IsAllDay">
+            <summary>
+            Indica se passa a ser de dia inteiro (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.NewStartUtc">
+            <summary>
+            Novo início (UTC) (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.NewEndUtc">
+            <summary>
+            Novo fim (UTC) (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.CancelThisOccurrence">
+            <summary>
+            Quando <see langword="true"/>, cancela a ocorrência selecionada.
+            </summary>
+            <remarks>
+            Quando <see cref="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.Scope"/> é <see cref="F:DomusUnify.Application.Recurrence.CalendarEditScope.ThisOccurrence"/>, pode criar uma exceção cancelada.
+            </remarks>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.ParticipantsAllMembers">
+            <summary>
+            Quando definido, indica se todos os membros devem ser participantes (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.ParticipantUserIds">
+            <summary>
+            Lista de participantes (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.VisibleToAllMembers">
+            <summary>
+            Quando definido, indica se o evento é visível para todos os membros (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.VisibleToUserIds">
+            <summary>
+            Lista de utilizadores com visibilidade (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.ReminderOffsetsMinutes">
+            <summary>
+            Lembretes em minutos antes do início do evento (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.Location">
+            <summary>
+            Nova localização (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.Note">
+            <summary>
+            Nova nota/descrição (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.ColorHex">
+            <summary>
+            Nova cor em hexadecimal (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Calendar.UpdateRecurringEventRequest.TimezoneId">
+            <summary>
+            Identificador do fuso horário (IANA), opcional.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Categories.CategoryResponse">
+            <summary>
+            Resposta com informação de uma categoria de itens (listas).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.CategoryResponse.Id">
+            <summary>
+            Identificador da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.CategoryResponse.Name">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.CategoryResponse.IconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.CategoryResponse.SortOrder">
+            <summary>
+            Ordem de apresentação.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Categories.CreateCategoryRequest">
+            <summary>
+            Pedido para criar uma nova categoria de itens (listas).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.CreateCategoryRequest.Name">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.CreateCategoryRequest.IconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.CreateCategoryRequest.SortOrder">
+            <summary>
+            Ordem de apresentação (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Categories.UpdateCategoryRequest">
+            <summary>
+            Pedido para atualizar uma categoria de itens (listas).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.UpdateCategoryRequest.Name">
+            <summary>
+            Novo nome da categoria (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.UpdateCategoryRequest.IconKey">
+            <summary>
+            Nova chave do ícone (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.UpdateCategoryRequest.SortOrder">
+            <summary>
+            Nova ordem de apresentação (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Families.CreateFamilyRequest">
+            <summary>
+            Pedido para criar uma nova família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.CreateFamilyRequest.Name">
+            <summary>
+            Nome da família.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Families.FamilyMemberResponse">
+            <summary>
+            Resposta com informação de um membro de uma família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberResponse.UserId">
+            <summary>
+            Identificador do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberResponse.Name">
+            <summary>
+            Nome do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberResponse.Email">
+            <summary>
+            Email do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberResponse.Role">
+            <summary>
+            Papel do utilizador na família.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Families.FamilyResponse">
+            <summary>
+            Resposta com informação de uma família no contexto do utilizador autenticado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyResponse.Id">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyResponse.Name">
+            <summary>
+            Nome da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyResponse.Role">
+            <summary>
+            Papel do utilizador autenticado na família.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Families.SetCurrentFamilyRequest">
+            <summary>
+            Pedido para definir a família ativa (contexto atual) do utilizador autenticado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.SetCurrentFamilyRequest.FamilyId">
+            <summary>
+            Identificador da família a definir como ativa.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.AccountSummaryResponse">
+            <summary>
+            Resposta com resumo de despesas/rendimentos por conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.AccountSummaryResponse.AccountId">
+            <summary>
+            Identificador da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.AccountSummaryResponse.Name">
+            <summary>
+            Nome da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.AccountSummaryResponse.Total">
+            <summary>
+            Total agregado para a conta, no intervalo considerado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.AccountSummaryResponse.Percentage">
+            <summary>
+            Percentagem do total em relação ao somatório do intervalo (0–100).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.BudgetTotalsResponse">
+            <summary>
+            Resposta com totais e saldos de um orçamento para um período.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.BudgetTotalsResponse.Today">
+            <summary>
+            Data de hoje (UTC) usada no cálculo.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.BudgetTotalsResponse.PeriodStart">
+            <summary>
+            Data de início do período calculado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.BudgetTotalsResponse.PeriodEnd">
+            <summary>
+            Data de fim do período calculado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.BudgetTotalsResponse.IncomeThisPeriod">
+            <summary>
+            Rendimentos do período.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.BudgetTotalsResponse.ExpensesThisPeriod">
+            <summary>
+            Despesas do período.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.BudgetTotalsResponse.BalanceThisPeriod">
+            <summary>
+            Saldo do período (rendimentos - despesas).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.BudgetTotalsResponse.BalanceToday">
+            <summary>
+            Saldo do dia (hoje).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.BudgetTotalsResponse.TotalExpenses">
+            <summary>
+            Despesas totais acumuladas (sem limitar ao período).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.CategorySummaryResponse">
+            <summary>
+            Resposta com resumo de despesas/rendimentos por categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CategorySummaryResponse.CategoryId">
+            <summary>
+            Identificador da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CategorySummaryResponse.CategoryName">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CategorySummaryResponse.CategoryIconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CategorySummaryResponse.Total">
+            <summary>
+            Total agregado para a categoria, no intervalo considerado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CategorySummaryResponse.Percentage">
+            <summary>
+            Percentagem do total em relação ao somatório do intervalo (0–100).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.CreateFinanceAccountRequest">
+            <summary>
+            Pedido para criar uma nova conta financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceAccountRequest.Type">
+            <summary>
+            Tipo de conta (ex.: <c>Checking</c>, <c>Cash</c>, <c>CreditCard</c>, etc.).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceAccountRequest.Name">
+            <summary>
+            Nome da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceAccountRequest.IconKey">
+            <summary>
+            Chave do ícone da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceAccountRequest.SortOrder">
+            <summary>
+            Ordem de apresentação.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.CreateFinanceCategoryRequest">
+            <summary>
+            Pedido para criar uma nova categoria financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceCategoryRequest.Type">
+            <summary>
+            Tipo de categoria (<c>Expense</c> ou <c>Income</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceCategoryRequest.Name">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceCategoryRequest.IconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceCategoryRequest.SortOrder">
+            <summary>
+            Ordem de apresentação.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest">
+            <summary>
+            Pedido para criar uma nova transação financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.Amount">
+            <summary>
+            Valor monetário da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.Title">
+            <summary>
+            Título/descrição curta da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.Type">
+            <summary>
+            Tipo de transação (<c>Expense</c> ou <c>Income</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.CategoryId">
+            <summary>
+            Identificador da categoria financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.AccountId">
+            <summary>
+            Identificador da conta associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.PaidByUserId">
+            <summary>
+            Identificador do membro que pagou/recebeu a transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.Date">
+            <summary>
+            Data da transação (opcional). Quando omitida, pode ser assumida a data atual.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.IsPaid">
+            <summary>
+            Indica se a transação está marcada como paga.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.RepeatType">
+            <summary>
+            Tipo de repetição (por omissão <c>None</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.RepeatInterval">
+            <summary>
+            Intervalo de repetição quando <see cref="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.RepeatType"/> é <c>Custom</c>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.RepeatUnit">
+            <summary>
+            Unidade de repetição quando <see cref="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.RepeatType"/> é <c>Custom</c>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.ReminderType">
+            <summary>
+            Tipo de lembrete (por omissão <c>None</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.ReminderValue">
+            <summary>
+            Valor do lembrete quando <see cref="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.ReminderType"/> é <c>Custom</c>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.ReminderUnit">
+            <summary>
+            Unidade do lembrete quando <see cref="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.ReminderType"/> é <c>Custom</c>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.CreateFinanceTransactionRequest.Note">
+            <summary>
+            Nota adicional (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.FinanceAccountResponse">
+            <summary>
+            Resposta com informação de uma conta financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceAccountResponse.Id">
+            <summary>
+            Identificador da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceAccountResponse.Type">
+            <summary>
+            Tipo de conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceAccountResponse.Name">
+            <summary>
+            Nome da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceAccountResponse.IconKey">
+            <summary>
+            Chave do ícone da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceAccountResponse.SortOrder">
+            <summary>
+            Ordem de apresentação.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.FinanceCategoryResponse">
+            <summary>
+            Resposta com informação de uma categoria financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceCategoryResponse.Id">
+            <summary>
+            Identificador da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceCategoryResponse.Type">
+            <summary>
+            Tipo de categoria (<c>Expense</c> ou <c>Income</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceCategoryResponse.Name">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceCategoryResponse.IconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceCategoryResponse.SortOrder">
+            <summary>
+            Ordem de apresentação.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse">
+            <summary>
+            Resposta com informação de uma transação financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.Id">
+            <summary>
+            Identificador da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.BudgetId">
+            <summary>
+            Identificador do orçamento.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.Amount">
+            <summary>
+            Valor monetário da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.Title">
+            <summary>
+            Título/descrição curta da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.Type">
+            <summary>
+            Tipo de transação (<c>Expense</c> ou <c>Income</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.CategoryId">
+            <summary>
+            Identificador da categoria financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.CategoryName">
+            <summary>
+            Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.CategoryIconKey">
+            <summary>
+            Chave do ícone da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.AccountId">
+            <summary>
+            Identificador da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.AccountName">
+            <summary>
+            Nome da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.AccountIconKey">
+            <summary>
+            Chave do ícone da conta.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.PaidByUserId">
+            <summary>
+            Identificador do membro que pagou/recebeu a transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.PaidByUserName">
+            <summary>
+            Nome do membro que pagou/recebeu a transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.Date">
+            <summary>
+            Data da transação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.IsPaid">
+            <summary>
+            Indica se a transação está marcada como paga.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.PaidAtUtc">
+            <summary>
+            Data/hora (UTC) em que a transação foi marcada como paga, se aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.RepeatType">
+            <summary>
+            Tipo de repetição.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.RepeatInterval">
+            <summary>
+            Intervalo de repetição quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.RepeatUnit">
+            <summary>
+            Unidade de repetição quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.ReminderType">
+            <summary>
+            Tipo de lembrete.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.ReminderValue">
+            <summary>
+            Valor do lembrete quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.ReminderUnit">
+            <summary>
+            Unidade do lembrete quando aplicável.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.FinanceTransactionResponse.Note">
+            <summary>
+            Nota adicional (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.MemberSummaryResponse">
+            <summary>
+            Resposta com resumo de despesas/rendimentos por membro (pago por).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.MemberSummaryResponse.UserId">
+            <summary>
+            Identificador do utilizador/membro.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.MemberSummaryResponse.Name">
+            <summary>
+            Nome do membro.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.MemberSummaryResponse.Total">
+            <summary>
+            Total agregado para o membro, no intervalo considerado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.MemberSummaryResponse.Percentage">
+            <summary>
+            Percentagem do total em relação ao somatório do intervalo (0–100).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.UpdateFinanceAccountRequest">
+            <summary>
+            Pedido para atualizar uma conta financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceAccountRequest.Name">
+            <summary>
+            Novo nome (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceAccountRequest.IconKey">
+            <summary>
+            Nova chave do ícone (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceAccountRequest.SortOrder">
+            <summary>
+            Nova ordem de apresentação (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.UpdateFinanceCategoryRequest">
+            <summary>
+            Pedido para atualizar uma categoria financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceCategoryRequest.Name">
+            <summary>
+            Novo nome (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceCategoryRequest.IconKey">
+            <summary>
+            Nova chave do ícone (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceCategoryRequest.SortOrder">
+            <summary>
+            Nova ordem de apresentação (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest">
+            <summary>
+            Pedido para atualizar uma transação financeira.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.Amount">
+            <summary>
+            Novo valor monetário (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.Title">
+            <summary>
+            Novo título/descrição (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.Type">
+            <summary>
+            Novo tipo (<c>Expense</c> ou <c>Income</c>) (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.CategoryId">
+            <summary>
+            Nova categoria (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.AccountId">
+            <summary>
+            Nova conta (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.PaidByUserId">
+            <summary>
+            Novo membro que pagou/recebeu (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.Date">
+            <summary>
+            Nova data (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.IsPaid">
+            <summary>
+            Indica se a transação passa a estar marcada como paga (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.RepeatType">
+            <summary>
+            Novo tipo de repetição (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.RepeatInterval">
+            <summary>
+            Novo intervalo de repetição (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.RepeatUnit">
+            <summary>
+            Nova unidade de repetição (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.ReminderType">
+            <summary>
+            Novo tipo de lembrete (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.ReminderValue">
+            <summary>
+            Novo valor do lembrete (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.ReminderUnit">
+            <summary>
+            Nova unidade do lembrete (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.Note">
+            <summary>
+            Nova nota (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Finance.UpdateFinanceTransactionRequest.NoteChangeRequested">
+            <summary>
+            Indica explicitamente que a nota deve ser alterada/limpa, mesmo que o valor seja <see langword="null"/>.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Lists.CreateListItemRequest">
+            <summary>
+            Pedido para criar um novo item numa lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListItemRequest.Name">
+            <summary>
+            Nome do item.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListItemRequest.CategoryId">
+            <summary>
+            Identificador da categoria do item (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Lists.CreateListRequest">
+            <summary>
+            Pedido para criar uma nova lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListRequest.Name">
+            <summary>
+            Nome da lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListRequest.Type">
+            <summary>
+            Tipo de lista (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListRequest.ColorHex">
+            <summary>
+            Cor da lista em hexadecimal (ex.: <c>#FFAA00</c>).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Lists.ListItemResponse">
+            <summary>
+            Resposta com informação de um item de lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.Id">
+            <summary>
+            Identificador do item.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.ListId">
+            <summary>
+            Identificador da lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.Name">
+            <summary>
+            Nome do item.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.IsCompleted">
+            <summary>
+            Indica se o item está concluído.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.CategoryId">
+            <summary>
+            Identificador da categoria do item (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.CompletedAtUtc">
+            <summary>
+            Data/hora de conclusão (UTC), se concluído.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.CompletedByUserId">
+            <summary>
+            Identificador do utilizador que concluiu o item, se aplicável.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Lists.ListResponse">
+            <summary>
+            Resposta com informação de uma lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.Id">
+            <summary>
+            Identificador da lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.Name">
+            <summary>
+            Nome da lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.Type">
+            <summary>
+            Tipo de lista (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.ColorHex">
+            <summary>
+            Cor da lista em hexadecimal.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.ItemsCount">
+            <summary>
+            Número total de itens na lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.CompletedCount">
+            <summary>
+            Número de itens concluídos.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Lists.RenameListRequest">
+            <summary>
+            Pedido para renomear uma lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.RenameListRequest.Name">
+            <summary>
+            Novo nome da lista.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Lists.UpdateListItemRequest">
+            <summary>
+            Pedido para atualizar um item de lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListItemRequest.Name">
+            <summary>
+            Novo nome do item (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListItemRequest.IsCompleted">
+            <summary>
+            Indica se o item passa a estar concluído (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListItemRequest.CategoryId">
+            <summary>
+            Identificador da categoria do item (opcional).
+            </summary>
+            <remarks>
+            Tipicamente é um GUID; é recebido como JSON para suportar pedidos onde o valor pode vir nulo/variável.
+            </remarks>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Lists.UpdateListRequest">
+            <summary>
+            Pedido para atualizar uma lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListRequest.Name">
+            <summary>
+            Nome da lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListRequest.ColorHex">
+            <summary>
+            Cor da lista em hexadecimal (ex.: <c>#FFAA00</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListRequest.Type">
+            <summary>
+            Tipo de lista (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.Hubs.FamilyHub">
+            <summary>
+            Hub SignalR para comunicação em tempo real ao nível da família.
+            </summary>
+            <remarks>
+            Os clientes podem juntar-se a um grupo por família para receber eventos (ex.: alterações a transações, listas,
+            calendário, etc.).
+            </remarks>
+        </member>
+        <member name="M:DomusUnify.Api.Hubs.FamilyHub.JoinFamily(System.Guid)">
+            <summary>
+            Associa a ligação atual ao grupo da família, permitindo receber eventos dessa família.
+            </summary>
+            <param name="familyId">Identificador da família.</param>
+        </member>
+        <member name="M:DomusUnify.Api.Hubs.FamilyHub.LeaveFamily(System.Guid)">
+            <summary>
+            Remove a ligação atual do grupo da família.
+            </summary>
+            <param name="familyId">Identificador da família.</param>
+        </member>
+        <member name="M:DomusUnify.Api.Hubs.FamilyHub.GroupName(System.Guid)">
+            <summary>
+            Constrói o nome do grupo SignalR para uma família.
+            </summary>
+            <param name="familyId">Identificador da família.</param>
+            <returns>Nome do grupo.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Realtime.SignalRRealtimeNotifier">
+            <summary>
+            Implementação de <see cref="T:DomusUnify.Application.Common.Realtime.IRealtimeNotifier"/> baseada em SignalR.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Realtime.SignalRRealtimeNotifier.NotifyFamilyAsync(System.Guid,System.String,System.Object,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Api.Services.Auth.IJwtTokenService">
+            <summary>
+            Serviço responsável por emitir tokens JWT para autenticação.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Services.Auth.IJwtTokenService.CreateToken(DomusUnify.Domain.Entities.User)">
+            <summary>
+            Cria um token JWT para um utilizador.
+            </summary>
+            <param name="user">Utilizador autenticado.</param>
+            <returns>Token JWT e a data/hora de expiração (UTC).</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Services.Auth.JwtTokenService">
+            <summary>
+            Implementação de <see cref="T:DomusUnify.Api.Services.Auth.IJwtTokenService"/> baseada na configuração da aplicação.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Services.Auth.JwtTokenService.CreateToken(DomusUnify.Domain.Entities.User)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Api.Services.CurrentUser.CurrentUserContext">
+            <summary>
+            Implementação do contexto do utilizador atual baseada no <see cref="T:Microsoft.AspNetCore.Http.IHttpContextAccessor"/>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.Services.CurrentUser.CurrentUserContext.UserId">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Api.Services.CurrentUser.CurrentUserContext.GetCurrentFamilyIdAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Api.Services.CurrentUser.ICurrentUserContext">
+            <summary>
+            Fornece informação sobre o utilizador autenticado e o contexto (família ativa).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.Services.CurrentUser.ICurrentUserContext.UserId">
+            <summary>
+            Identificador do utilizador autenticado.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Services.CurrentUser.ICurrentUserContext.GetCurrentFamilyIdAsync(System.Threading.CancellationToken)">
+            <summary>
+            Obtém o identificador da família atualmente ativa para o utilizador autenticado.
+            </summary>
+            <remarks>
+            A família ativa é usada como contexto padrão para endpoints que operam por família.
+            </remarks>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Identificador da família ativa.</returns>
+        </member>
+    </members>
+</doc>

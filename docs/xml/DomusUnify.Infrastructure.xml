@@ -1,0 +1,238 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>DomusUnify.Infrastructure</name>
+    </assembly>
+    <members>
+        <member name="T:DomusUnify.Infrastructure.DependencyInjection">
+            <summary>
+            Registo de dependências da camada de infraestrutura.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Infrastructure.DependencyInjection.AddInfrastructure(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Adiciona serviços de infraestrutura ao contentor de injeção de dependências.
+            </summary>
+            <remarks>
+            Configura o <see cref="T:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext"/> usando a string de ligação <c>DefaultConnection</c>.
+            </remarks>
+            <param name="services">Coleção de serviços.</param>
+            <param name="configuration">Configuração da aplicação.</param>
+            <returns>A mesma coleção de serviços, para encadeamento.</returns>
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.DbSeeder">
+            <summary>
+            Utilitário para semear dados iniciais na base de dados.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.DbSeeder.SeedAsync(DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext)">
+            <summary>
+            Aplica migrações e cria um conjunto mínimo de dados (se a base de dados estiver vazia).
+            </summary>
+            <remarks>
+            Cria um utilizador administrador e uma família por defeito, para facilitar ambientes de desenvolvimento.
+            </remarks>
+            <param name="db">Contexto de base de dados.</param>
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext">
+            <summary>
+            Contexto EF Core (SQL Server) da aplicação.
+            </summary>
+            <remarks>
+            Implementa <see cref="T:DomusUnify.Application.Common.Interfaces.IAppDbContext"/> para ser consumido pela camada de aplicação.
+            </remarks>
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.#ctor(Microsoft.EntityFrameworkCore.DbContextOptions{DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext})">
+            <summary>
+            Inicializa uma nova instância do contexto.
+            </summary>
+            <param name="options">Opções de configuração do EF Core.</param>
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.Users">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.Families">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.FamilyMembers">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.FamilyInvites">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.Lists">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.ListItems">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.ItemCategories">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.CalendarEvents">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.CalendarEventParticipants">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.CalendarEventVisibilities">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.CalendarEventReminders">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.FamilyCalendarSettings">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.UserCalendarSettings">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.Budgets">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.BudgetUserAccess">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.BudgetUserSettings">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.BudgetCategoryLimits">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.FinanceCategories">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.FinanceAccounts">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.FinanceTransactions">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <summary>
+            Configura o mapeamento das entidades (tabelas, chaves, índices e relações).
+            </summary>
+            <param name="modelBuilder">Construtor de modelo EF Core.</param>
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.InitialCreate">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddCurrentFamilyToUser">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddCurrentFamilyToUser.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddCurrentFamilyToUser.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddCurrentFamilyToUser.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.ListsEndpoints">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.ListsEndpoints.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.ListsEndpoints.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.ListsEndpoints.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddManagedCategories">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddManagedCategories.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddManagedCategories.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddManagedCategories.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.ChangeData">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.ChangeData.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.ChangeData.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.ChangeData.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddCalendarModule">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddCalendarModule.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddCalendarModule.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddCalendarModule.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddIsCancelledToCalendarEvents">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddIsCancelledToCalendarEvents.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddIsCancelledToCalendarEvents.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddIsCancelledToCalendarEvents.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddRecurrenceIdUtcToCalendarEvents">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddRecurrenceIdUtcToCalendarEvents.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddRecurrenceIdUtcToCalendarEvents.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddRecurrenceIdUtcToCalendarEvents.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddFamilyInvites">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddFamilyInvites.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddFamilyInvites.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddFamilyInvites.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddBudgetModule">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddBudgetModule.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddBudgetModule.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddBudgetModule.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

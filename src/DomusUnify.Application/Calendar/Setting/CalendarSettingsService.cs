@@ -15,6 +15,11 @@ public sealed class CalendarSettingsService : ICalendarSettingsService
     private readonly IAppDbContext _db;
     private readonly IRealtimeNotifier _rt;
 
+    /// <summary>
+    /// Inicializa uma nova instância de <see cref="CalendarSettingsService"/>.
+    /// </summary>
+    /// <param name="db">Contexto de base de dados.</param>
+    /// <param name="rt">Notificador em tempo real.</param>
     public CalendarSettingsService(IAppDbContext db, IRealtimeNotifier rt)
     {
         _db = db;
