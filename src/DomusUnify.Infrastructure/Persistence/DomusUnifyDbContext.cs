@@ -12,6 +12,7 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Family> Families => Set<Family>();
     public DbSet<FamilyMember> FamilyMembers => Set<FamilyMember>();
+    public DbSet<FamilyInvite> FamilyInvites => Set<FamilyInvite>();
     public DbSet<SharedList> Lists => Set<SharedList>();
     public DbSet<ListItem> ListItems => Set<ListItem>();
     public DbSet<ItemCategory> ItemCategories => Set<ItemCategory>();
@@ -21,6 +22,15 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     public DbSet<CalendarEventReminder> CalendarEventReminders => Set<CalendarEventReminder>();
     public DbSet<FamilyCalendarSettings> FamilyCalendarSettings => Set<FamilyCalendarSettings>();
     public DbSet<UserCalendarSettings> UserCalendarSettings => Set<UserCalendarSettings>();
+
+    // BUDGET / FINANCE
+    public DbSet<Budget> Budgets => Set<Budget>();
+    public DbSet<BudgetUserAccess> BudgetUserAccess => Set<BudgetUserAccess>();
+    public DbSet<BudgetUserSettings> BudgetUserSettings => Set<BudgetUserSettings>();
+    public DbSet<BudgetCategoryLimit> BudgetCategoryLimits => Set<BudgetCategoryLimit>();
+    public DbSet<FinanceCategory> FinanceCategories => Set<FinanceCategory>();
+    public DbSet<FinanceAccount> FinanceAccounts => Set<FinanceAccount>();
+    public DbSet<FinanceTransaction> FinanceTransactions => Set<FinanceTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,6 +93,29 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        // FAMILY INVITE
+        modelBuilder.Entity<FamilyInvite>(b =>
+        {
+            b.ToTable("FamilyInvites");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.TokenHash).IsRequired();
+            b.HasIndex(x => x.TokenHash).IsUnique();
+
+            b.HasOne(x => x.Family)
+                .WithMany()
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.InvitedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.InvitedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasIndex(x => new { x.FamilyId, x.ExpiresAtUtc });
+        });
+
 
         // ITEM CATEGORY
         modelBuilder.Entity<ItemCategory>(b =>
@@ -282,6 +315,203 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
 
             b.HasIndex(x => new { x.SharedListId, x.CategoryId });
 
+        });
+
+        // FINANCE CATEGORY
+        modelBuilder.Entity<FinanceCategory>(b =>
+        {
+            b.ToTable("FinanceCategories");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Name).HasMaxLength(80).IsRequired();
+            b.Property(x => x.IconKey).HasMaxLength(40).IsRequired();
+            b.Property(x => x.SortOrder).IsRequired();
+            b.Property(x => x.Type).IsRequired();
+
+            b.HasIndex(x => new { x.FamilyId, x.Type, x.Name }).IsUnique();
+
+            b.HasOne(x => x.Family)
+                .WithMany(x => x.FinanceCategories)
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // FINANCE ACCOUNT
+        modelBuilder.Entity<FinanceAccount>(b =>
+        {
+            b.ToTable("FinanceAccounts");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            b.Property(x => x.IconKey).HasMaxLength(40).IsRequired();
+            b.Property(x => x.SortOrder).IsRequired();
+            b.Property(x => x.Type).IsRequired();
+
+            b.HasIndex(x => new { x.FamilyId, x.Name }).IsUnique();
+
+            b.HasOne(x => x.Family)
+                .WithMany(x => x.FinanceAccounts)
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // BUDGET
+        modelBuilder.Entity<Budget>(b =>
+        {
+            b.ToTable("Budgets");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            b.Property(x => x.IconKey).HasMaxLength(40).IsRequired();
+            b.Property(x => x.CurrencyCode).HasMaxLength(3).IsRequired();
+
+            b.Property(x => x.SpendingLimit).HasColumnType("decimal(18,2)");
+
+            b.Property(x => x.Type).IsRequired();
+            b.Property(x => x.PeriodType);
+            b.Property(x => x.StartDate);
+            b.Property(x => x.EndDate);
+            b.Property(x => x.SemiMonthlyPattern);
+
+            b.Property(x => x.MainIndicator).IsRequired();
+            b.Property(x => x.OnlyPaidInTotals).IsRequired();
+            b.Property(x => x.TransactionOrder).IsRequired();
+            b.Property(x => x.UpcomingDisplayMode).IsRequired();
+
+            b.Property(x => x.VisibilityMode).IsRequired();
+
+            b.HasIndex(x => new { x.FamilyId, x.Name }).IsUnique();
+            b.HasIndex(x => x.FamilyId);
+
+            b.HasOne(x => x.Family)
+                .WithMany(x => x.Budgets)
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.OwnerUser)
+                .WithMany()
+                .HasForeignKey(x => x.OwnerUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // BUDGET USER ACCESS (specific members)
+        modelBuilder.Entity<BudgetUserAccess>(b =>
+        {
+            b.ToTable("BudgetUserAccess");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.CreatedAtUtc).IsRequired();
+
+            b.HasOne(x => x.Budget)
+                .WithMany(e => e.AllowedUsers)
+                .HasForeignKey(x => x.BudgetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasIndex(x => new { x.BudgetId, x.UserId }).IsUnique();
+            b.HasIndex(x => x.UserId);
+        });
+
+        // BUDGET USER SETTINGS
+        modelBuilder.Entity<BudgetUserSettings>(b =>
+        {
+            b.ToTable("BudgetUserSettings");
+            b.HasKey(x => x.Id);
+
+            b.HasIndex(x => new { x.BudgetId, x.UserId }).IsUnique();
+            b.HasIndex(x => x.UserId);
+
+            b.Property(x => x.DailyReminderTime)
+                .HasConversion(
+                    t => t.ToTimeSpan(),
+                    t => TimeOnly.FromTimeSpan(t));
+
+            b.HasOne(x => x.Budget)
+                .WithMany(x => x.UserSettings)
+                .HasForeignKey(x => x.BudgetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // BUDGET CATEGORY LIMIT
+        modelBuilder.Entity<BudgetCategoryLimit>(b =>
+        {
+            b.ToTable("BudgetCategoryLimits");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Amount)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            b.HasIndex(x => new { x.BudgetId, x.CategoryId }).IsUnique();
+
+            b.HasOne(x => x.Budget)
+                .WithMany(x => x.CategoryLimits)
+                .HasForeignKey(x => x.BudgetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.Category)
+                .WithMany()
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // FINANCE TRANSACTION
+        modelBuilder.Entity<FinanceTransaction>(b =>
+        {
+            b.ToTable("FinanceTransactions");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            b.Property(x => x.Note).HasMaxLength(2000);
+
+            b.Property(x => x.Amount)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            b.Property(x => x.Date).IsRequired();
+            b.Property(x => x.Type).IsRequired();
+
+            b.Property(x => x.IsPaid).IsRequired();
+
+            b.HasIndex(x => new { x.BudgetId, x.Date });
+            b.HasIndex(x => new { x.BudgetId, x.Type, x.Date });
+            b.HasIndex(x => x.CategoryId);
+            b.HasIndex(x => x.AccountId);
+            b.HasIndex(x => x.PaidByUserId);
+
+            b.HasOne(x => x.Budget)
+                .WithMany(x => x.Transactions)
+                .HasForeignKey(x => x.BudgetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.Category)
+                .WithMany()
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasOne(x => x.PaidByUser)
+                .WithMany()
+                .HasForeignKey(x => x.PaidByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasOne(x => x.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         // EXPENSE

@@ -7,6 +7,11 @@ using DomusUnify.Application.Lists;
 using DomusUnify.Application.Common.Realtime;
 using DomusUnify.Application.Categories;
 using DomusUnify.Application.Calendar;
+using DomusUnify.Application.Family;
+using DomusUnify.Application.Budgets;
+using DomusUnify.Application.FinanceCategories;
+using DomusUnify.Application.FinanceAccounts;
+using DomusUnify.Application.FinanceTransactions;
 using DomusUnify.Api.Services.Auth;
 using DomusUnify.Api.Services.CurrentUser;
 using DomusUnify.Api.Realtime;
@@ -91,7 +96,7 @@ builder.Services
             ClockSkew = TimeSpan.FromSeconds(30)
         };
 
-        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
@@ -124,6 +129,15 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<ICalendarSettingsService, CalendarSettingsService>();
 builder.Services.AddScoped<IRecurrenceService, RecurrenceService>();
+builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddScoped<IFinanceCategoryService, FinanceCategoryService>();
+builder.Services.AddScoped<IFinanceAccountService, FinanceAccountService>();
+builder.Services.AddScoped<IFinanceTransactionService, FinanceTransactionService>();
+
+builder.Services.Configure<FamilyInviteOptions>(
+    builder.Configuration.GetSection(FamilyInviteOptions.SectionName));
+
+builder.Services.AddScoped<IFamilyInviteService, FamilyInviteService>();
 
 // Realtime
 builder.Services.AddSignalR();

@@ -6,6 +6,8 @@ using DomusUnify.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using DomusUnify.Api.Services.CurrentUser;
+using DomusUnify.Application.Family;
 
 namespace DomusUnify.Api.Controllers;
 
@@ -15,8 +17,11 @@ namespace DomusUnify.Api.Controllers;
 public class FamiliesController : ControllerBase
 {
     private readonly DomusUnifyDbContext _db;
+    private readonly IFamilyInviteService _svc;
+    private readonly ICurrentUserContext _ctx;
 
-    public FamiliesController(DomusUnifyDbContext db) => _db = db;
+
+    public FamiliesController(DomusUnifyDbContext db, IFamilyInviteService svc, ICurrentUserContext ctx) => (_db, _svc, _ctx) = (db, svc, ctx);
 
     /// <summary>
     /// Cria uma nova família e atribui o utilizador autenticado como administrador.
@@ -62,6 +67,13 @@ public class FamiliesController : ControllerBase
             Name = family.Name,
             Role = membership.Role.ToString()
         });
+    }
+
+    [HttpPost("{familyId:guid}/invites")]
+    public async Task<ActionResult<CreateInviteResult>> CreateInvite(Guid familyId, [FromQuery] int daysValid = 7, [FromQuery] int? maxUses = null, CancellationToken ct = default)
+    {
+        var res = await _svc.CreateInviteAsync(_ctx.UserId, familyId, daysValid, maxUses, ct);
+        return Ok(res);
     }
 
     /// <summary>
@@ -156,6 +168,37 @@ public class FamiliesController : ControllerBase
         await _db.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Lista os membros da família atual (para seleções como "visível para" e "pago por").
+    /// </summary>
+    [HttpGet("members")]
+    public async Task<ActionResult<List<FamilyMemberResponse>>> GetCurrentFamilyMembers(CancellationToken ct)
+    {
+        var familyId = await _ctx.GetCurrentFamilyIdAsync(ct);
+
+        var isMember = await _db.FamilyMembers
+            .AsNoTracking()
+            .AnyAsync(m => m.FamilyId == familyId && m.UserId == _ctx.UserId, ct);
+
+        if (!isMember) return Forbid();
+
+        var rows = await _db.FamilyMembers
+            .AsNoTracking()
+            .Include(m => m.User)
+            .Where(m => m.FamilyId == familyId)
+            .OrderBy(m => m.User.Name)
+            .Select(m => new FamilyMemberResponse
+            {
+                UserId = m.UserId,
+                Name = m.User.Name,
+                Email = m.User.Email,
+                Role = m.Role.ToString()
+            })
+            .ToListAsync(ct);
+
+        return Ok(rows);
     }
 
 }

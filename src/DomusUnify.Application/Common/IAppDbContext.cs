@@ -6,8 +6,9 @@ namespace DomusUnify.Application.Common.Interfaces;
 public interface IAppDbContext
 {
     DbSet<User> Users { get; }
-    DbSet<Family> Families { get; }
+    DbSet<Domain.Entities.Family> Families { get; }
     DbSet<FamilyMember> FamilyMembers { get; }
+    DbSet<FamilyInvite> FamilyInvites { get; }
     DbSet<SharedList> Lists { get; }
     DbSet<ListItem> ListItems { get; }
     DbSet<ItemCategory> ItemCategories { get; }
@@ -19,6 +20,15 @@ public interface IAppDbContext
     DbSet<CalendarEventReminder> CalendarEventReminders { get; }
     DbSet<FamilyCalendarSettings> FamilyCalendarSettings { get; }
     DbSet<UserCalendarSettings> UserCalendarSettings { get; }
+
+    // BUDGET / FINANCE
+    DbSet<Budget> Budgets { get; }
+    DbSet<BudgetUserAccess> BudgetUserAccess { get; }
+    DbSet<BudgetUserSettings> BudgetUserSettings { get; }
+    DbSet<BudgetCategoryLimit> BudgetCategoryLimits { get; }
+    DbSet<FinanceCategory> FinanceCategories { get; }
+    DbSet<FinanceAccount> FinanceAccounts { get; }
+    DbSet<FinanceTransaction> FinanceTransactions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

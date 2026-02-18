@@ -4,6 +4,7 @@ using DomusUnify.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DomusUnify.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(DomusUnifyDbContext))]
-    partial class DomusUnifyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260211095028_AddFamilyInvites")]
+    partial class AddFamilyInvites
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,174 +24,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.Budget", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CurrencyCode")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
-                    b.Property<DateOnly?>("EndDate")
-                        .HasColumnType("date");
-
-                    b.Property<Guid>("FamilyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("IconKey")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
-                    b.Property<int>("MainIndicator")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<bool>("OnlyPaidInTotals")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("OwnerUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("PeriodType")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SemiMonthlyPattern")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("SpendingLimit")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateOnly?>("StartDate")
-                        .HasColumnType("date");
-
-                    b.Property<int>("TransactionOrder")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UpcomingDisplayMode")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("VisibilityMode")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FamilyId");
-
-                    b.HasIndex("OwnerUserId");
-
-                    b.HasIndex("FamilyId", "Name")
-                        .IsUnique();
-
-                    b.ToTable("Budgets", (string)null);
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetCategoryLimit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("BudgetId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("BudgetId", "CategoryId")
-                        .IsUnique();
-
-                    b.ToTable("BudgetCategoryLimits", (string)null);
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetUserAccess", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("BudgetId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("BudgetId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("BudgetUserAccess", (string)null);
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetUserSettings", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("BudgetId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("DailyReminderEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<TimeSpan>("DailyReminderTime")
-                        .HasColumnType("time");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("BudgetId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("BudgetUserSettings", (string)null);
-                });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.CalendarEvent", b =>
                 {
@@ -484,170 +319,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.ToTable("FamilyMembers", (string)null);
                 });
 
-            modelBuilder.Entity("DomusUnify.Domain.Entities.FinanceAccount", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("FamilyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("IconKey")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FamilyId", "Name")
-                        .IsUnique();
-
-                    b.ToTable("FinanceAccounts", (string)null);
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.FinanceCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("FamilyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("IconKey")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("nvarchar(80)");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FamilyId", "Type", "Name")
-                        .IsUnique();
-
-                    b.ToTable("FinanceCategories", (string)null);
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.FinanceTransaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("BudgetId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<bool>("IsPaid")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTime?>("PaidAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("PaidByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("ReminderType")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ReminderUnit")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ReminderValue")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("RepeatInterval")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RepeatType")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("RepeatUnit")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AccountId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("PaidByUserId");
-
-                    b.HasIndex("BudgetId", "Date");
-
-                    b.HasIndex("BudgetId", "Type", "Date");
-
-                    b.ToTable("FinanceTransactions", (string)null);
-                });
-
             modelBuilder.Entity("DomusUnify.Domain.Entities.ItemCategory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -832,82 +503,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.ToTable("UserCalendarSettings", (string)null);
                 });
 
-            modelBuilder.Entity("DomusUnify.Domain.Entities.Budget", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
-                        .WithMany("Budgets")
-                        .HasForeignKey("FamilyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DomusUnify.Domain.Entities.User", "OwnerUser")
-                        .WithMany()
-                        .HasForeignKey("OwnerUserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Family");
-
-                    b.Navigation("OwnerUser");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetCategoryLimit", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.Budget", "Budget")
-                        .WithMany("CategoryLimits")
-                        .HasForeignKey("BudgetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DomusUnify.Domain.Entities.FinanceCategory", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Budget");
-
-                    b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetUserAccess", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.Budget", "Budget")
-                        .WithMany("AllowedUsers")
-                        .HasForeignKey("BudgetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DomusUnify.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Budget");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetUserSettings", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.Budget", "Budget")
-                        .WithMany("UserSettings")
-                        .HasForeignKey("BudgetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DomusUnify.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Budget");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("DomusUnify.Domain.Entities.CalendarEvent", b =>
                 {
                     b.HasOne("DomusUnify.Domain.Entities.User", "CreatedByUser")
@@ -1032,71 +627,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DomusUnify.Domain.Entities.FinanceAccount", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
-                        .WithMany("FinanceAccounts")
-                        .HasForeignKey("FamilyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Family");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.FinanceCategory", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
-                        .WithMany("FinanceCategories")
-                        .HasForeignKey("FamilyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Family");
-                });
-
-            modelBuilder.Entity("DomusUnify.Domain.Entities.FinanceTransaction", b =>
-                {
-                    b.HasOne("DomusUnify.Domain.Entities.FinanceAccount", "Account")
-                        .WithMany()
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("DomusUnify.Domain.Entities.Budget", "Budget")
-                        .WithMany("Transactions")
-                        .HasForeignKey("BudgetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DomusUnify.Domain.Entities.FinanceCategory", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("DomusUnify.Domain.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("DomusUnify.Domain.Entities.User", "PaidByUser")
-                        .WithMany()
-                        .HasForeignKey("PaidByUserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Account");
-
-                    b.Navigation("Budget");
-
-                    b.Navigation("Category");
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("PaidByUser");
-                });
-
             modelBuilder.Entity("DomusUnify.Domain.Entities.ItemCategory", b =>
                 {
                     b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
@@ -1165,17 +695,6 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DomusUnify.Domain.Entities.Budget", b =>
-                {
-                    b.Navigation("AllowedUsers");
-
-                    b.Navigation("CategoryLimits");
-
-                    b.Navigation("Transactions");
-
-                    b.Navigation("UserSettings");
-                });
-
             modelBuilder.Entity("DomusUnify.Domain.Entities.CalendarEvent", b =>
                 {
                     b.Navigation("Participants");
@@ -1187,13 +706,7 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.Family", b =>
                 {
-                    b.Navigation("Budgets");
-
                     b.Navigation("CalendarEvents");
-
-                    b.Navigation("FinanceAccounts");
-
-                    b.Navigation("FinanceCategories");
 
                     b.Navigation("Lists");
 
