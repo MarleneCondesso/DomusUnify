@@ -10,7 +10,7 @@
  */
 
 import type { components } from './schema'
-import { apiRequest } from './http'
+import { apiDownload, apiRequest, type ApiDownloadResult } from './http'
 
 // Tipos (DTOs) extraídos do OpenAPI gerado.
 export type LoginRequest = components['schemas']['LoginRequest']
@@ -61,6 +61,20 @@ export type ActivityQuery = {
 export type BudgetSummaryResponse = components['schemas']['BudgetSummaryResponse']
 export type BudgetDetailResponse = components['schemas']['BudgetDetailResponse']
 export type BudgetTotalsResponse = components['schemas']['BudgetTotalsResponse']
+export type BudgetMemberResponse = components['schemas']['BudgetMemberResponse']
+export type CreateBudgetRequest = components['schemas']['CreateBudgetRequest']
+export type UpdateBudgetRequest = components['schemas']['UpdateBudgetRequest']
+
+export type FinanceTransactionResponse = components['schemas']['FinanceTransactionResponse']
+export type CreateFinanceTransactionRequest = components['schemas']['CreateFinanceTransactionRequest']
+export type UpdateFinanceTransactionRequest = components['schemas']['UpdateFinanceTransactionRequest']
+export type FinanceAccountResponse = components['schemas']['FinanceAccountResponse']
+export type CreateFinanceAccountRequest = components['schemas']['CreateFinanceAccountRequest']
+export type FinanceCategoryResponse = components['schemas']['FinanceCategoryResponse']
+export type CreateFinanceCategoryRequest = components['schemas']['CreateFinanceCategoryRequest']
+export type CategorySummaryResponse = components['schemas']['CategorySummaryResponse']
+export type MemberSummaryResponse = components['schemas']['MemberSummaryResponse']
+export type AccountSummaryResponse = components['schemas']['AccountSummaryResponse']
 
 /**
  * Nota: as rotas aqui seguem exatamente o que está no backend.
@@ -155,8 +169,17 @@ export const domusApi = {
   getBudgets: async (token: string): Promise<BudgetSummaryResponse[]> =>
     apiRequest<BudgetSummaryResponse[]>('/api/v1/budgets', { token }),
 
+  createBudget: async (token: string, request: CreateBudgetRequest): Promise<BudgetDetailResponse> =>
+    apiRequest<BudgetDetailResponse>('/api/v1/budgets', { method: 'POST', token, json: request }),
+
   getBudgetById: async (token: string, budgetId: string): Promise<BudgetDetailResponse> =>
     apiRequest<BudgetDetailResponse>(`/api/v1/budgets/${budgetId}`, { token }),
+
+  updateBudget: async (token: string, budgetId: string, request: UpdateBudgetRequest): Promise<BudgetDetailResponse> =>
+    apiRequest<BudgetDetailResponse>(`/api/v1/budgets/${budgetId}`, { method: 'PATCH', token, json: request }),
+
+  getBudgetMembers: async (token: string, budgetId: string): Promise<BudgetMemberResponse[]> =>
+    apiRequest<BudgetMemberResponse[]>(`/api/v1/budgets/${budgetId}/members`, { token }),
 
   getBudgetTotals: async (token: string, budgetId: string, referenceDate?: string): Promise<BudgetTotalsResponse> => {
     const searchParams = new URLSearchParams()
@@ -168,6 +191,136 @@ export const domusApi = {
       { token },
     )
   },
+
+  getBudgetTransactions: async (
+    token: string,
+    budgetId: string,
+    params: { from?: string; to?: string } = {},
+  ): Promise<FinanceTransactionResponse[]> => {
+    const searchParams = new URLSearchParams()
+    if (params.from) searchParams.set('from', params.from)
+    if (params.to) searchParams.set('to', params.to)
+
+    const qs = searchParams.toString()
+    return apiRequest<FinanceTransactionResponse[]>(
+      `/api/v1/budgets/${budgetId}/transactions${qs ? `?${qs}` : ''}`,
+      { token },
+    )
+  },
+
+  exportBudgetTransactionsCsv: async (
+    token: string,
+    budgetId: string,
+    params: { from: string; to: string; delimiter?: string } ,
+  ): Promise<ApiDownloadResult> => {
+    const searchParams = new URLSearchParams()
+    searchParams.set('from', params.from)
+    searchParams.set('to', params.to)
+    if (params.delimiter) searchParams.set('delimiter', params.delimiter)
+
+    return apiDownload(`/api/v1/budgets/${budgetId}/transactions/export?${searchParams.toString()}`, { token })
+  },
+
+  createBudgetTransaction: async (
+    token: string,
+    budgetId: string,
+    request: CreateFinanceTransactionRequest,
+  ): Promise<FinanceTransactionResponse> =>
+    apiRequest<FinanceTransactionResponse>(`/api/v1/budgets/${budgetId}/transactions`, {
+      method: 'POST',
+      token,
+      json: request,
+    }),
+
+  updateBudgetTransaction: async (
+    token: string,
+    budgetId: string,
+    transactionId: string,
+    request: UpdateFinanceTransactionRequest,
+  ): Promise<FinanceTransactionResponse> =>
+    apiRequest<FinanceTransactionResponse>(`/api/v1/budgets/${budgetId}/transactions/${transactionId}`, {
+      method: 'PATCH',
+      token,
+      json: request,
+    }),
+
+  deleteBudgetTransaction: async (token: string, budgetId: string, transactionId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/budgets/${budgetId}/transactions/${transactionId}`, { method: 'DELETE', token }),
+
+  getBudgetSummaryByCategories: async (
+    token: string,
+    budgetId: string,
+    params: { type?: string; from?: string; to?: string } = {},
+  ): Promise<CategorySummaryResponse[]> => {
+    const searchParams = new URLSearchParams()
+    if (params.type) searchParams.set('type', params.type)
+    if (params.from) searchParams.set('from', params.from)
+    if (params.to) searchParams.set('to', params.to)
+
+    const qs = searchParams.toString()
+    return apiRequest<CategorySummaryResponse[]>(
+      `/api/v1/budgets/${budgetId}/transactions/summary/categories${qs ? `?${qs}` : ''}`,
+      { token },
+    )
+  },
+
+  getBudgetSummaryByMembers: async (
+    token: string,
+    budgetId: string,
+    params: { type?: string; from?: string; to?: string } = {},
+  ): Promise<MemberSummaryResponse[]> => {
+    const searchParams = new URLSearchParams()
+    if (params.type) searchParams.set('type', params.type)
+    if (params.from) searchParams.set('from', params.from)
+    if (params.to) searchParams.set('to', params.to)
+
+    const qs = searchParams.toString()
+    return apiRequest<MemberSummaryResponse[]>(
+      `/api/v1/budgets/${budgetId}/transactions/summary/members${qs ? `?${qs}` : ''}`,
+      { token },
+    )
+  },
+
+  getBudgetSummaryByAccounts: async (
+    token: string,
+    budgetId: string,
+    params: { type?: string; from?: string; to?: string } = {},
+  ): Promise<AccountSummaryResponse[]> => {
+    const searchParams = new URLSearchParams()
+    if (params.type) searchParams.set('type', params.type)
+    if (params.from) searchParams.set('from', params.from)
+    if (params.to) searchParams.set('to', params.to)
+
+    const qs = searchParams.toString()
+    return apiRequest<AccountSummaryResponse[]>(
+      `/api/v1/budgets/${budgetId}/transactions/summary/accounts${qs ? `?${qs}` : ''}`,
+      { token },
+    )
+  },
+
+  markAllBudgetTransactionsPaid: async (token: string, budgetId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/budgets/${budgetId}/transactions/mark-all-paid`, { method: 'POST', token }),
+
+  clearBudgetTransactions: async (token: string, budgetId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/budgets/${budgetId}/transactions/clear`, { method: 'POST', token }),
+
+  // Finance (Categories, Accounts)
+  getFinanceAccounts: async (token: string): Promise<FinanceAccountResponse[]> =>
+    apiRequest<FinanceAccountResponse[]>('/api/v1/finance-accounts', { token }),
+
+  createFinanceAccount: async (token: string, request: CreateFinanceAccountRequest): Promise<FinanceAccountResponse> =>
+    apiRequest<FinanceAccountResponse>('/api/v1/finance-accounts', { method: 'POST', token, json: request }),
+
+  getFinanceCategories: async (token: string, type?: string): Promise<FinanceCategoryResponse[]> => {
+    const searchParams = new URLSearchParams()
+    if (type) searchParams.set('type', type)
+    const qs = searchParams.toString()
+
+    return apiRequest<FinanceCategoryResponse[]>(`/api/v1/finance-categories${qs ? `?${qs}` : ''}`, { token })
+  },
+
+  createFinanceCategory: async (token: string, request: CreateFinanceCategoryRequest): Promise<FinanceCategoryResponse> =>
+    apiRequest<FinanceCategoryResponse>('/api/v1/finance-categories', { method: 'POST', token, json: request }),
 
 
   // Activity (Recent Updates / All Activity)

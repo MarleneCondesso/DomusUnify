@@ -36,6 +36,12 @@ function buildUrl(path: string): string {
   return `${origin}${path}`
 }
 
+export type ApiDownloadResult = {
+  blob: Blob
+  fileName: string | null
+  contentType: string | null
+}
+
 async function readBody(response: Response): Promise<unknown> {
   // Tentamos ler como texto e, se possível, converter para JSON.
   const text = await response.text()
@@ -86,3 +92,40 @@ export async function apiRequest<TResponse>(
   return parsed as TResponse
 }
 
+function parseFileNameFromContentDisposition(header: string | null): string | null {
+  if (!header) return null
+
+  const matchStar = header.match(/filename\*=UTF-8''([^;]+)/i)
+  if (matchStar?.[1]) {
+    try {
+      return decodeURIComponent(matchStar[1].trim().replace(/^"|"$/g, ''))
+    } catch {
+      return matchStar[1].trim().replace(/^"|"$/g, '')
+    }
+  }
+
+  const match = header.match(/filename="?([^"]+)"?/i)
+  return match?.[1]?.trim() ?? null
+}
+
+export async function apiDownload(
+  path: string,
+  { method = 'GET', token, signal }: Omit<ApiRequestOptions, 'json'> = {},
+): Promise<ApiDownloadResult> {
+  const headers = new Headers()
+  headers.set('Accept', 'text/csv,application/octet-stream,*/*')
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+
+  const response = await fetch(buildUrl(path), { method, headers, signal })
+
+  if (!response.ok) {
+    const parsed = await readBody(response)
+    throw new ApiError('Erro ao chamar a API.', response.status, parsed)
+  }
+
+  return {
+    blob: await response.blob(),
+    fileName: parseFileNameFromContentDisposition(response.headers.get('content-disposition')),
+    contentType: response.headers.get('content-type'),
+  }
+}

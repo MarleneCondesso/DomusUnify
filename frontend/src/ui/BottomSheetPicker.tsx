@@ -12,6 +12,7 @@ type Props = {
   onClose: () => void
   clearLabel?: string
   isLoading?: boolean
+  zIndexClass?: string
 }
 
 export function BottomSheetPicker({
@@ -22,9 +23,12 @@ export function BottomSheetPicker({
   onClose,
   clearLabel,
   isLoading,
+  zIndexClass,
 }: Props) {
+  const zIndex = zIndexClass ?? 'z-[60]'
+
   return (
-    <div className="fixed inset-0 z-[60]">
+    <div className={`fixed inset-0 ${zIndex}`}>
       <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl rounded-t-3xl bg-white p-4 shadow-2xl">
@@ -89,4 +93,3 @@ export function BottomSheetPicker({
     </div>
   )
 }
-

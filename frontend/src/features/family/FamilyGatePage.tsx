@@ -6,11 +6,14 @@ import { domusApi } from '../../api/domusApi'
 import { queryKeys } from '../../api/queryKeys'
 import type { FamilyResponse } from '../../api/domusApi'
 import { DashboardPage } from '../dashboard/DashboardPage'
-import { CalendarPage } from '../calendar/calendar'
+import { CalendarPage } from '../calendar/Calendar'
 import { ListsPage } from '../lists/ListsPage'
 import { CreateListPage } from '../lists/CreateListPage'
 import { ListItemsPage } from '../lists/ListItemsPage'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
+import { BudgetPage } from '../budget/BudgetPage'
+import { ManageAccountsPage } from '../budget/ManageAccountsPage'
+import { ManageCategoriesPage } from '../budget/ManageCategoriesPage'
 
 type Props = {
   token: string
@@ -89,6 +92,9 @@ export function FamilyGatePage({ token, onLogout }: Props) {
   return (
     <Routes>
       <Route path="/" element={<DashboardPage token={token} family={family} />} />
+      <Route path="/budgets/:budgetId" element={<BudgetPage token={token} family={family} />} />
+      <Route path="/budgets/:budgetId/categories" element={<ManageCategoriesPage token={token} />} />
+      <Route path="/budgets/:budgetId/accounts" element={<ManageAccountsPage token={token} />} />
       <Route path="/calendar" element={<CalendarPage token={token} family={family} />} />
       <Route path="/lists" element={<ListsPage token={token} family={family} onLogout={onLogout} />} />
       <Route path="/lists/new" element={<CreateListPage token={token} family={family} onLogout={onLogout} />} />

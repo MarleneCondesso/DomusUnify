@@ -32,8 +32,19 @@ export const queryKeys = {
     ] as const,
   budgets: ['budgets'] as const,
   budgetById: (budgetId: string) => ['budgetById', budgetId] as const,
+  budgetMembers: (budgetId: string) => ['budgetMembers', budgetId] as const,
   budgetTotals: (params: { budgetId: string; referenceDate?: string }) =>
     ['budgetTotals', params.budgetId, params.referenceDate ?? null] as const,
+  budgetTransactions: (params: { budgetId: string; from?: string; to?: string }) =>
+    ['budgetTransactions', params.budgetId, params.from ?? null, params.to ?? null] as const,
+  budgetSummaryCategories: (params: { budgetId: string; type?: string; from?: string; to?: string }) =>
+    ['budgetSummaryCategories', params.budgetId, params.type ?? null, params.from ?? null, params.to ?? null] as const,
+  budgetSummaryMembers: (params: { budgetId: string; type?: string; from?: string; to?: string }) =>
+    ['budgetSummaryMembers', params.budgetId, params.type ?? null, params.from ?? null, params.to ?? null] as const,
+  budgetSummaryAccounts: (params: { budgetId: string; type?: string; from?: string; to?: string }) =>
+    ['budgetSummaryAccounts', params.budgetId, params.type ?? null, params.from ?? null, params.to ?? null] as const,
+  financeAccounts: ['financeAccounts'] as const,
+  financeCategories: (type?: string) => ['financeCategories', type ?? null] as const,
   activityRecent: (take: number) => ['activityRecent', take] as const,
   activityAll: (params: {
     skip?: number

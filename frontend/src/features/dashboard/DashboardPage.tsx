@@ -377,7 +377,13 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         </div>
 
 
-        <div className="bg-forest rounded-2xl p-8 text-white relative overflow-hidden hover:shadow-2xl transition-all cursor-pointer">
+        <div
+          className="bg-forest rounded-2xl p-8 text-white relative overflow-hidden hover:shadow-2xl transition-all cursor-pointer"
+          onClick={() => {
+            if (!primaryBudgetId) return
+            navigate(`/budgets/${primaryBudgetId}`)
+          }}
+        >
           <img
             src="https://readdy.ai/api/search-image?query=happy%20family%20enjoying%20time%20together%20in%20modern%20home%20warm%20atmosphere%20natural%20lighting%20lifestyle%20photography&width=400&height=500&seq=budget1&orientation=portrait"
             className="absolute inset-0 w-full h-full object-cover opacity-30"
