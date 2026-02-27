@@ -13,7 +13,7 @@ public interface ICalendarService
     /// </summary>
     /// <remarks>
     /// Pode filtrar por intervalo (<paramref name="fromUtc"/>/<paramref name="toUtc"/>), por dia inteiro (<paramref name="dateUtc"/>),
-    /// por texto (<paramref name="search"/>) e por participante (<paramref name="participantUserId"/>).
+    /// por texto (<paramref name="search"/>), por participante (<paramref name="participantUserId"/>) e limitar resultados com <paramref name="take"/>.
     /// </remarks>
     /// <param name="userId">Identificador do utilizador autenticado.</param>
     /// <param name="familyId">Identificador da família.</param>
@@ -22,6 +22,7 @@ public interface ICalendarService
     /// <param name="dateUtc">Data (UTC) para filtrar por dia inteiro, opcional.</param>
     /// <param name="search">Texto a procurar no título, opcional.</param>
     /// <param name="participantUserId">Filtra por participante, opcional.</param>
+    /// <param name="take">Número máximo de instâncias a devolver. Se <c>null</c>, devolve todas as instâncias que correspondem aos filtros.</param>
     /// <param name="ct">Token de cancelamento.</param>
     /// <returns>Lista de instâncias de eventos (inclui ocorrências de recorrências).</returns>
     Task<IReadOnlyList<CalendarEventInstanceModel>> GetEventsAsync(
@@ -32,6 +33,7 @@ public interface ICalendarService
         DateTime? dateUtc,
         string? search,
         Guid? participantUserId,
+        int? take,
         CancellationToken ct);
 
     /// <summary>

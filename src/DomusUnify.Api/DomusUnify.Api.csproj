@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
+    <UserSecretsId>47a376e3-c5ac-4df9-bb5a-5d73cfe95284</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,12 +35,9 @@
 
   <ItemGroup>
     <!-- Copia XML docs das assemblies referenciadas para enriquecer o Swagger (schemas/DTOs). -->
-    <None Include="..\DomusUnify.Application\bin\$(Configuration)\$(TargetFramework)\DomusUnify.Application.xml"
-          CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\DomusUnify.Domain\bin\$(Configuration)\$(TargetFramework)\DomusUnify.Domain.xml"
-          CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\DomusUnify.Infrastructure\bin\$(Configuration)\$(TargetFramework)\DomusUnify.Infrastructure.xml"
-          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\DomusUnify.Application\bin\$(Configuration)\$(TargetFramework)\DomusUnify.Application.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\DomusUnify.Domain\bin\$(Configuration)\$(TargetFramework)\DomusUnify.Domain.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\DomusUnify.Infrastructure\bin\$(Configuration)\$(TargetFramework)\DomusUnify.Infrastructure.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

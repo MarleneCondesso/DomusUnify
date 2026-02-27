@@ -1,6 +1,7 @@
 using DomusUnify.Api.DTOs.Categories;
 using DomusUnify.Api.Services.CurrentUser;
 using DomusUnify.Application.Categories;
+using DomusUnify.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -41,6 +42,7 @@ public class ItemCategoriesController : ControllerBase
         {
             Id = x.Id,
             Name = x.Name,
+            Type = x.Type.ToString(),
             IconKey = x.IconKey,
             SortOrder = x.SortOrder
         }).ToList());
@@ -62,14 +64,18 @@ public class ItemCategoriesController : ControllerBase
         {
             var familyId = await _ctx.GetCurrentFamilyIdAsync(ct);
 
+            if (!Enum.TryParse<ListType>(request.Type, true, out var type))
+                return BadRequest("Tipo invÃ¡lido. Use Shopping, Tasks ou Custom.");
+
             var created = await _svc.CreateItemCategoryAsync(
                 _ctx.UserId, familyId,
-                request.Name, request.IconKey, request.SortOrder, ct);
+                request.Name, type, request.IconKey, request.SortOrder, ct);
 
             return Ok(new CategoryResponse
             {
                 Id = created.Id,
                 Name = created.Name,
+                Type = created.Type.ToString(),
                 IconKey = created.IconKey,
                 SortOrder = created.SortOrder
             });
@@ -96,14 +102,23 @@ public class ItemCategoriesController : ControllerBase
         {
             var familyId = await _ctx.GetCurrentFamilyIdAsync(ct);
 
+            ListType? type = null;
+            if (request.Type is not null)
+            {
+                if (!Enum.TryParse<ListType>(request.Type, true, out var parsed))
+                    return BadRequest("Tipo invÃ¡lido. Use Shopping, Tasks ou Custom.");
+                type = parsed;
+            }
+
             var updated = await _svc.UpdateItemCategoryAsync(
                 _ctx.UserId, familyId,
-                categoryId, request.Name, request.IconKey, request.SortOrder, ct);
+                categoryId, request.Name, type, request.IconKey, request.SortOrder, ct);
 
             return Ok(new CategoryResponse
             {
                 Id = updated.Id,
                 Name = updated.Name,
+                Type = updated.Type.ToString(),
                 IconKey = updated.IconKey,
                 SortOrder = updated.SortOrder
             });

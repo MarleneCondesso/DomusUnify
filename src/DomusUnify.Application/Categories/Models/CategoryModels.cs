@@ -1,3 +1,5 @@
+using DomusUnify.Domain.Enums;
+
 namespace DomusUnify.Application.Categories.Models;
 
 /// <summary>
@@ -11,6 +13,7 @@ namespace DomusUnify.Application.Categories.Models;
 public sealed record CategoryModel(
     Guid Id,
     string Name,
+    ListType Type,
     string IconKey,
     string? ColorHex,
     int SortOrder

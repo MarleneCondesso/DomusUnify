@@ -1,0 +1,304 @@
+/* Tailwind CSS v4 */
+@import 'tailwindcss';
+@import 'remixicon/fonts/remixicon.css';
+
+/* Design tokens (cores do layout do Readdy) */
+@layer theme {
+  @theme {
+    /* Verde escuro (Tailwind: emerald-900) */
+    --color-forest: #2D4A3E;
+
+    /* Amarelo/dourado */
+    --color-amber: #d4a853;
+
+    /* Amarelo/dourado escuro */
+    --color-amber-dark: #b8903a;
+
+    /* Amarelo/dourado claro */
+    --color-amber-light: #e8c97a;
+
+    /* Cinzento muito escuro (carvão) */
+    --color-charcoal: #2a2a2a;
+
+    /* Branco “quente” (off-white) */
+    --color-offwhite: #fafaf6;
+
+    /* Bege (areia) */
+    --color-sand: #f5f0e8;
+
+    /* Bege muito claro (areia clara) */
+    --color-sand-light: #faf8f4;
+
+    /* Bege acinzentado (areia escura) */
+    --color-sand-dark: #e8dfd0;
+
+    /* Verde claro (sálvia) */
+    --color-sage-light: #d4e4d9;
+
+    /* Verde médio/escuro (sálvia escura) */
+    --color-sage-dark: #7a9b86;
+
+    /* Castanho/bege (barro/clay) */
+    --color-clay: #c4a882;
+
+    /* Aliases (mais simples de usar no projeto) */
+    --color-primary: var(--color-forest);
+    --color-secondary: var(--color-amber);
+  }
+}
+/**
+ * Estilos base do projeto (Tailwind + pequenos ajustes globais).
+ *
+ * A maior parte do styling passa a ser feito com classes Tailwind nos componentes.
+ */
+@layer base {
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+  }
+
+  body {
+    @apply min-w-[320px] text-white/90 antialiased;
+    background: rgb(250 250 248 / var(--tw-bg-opacity, 1));
+  }
+
+  a {
+    @apply text-indigo-300 hover:text-indigo-200;
+  }
+
+  button{
+    @apply cursor-pointer;
+  }
+ 
+}
+
+@layer components {
+  /* Loader: animação "cute loading" (4 bolhas) */
+  .domus-loading-bubbles {
+    --domus-loader-dot: 12px;
+    --domus-loader-gap: calc(var(--domus-loader-dot) * 2.6);
+    --domus-loader-radius: calc(var(--domus-loader-dot) * 2.25);
+    --domus-loader-duration: 1.8s;
+
+    --domus-loader-c1: var(--color-clay);
+    --domus-loader-c2: var(--color-sage-light);
+    --domus-loader-c3: var(--color-amber);
+    --domus-loader-c4: var(--color-forest);
+
+    position: relative;
+    width: calc(var(--domus-loader-gap) * 3 + var(--domus-loader-dot));
+    height: calc(var(--domus-loader-radius) * 2.3 + var(--domus-loader-dot));
+  }
+
+  .domus-loading-bubbles__dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--domus-loader-dot);
+    height: var(--domus-loader-dot);
+    border-radius: 9999px;
+    transform-origin: center;
+    will-change: transform, border-radius;
+  }
+
+  .domus-loading-bubbles__dot:nth-child(1) {
+    background: var(--domus-loader-c1);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -1.5));
+    animation: domus-loading-bubbles-dot1 var(--domus-loader-duration) infinite ease-in-out alternate;
+  }
+
+  .domus-loading-bubbles__dot:nth-child(2) {
+    background: var(--domus-loader-c2);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -0.5));
+    animation: domus-loading-bubbles-dot2 var(--domus-loader-duration) infinite ease-in-out alternate;
+  }
+
+  .domus-loading-bubbles__dot:nth-child(3) {
+    background: var(--domus-loader-c3);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 0.5));
+    animation: domus-loading-bubbles-dot3 var(--domus-loader-duration) infinite ease-in-out alternate;
+  }
+
+  .domus-loading-bubbles__dot:nth-child(4) {
+    background: var(--domus-loader-c4);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 1.5));
+    animation: domus-loading-bubbles-dot4 var(--domus-loader-duration) infinite ease-in-out alternate;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .domus-loading-bubbles__dot {
+      animation: none !important;
+      border-radius: 9999px !important;
+    }
+  }
+}
+
+@keyframes domus-loading-bubbles-dot1 {
+  0% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -1.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+  12% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -1.5)) translateY(0) scaleX(1.1) scaleY(2.4);
+    border-radius: 9999px;
+  }
+  28%,
+  50% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * -0.35))
+      translateY(calc(var(--domus-loader-radius) * -1))
+      scaleX(3.8)
+      scaleY(2.6)
+      rotate(-18deg);
+    border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
+  }
+  62% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * 1.05))
+      translateY(calc(var(--domus-loader-radius) * -0.25))
+      scaleX(3.8)
+      scaleY(2.6)
+      rotate(35deg);
+    border-radius: 55% 45% 60% 40% / 60% 40% 55% 45%;
+  }
+  78% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 1.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 1.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+}
+
+@keyframes domus-loading-bubbles-dot2 {
+  0% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -0.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+  12% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -0.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+  28%,
+  50% {
+    transform: translate(-50%, -50%)
+      translateX(0)
+      translateY(0)
+      scale(0.85);
+    border-radius: 9999px;
+  }
+  62% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * -0.45))
+      translateY(calc(var(--domus-loader-radius) * -0.2))
+      scaleX(2.2)
+      scaleY(1.6)
+      rotate(-22deg);
+    border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
+  }
+  70% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * 0.05))
+      translateY(calc(var(--domus-loader-radius) * -0.9))
+      scaleX(2.4)
+      scaleY(1.7)
+      rotate(18deg);
+    border-radius: 55% 45% 60% 40% / 60% 40% 55% 45%;
+  }
+  78%,
+  100% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 0.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+}
+
+@keyframes domus-loading-bubbles-dot3 {
+  0% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 0.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+  12% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * 0.15))
+      translateY(calc(var(--domus-loader-radius) * 0.95))
+      scaleX(3.8)
+      scaleY(2.6)
+      rotate(18deg);
+    border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
+  }
+  28%,
+  50% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * -0.25))
+      translateY(calc(var(--domus-loader-radius) * 1))
+      scaleX(3.8)
+      scaleY(2.6)
+      rotate(-14deg);
+    border-radius: 55% 45% 60% 40% / 60% 40% 55% 45%;
+  }
+  62% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * -1.1))
+      translateY(calc(var(--domus-loader-radius) * 0.25))
+      scaleX(2.4)
+      scaleY(1.7)
+      rotate(32deg);
+    border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
+  }
+  78% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -1.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -1.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+}
+
+@keyframes domus-loading-bubbles-dot4 {
+  0% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 1.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+  12% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 1.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+  28%,
+  50% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * 1.05))
+      translateY(calc(var(--domus-loader-radius) * 0.2))
+      scaleX(2.6)
+      scaleY(1.9)
+      rotate(48deg);
+    border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
+  }
+  62% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * 0.15))
+      translateY(calc(var(--domus-loader-radius) * 1.1))
+      scaleX(3.8)
+      scaleY(2.6)
+      rotate(4deg);
+    border-radius: 55% 45% 60% 40% / 60% 40% 55% 45%;
+  }
+  70% {
+    transform: translate(-50%, -50%)
+      translateX(calc(var(--domus-loader-radius) * -0.35))
+      translateY(calc(var(--domus-loader-radius) * 0.55))
+      scaleX(2.3)
+      scaleY(1.8)
+      rotate(-75deg);
+    border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
+  }
+  78%,
+  100% {
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -0.5)) translateY(0) scale(1);
+    border-radius: 9999px;
+  }
+}

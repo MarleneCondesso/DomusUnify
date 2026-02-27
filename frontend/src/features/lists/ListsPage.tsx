@@ -1,0 +1,203 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import { domusApi, type FamilyResponse } from '../../api/domusApi'
+import { queryKeys } from '../../api/queryKeys'
+import { useFamilyHub } from '../../realtime/useFamilyHub'
+import { LoadingSpinner } from '../../ui/LoadingSpinner'
+
+type Props = {
+  token: string
+  family: FamilyResponse
+  onLogout: () => void
+}
+
+/**
+ * Página de exemplo:
+ * - Mostra as listas da família atual (GET /api/v1/lists)
+ * - Permite criar uma lista (POST /api/v1/lists)
+ *
+ * SignalR:
+ * - O hook `useFamilyHub` liga ao hub `/hubs/family` e invalida automaticamente estas queries quando houver eventos.
+ */
+export function ListsPage({ token, family }: Props) {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  //#region ...[SignalR]...
+  const familyId = family.id ?? ''
+  useFamilyHub({ token, familyId, enabled: Boolean(family.id) })
+  //#endregion
+
+  //#region ...[Queries & Mutations]...
+
+  const listsQuery = useQuery({
+    queryKey: queryKeys.lists,
+    queryFn: () => domusApi.getLists(token),
+  })
+
+  const regenerateCoversMutation = useMutation({
+    mutationFn: () => domusApi.regenerateListCovers(token),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.lists })
+    },
+  })
+
+  const hasPexelsCovers = Boolean(
+    listsQuery.data?.some((l) => (l.coverImageUrl ?? '').includes('pexels.com')),
+  )
+
+  //#endregion
+
+  //#region ...[Loading]...
+  if (listsQuery.isLoading) {
+    return (
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
+        <div className="flex justify-center py-2">
+          <LoadingSpinner size="lg" />
+        </div>
+      </div>
+    )
+  }
+  //#endregion
+
+  if (!family.id) {
+    return (
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
+        <h2 className="text-xl font-semibold text-charcoal">Resposta inválida da API</h2>
+        <p className="mt-2 text-sm text-charcoal">A família atual veio sem `id`.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full">
+      <header className="flex items-start justify-between gap-4 bg-linear-to-b from-sage-light to-offwhite py-10 flex-col px-4">
+        <nav className="flex w-full items-center justify-between px-3">
+          <button
+            type="button"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
+            aria-label="Home"
+            onClick={() => navigate('/')}
+          >
+            <i className="ri-home-7-line text-2xl leading-none" />
+          </button>
+
+          <button
+            type="button"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
+            aria-label="Menu"
+            disabled={regenerateCoversMutation.isPending}
+            onClick={() => {
+              const ok = window.confirm('Regenerar imagens de capa das listas?')
+              if (!ok) return
+              regenerateCoversMutation.mutate()
+            }}
+          >
+            <i className={`${regenerateCoversMutation.isPending ? 'ri-loader-4-line animate-spin' : 'ri-more-2-fill'} text-2xl leading-none`} />
+          </button>
+        </nav>
+        <section className='py-16 px-2'>
+          <div className='flex items-center justify-between'>
+            <div>
+              <h1 className="text-6xl font-bold text-charcoal mb-6 flex items-center gap-3">Family Lists <span className='text-5xl'>📝</span></h1>
+              <p className='text-md text-gray-600 mb-2'>Manage your shared shopping lists, tasks, and more</p>
+            </div>
+          </div>
+        </section>
+      </header>
+
+
+
+      {listsQuery.data?.length === 0 && <p className="mt-2 text-sm text-charcoal">Ainda não possui nenhuma lista.</p>}
+      {listsQuery.data && listsQuery.data.length > 0 && (
+
+        <section className='max-w-7xl mx-auto px-2 pb-16'>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+            {listsQuery.data?.map((l) => {
+              const itemsCount = l.itemsCount ?? 0
+              const completedCount = l.completedCount ?? 0
+              const progressPct = itemsCount > 0 ? Math.round((completedCount / itemsCount) * 100) : 0
+              const cover = l.coverImageUrl ?? ''
+              const barColor = '#d4a853'
+              const visibilityMode = l.visibilityMode ?? 'AllMembers'
+              const isPrivate = visibilityMode === 'Private'
+
+              return (
+                <span
+                  key={l.id}
+                  className="relative h-72 cursor-pointer overflow-hidden rounded-2xl bg-sand-light shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                  style={{
+                    backgroundImage: cover ? `url(${cover})` : undefined,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                  onClick={() => navigate(`/lists/items/${l.id}`)}
+                >
+                  <div className="absolute inset-0 bg-linear-to-t from-forest/80 via-forest/40 to-transparent" />
+
+                  <div className="absolute left-4 top-4 flex items-center gap-2">
+                    <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+                      {l.type ?? 'Custom'}
+                    </span>
+                  </div>
+
+                  <div className="absolute right-4 top-4">
+                    <span
+                      className="grid h-8 w-8 place-items-center rounded-full bg-bg-offwhite text-white backdrop-blur"
+                      title={isPrivate ? 'Privada' : 'Partilhada'}
+                    >
+                      <span
+                        role="img"
+                        aria-label={isPrivate ? 'Lista privada' : 'Lista partilhada'}
+                        className="text-base leading-none"
+                      >
+                        {isPrivate ? <i className="ri-lock-fill text-offwhite"></i> : <i className="ri-group-fill text-offwhite"></i>}
+                      </span>
+                    </span>
+                  </div>
+
+                  <div className="absolute inset-0 flex flex-col justify-end p-6">
+                    <h3 className="text-2xl font-bold text-white drop-shadow">{l.name}</h3>
+                    <p className="mt-1 text-sm text-white/90">
+                      {itemsCount} items • {completedCount} completed
+                    </p>
+
+                    <div className="mt-4 h-1.5 w-full rounded-full bg-white/30">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${progressPct}%`, backgroundColor: barColor }}
+                      />
+                    </div>
+                  </div>
+                </span>
+              )
+            })}
+          </div>
+
+          <button
+            className='place-items-center h-12 w-12 rounded-full bg-amber fixed bottom-20 right-15'
+            onClick={() => navigate('/lists/new')}>
+            <i className="ri-add-large-fill"></i>
+          </button>
+
+          {hasPexelsCovers && (
+            <div className="mt-6 text-center text-xs text-charcoal/70">
+              Fotos fornecidas por{' '}
+              <a
+                className="underline hover:text-charcoal"
+                href="https://www.pexels.com"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Pexels
+              </a>
+              .
+            </div>
+          )}
+        </section>
+      )}
+
+    </div >
+
+  )
+}

@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomusUnify.Domain", "src\Do
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomusUnify.Infrastructure", "src\DomusUnify.Infrastructure\DomusUnify.Infrastructure.csproj", "{5222782A-5B22-412D-A9F3-593D7E4AA780}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{35B67BB8-4BAE-4F36-AB83-D87B37DEA6E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomusUnify.Api.IntegrationTests", "tests\DomusUnify.Api.IntegrationTests\DomusUnify.Api.IntegrationTests.csproj", "{E97FAC5E-A6D2-4DD3-B6EC-2119E87954CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,11 +42,16 @@ Global
 		{5222782A-5B22-412D-A9F3-593D7E4AA780}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5222782A-5B22-412D-A9F3-593D7E4AA780}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5222782A-5B22-412D-A9F3-593D7E4AA780}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E97FAC5E-A6D2-4DD3-B6EC-2119E87954CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E97FAC5E-A6D2-4DD3-B6EC-2119E87954CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E97FAC5E-A6D2-4DD3-B6EC-2119E87954CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E97FAC5E-A6D2-4DD3-B6EC-2119E87954CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{14983DCA-F203-4A31-9895-BDEB4D555E57} = {A4045BF8-D53E-4461-BFC7-81C5B1B94A4A}
 		{8683EE65-A0C9-4F94-AA01-800FE92F69B2} = {A4045BF8-D53E-4461-BFC7-81C5B1B94A4A}
 		{9B2D18A5-B0E2-47B1-AE1D-C28A02A63582} = {A4045BF8-D53E-4461-BFC7-81C5B1B94A4A}
 		{5222782A-5B22-412D-A9F3-593D7E4AA780} = {A4045BF8-D53E-4461-BFC7-81C5B1B94A4A}
+		{E97FAC5E-A6D2-4DD3-B6EC-2119E87954CA} = {35B67BB8-4BAE-4F36-AB83-D87B37DEA6E9}
 	EndGlobalSection
 EndGlobal

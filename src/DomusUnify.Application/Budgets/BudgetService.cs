@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using DomusUnify.Application.Activity;
+using DomusUnify.Application.Activity.Models;
 using DomusUnify.Application.Budgets.Models;
 using DomusUnify.Application.Common.Interfaces;
 using DomusUnify.Application.Common.Realtime;
@@ -22,6 +24,7 @@ public sealed class BudgetService : IBudgetService
     private readonly IRealtimeNotifier _rt;
     private readonly IFinanceCategoryService _cats;
     private readonly IFinanceAccountService _accounts;
+    private readonly IActivityService _activity;
 
     /// <summary>
     /// Inicializa uma nova instância de <see cref="BudgetService"/>.
@@ -30,12 +33,14 @@ public sealed class BudgetService : IBudgetService
     /// <param name="rt">Notificador em tempo real.</param>
     /// <param name="cats">Serviço de categorias financeiras.</param>
     /// <param name="accounts">Serviço de contas financeiras.</param>
-    public BudgetService(IAppDbContext db, IRealtimeNotifier rt, IFinanceCategoryService cats, IFinanceAccountService accounts)
+    /// <param name="activity">Serviço de feed de atividade.</param>
+    public BudgetService(IAppDbContext db, IRealtimeNotifier rt, IFinanceCategoryService cats, IFinanceAccountService accounts, IActivityService activity)
     {
         _db = db;
         _rt = rt;
         _cats = cats;
         _accounts = accounts;
+        _activity = activity;
     }
 
     /// <inheritdoc />
@@ -241,6 +246,15 @@ public sealed class BudgetService : IBudgetService
             }
         }, ct);
 
+        await _activity.LogAsync(
+            familyId,
+            userId,
+            new ActivityLogInput(
+                Kind: "budgets:created",
+                Message: $"created budget: {model.Name}",
+                EntityId: model.Id),
+            ct);
+
         return model;
     }
 
@@ -411,6 +425,15 @@ public sealed class BudgetService : IBudgetService
             }
         }, ct);
 
+        await _activity.LogAsync(
+            familyId,
+            userId,
+            new ActivityLogInput(
+                Kind: "budgets:updated",
+                Message: $"updated budget: {model.Name}",
+                EntityId: model.Id),
+            ct);
+
         return model;
     }
 
@@ -426,6 +449,8 @@ public sealed class BudgetService : IBudgetService
         if (budget is null) throw new KeyNotFoundException("Orçamento não encontrado.");
         EnsureBudgetAccess(userId, budget);
 
+        var budgetName = budget.Name;
+
         _db.Budgets.Remove(budget);
         await _db.SaveChangesAsync(ct);
 
@@ -434,6 +459,15 @@ public sealed class BudgetService : IBudgetService
             action = "deleted",
             budgetId
         }, ct);
+
+        await _activity.LogAsync(
+            familyId,
+            userId,
+            new ActivityLogInput(
+                Kind: "budgets:deleted",
+                Message: $"deleted budget: {budgetName}",
+                EntityId: budgetId),
+            ct);
     }
 
     /// <inheritdoc />

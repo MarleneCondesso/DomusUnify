@@ -1,3 +1,5 @@
+using DomusUnify.Application.Activity;
+using DomusUnify.Application.Activity.Models;
 using DomusUnify.Application.Calendar.Models;
 using DomusUnify.Application.Common.Interfaces;
 using DomusUnify.Application.Common.Realtime;
@@ -15,6 +17,7 @@ public sealed class CalendarService : ICalendarService
     private readonly IAppDbContext _db;
     private readonly IRealtimeNotifier _rt;
     private readonly IRecurrenceService _rec;
+    private readonly IActivityService _activity;
 
     /// <summary>
     /// Inicializa uma nova instância de <see cref="CalendarService"/>.
@@ -22,11 +25,13 @@ public sealed class CalendarService : ICalendarService
     /// <param name="db">Contexto de base de dados.</param>
     /// <param name="rt">Notificador em tempo real.</param>
     /// <param name="rec">Serviço de recorrência para expandir ocorrências.</param>
-    public CalendarService(IAppDbContext db, IRealtimeNotifier rt, IRecurrenceService rec)
+    /// <param name="activity">Serviço de feed de atividade.</param>
+    public CalendarService(IAppDbContext db, IRealtimeNotifier rt, IRecurrenceService rec, IActivityService activity)
     {
         _db = db;
         _rt = rt;
         _rec = rec;
+        _activity = activity;
     }
 
 
@@ -39,8 +44,12 @@ public sealed class CalendarService : ICalendarService
         DateTime? dateUtc,
         string? search,
         Guid? participantUserId,
+        int? take,
         CancellationToken ct)
     {
+        if (take.HasValue && take.Value <= 0)
+            throw new ArgumentException("take tem de ser >= 1.", nameof(take));
+
         await EnsureMemberAsync(userId, familyId, ct);
 
         // determinar intervalo final
@@ -162,10 +171,14 @@ public sealed class CalendarService : ICalendarService
             }
         }
 
-        return instances
+        IEnumerable<CalendarEventInstanceModel> q = instances
             .Where(i => !i.IsCancelled)
-            .OrderBy(i => i.OccurrenceStartUtc)
-            .ToList();
+            .OrderBy(i => i.OccurrenceStartUtc);
+
+        if (take.HasValue)
+            q = q.Take(take.Value);
+
+        return q.ToList();
     }
 
     /// <inheritdoc />
@@ -313,6 +326,15 @@ public sealed class CalendarService : ICalendarService
             toUtc = entity.EndUtc
         }, ct);
 
+        await _activity.LogAsync(
+            familyId,
+            userId,
+            new ActivityLogInput(
+                Kind: "calendar:created",
+                Message: $"created new event: {entity.Title}",
+                EntityId: entity.Id),
+            ct);
+
         return new CalendarEventModel(
             entity.Id, entity.FamilyId, entity.Title, entity.IsAllDay, entity.StartUtc, entity.EndUtc,
             entity.Location, entity.Note, entity.ColorHex,
@@ -458,6 +480,15 @@ public sealed class CalendarService : ICalendarService
             fromUtc = e.StartUtc,
             toUtc = e.EndUtc
         }, ct);
+
+        await _activity.LogAsync(
+            familyId,
+            userId,
+            new ActivityLogInput(
+                Kind: "calendar:updated",
+                Message: $"updated event: {e.Title}",
+                EntityId: e.Id),
+            ct);
 
         // devolver model (recarrega ids)
         var participants = await _db.CalendarEventParticipants.AsNoTracking()
@@ -669,6 +700,8 @@ public sealed class CalendarService : ICalendarService
         if (e is null)
             throw new KeyNotFoundException("Evento não encontrado.");
 
+        var eventTitle = e.Title;
+
         _db.CalendarEvents.Remove(e);
         await _db.SaveChangesAsync(ct);
 
@@ -679,6 +712,15 @@ public sealed class CalendarService : ICalendarService
             fromUtc = e.StartUtc,
             toUtc = e.EndUtc
         }, ct);
+
+        await _activity.LogAsync(
+            familyId,
+            userId,
+            new ActivityLogInput(
+                Kind: "calendar:deleted",
+                Message: $"deleted event: {eventTitle}",
+                EntityId: eventId),
+            ct);
     }
 
     /// <inheritdoc />
@@ -803,6 +845,15 @@ public sealed class CalendarService : ICalendarService
             eventId = parent.Id,
             newEventId = newParent.Id
         }, ct);
+
+        await _activity.LogAsync(
+            familyId,
+            userId,
+            new ActivityLogInput(
+                Kind: "calendar:updated",
+                Message: $"updated recurring event: {newParent.Title}",
+                EntityId: newParent.Id),
+            ct);
     }
 
     /// <inheritdoc />
@@ -1061,6 +1112,17 @@ public sealed class CalendarService : ICalendarService
             eventId = parent.Id,
             occurrenceStartUtc = occurrenceStartUtc
         }, ct);
+
+        await _activity.LogAsync(
+            familyId,
+            userId,
+            new ActivityLogInput(
+                Kind: cancelThisOccurrence == true ? "calendar:occurrence_cancelled" : "calendar:occurrence_updated",
+                Message: cancelThisOccurrence == true
+                    ? $"cancelled event occurrence: {parent.Title}"
+                    : $"updated event occurrence: {existing.Title}",
+                EntityId: parent.Id),
+            ct);
     }
 
     private async Task CopyLinksFromParentAsync(

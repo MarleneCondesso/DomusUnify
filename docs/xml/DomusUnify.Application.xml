@@ -4,12 +4,154 @@
         <name>DomusUnify.Application</name>
     </assembly>
     <members>
+        <member name="T:DomusUnify.Application.Activity.ActivityService">
+            <summary>
+            Implementação do serviço de feed de atividade.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Application.Activity.ActivityService.#ctor(DomusUnify.Application.Common.Interfaces.IAppDbContext)">
+            <summary>
+            Inicializa uma nova instância de <see cref="T:DomusUnify.Application.Activity.ActivityService"/>.
+            </summary>
+            <param name="db">Contexto de base de dados.</param>
+        </member>
+        <member name="M:DomusUnify.Application.Activity.ActivityService.LogAsync(System.Guid,System.Guid,DomusUnify.Application.Activity.Models.ActivityLogInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Application.Activity.ActivityService.GetRecentAsync(System.Guid,System.Guid,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Application.Activity.ActivityService.GetAsync(System.Guid,System.Guid,System.Int32,System.Int32,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateOnly},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Application.Activity.IActivityService">
+            <summary>
+            Serviço de feed de atividade (recent updates).
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Application.Activity.IActivityService.LogAsync(System.Guid,System.Guid,DomusUnify.Application.Activity.Models.ActivityLogInput,System.Threading.CancellationToken)">
+            <summary>
+            Regista uma entrada de atividade na família.
+            </summary>
+            <param name="familyId">Identificador da família.</param>
+            <param name="actorUserId">Identificador do utilizador que executou a ação.</param>
+            <param name="input">Dados da entrada.</param>
+            <param name="ct">Token de cancelamento.</param>
+        </member>
+        <member name="M:DomusUnify.Application.Activity.IActivityService.GetRecentAsync(System.Guid,System.Guid,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Obtém as entradas mais recentes do feed, visíveis para o utilizador.
+            </summary>
+            <param name="userId">Utilizador autenticado.</param>
+            <param name="familyId">Família.</param>
+            <param name="take">Número de registos a devolver.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de entradas.</returns>
+        </member>
+        <member name="M:DomusUnify.Application.Activity.IActivityService.GetAsync(System.Guid,System.Guid,System.Int32,System.Int32,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateOnly},System.Threading.CancellationToken)">
+            <summary>
+            Obtém entradas do feed (paginado), visíveis para o utilizador.
+            </summary>
+            <param name="userId">Utilizador autenticado.</param>
+            <param name="familyId">Família.</param>
+            <param name="skip">Número de registos a saltar.</param>
+            <param name="take">Número de registos a devolver.</param>
+            <param name="type">
+            Filtro opcional por tipo/área.
+            Valores suportados: <c>lists</c>, <c>budget</c>, <c>calendar</c>.
+            </param>
+            <param name="fromUtc">Filtro opcional por data/hora inicial (UTC).</param>
+            <param name="toUtc">Filtro opcional por data/hora final (UTC, exclusivo).</param>
+            <param name="dateUtc">Filtro opcional por dia inteiro (UTC). Não pode ser usado em conjunto com <paramref name="fromUtc"/>/<paramref name="toUtc"/>.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de entradas.</returns>
+        </member>
+        <member name="T:DomusUnify.Application.Activity.Models.ActivityLogInput">
+            <summary>
+            Pedido interno para registar uma entrada de atividade.
+            </summary>
+            <param name="Kind">Tipo/identificador da atividade (ex.: <c>lists:item_added</c>).</param>
+            <param name="Message">Mensagem legível para UI (sem incluir o nome do ator).</param>
+            <param name="ListId">Identificador da lista associada (opcional).</param>
+            <param name="EntityId">Identificador de entidade relacionada (opcional).</param>
+        </member>
+        <member name="M:DomusUnify.Application.Activity.Models.ActivityLogInput.#ctor(System.String,System.String,System.Nullable{System.Guid},System.Nullable{System.Guid})">
+            <summary>
+            Pedido interno para registar uma entrada de atividade.
+            </summary>
+            <param name="Kind">Tipo/identificador da atividade (ex.: <c>lists:item_added</c>).</param>
+            <param name="Message">Mensagem legível para UI (sem incluir o nome do ator).</param>
+            <param name="ListId">Identificador da lista associada (opcional).</param>
+            <param name="EntityId">Identificador de entidade relacionada (opcional).</param>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityLogInput.Kind">
+            <summary>Tipo/identificador da atividade (ex.: <c>lists:item_added</c>).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityLogInput.Message">
+            <summary>Mensagem legível para UI (sem incluir o nome do ator).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityLogInput.ListId">
+            <summary>Identificador da lista associada (opcional).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityLogInput.EntityId">
+            <summary>Identificador de entidade relacionada (opcional).</summary>
+        </member>
+        <member name="T:DomusUnify.Application.Activity.Models.ActivityEntryModel">
+            <summary>
+            Modelo de entrada de atividade (feed).
+            </summary>
+            <param name="Id">Identificador da entrada.</param>
+            <param name="Kind">Tipo/identificador da atividade.</param>
+            <param name="Message">Mensagem legível.</param>
+            <param name="ActorUserId">Identificador do utilizador que executou a ação.</param>
+            <param name="ActorName">Nome do utilizador que executou a ação.</param>
+            <param name="CreatedAtUtc">Data/hora (UTC) da entrada.</param>
+            <param name="ListId">Identificador da lista associada (opcional).</param>
+            <param name="EntityId">Identificador de entidade relacionada (opcional).</param>
+        </member>
+        <member name="M:DomusUnify.Application.Activity.Models.ActivityEntryModel.#ctor(System.Guid,System.String,System.String,System.Guid,System.String,System.DateTime,System.Nullable{System.Guid},System.Nullable{System.Guid})">
+            <summary>
+            Modelo de entrada de atividade (feed).
+            </summary>
+            <param name="Id">Identificador da entrada.</param>
+            <param name="Kind">Tipo/identificador da atividade.</param>
+            <param name="Message">Mensagem legível.</param>
+            <param name="ActorUserId">Identificador do utilizador que executou a ação.</param>
+            <param name="ActorName">Nome do utilizador que executou a ação.</param>
+            <param name="CreatedAtUtc">Data/hora (UTC) da entrada.</param>
+            <param name="ListId">Identificador da lista associada (opcional).</param>
+            <param name="EntityId">Identificador de entidade relacionada (opcional).</param>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityEntryModel.Id">
+            <summary>Identificador da entrada.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityEntryModel.Kind">
+            <summary>Tipo/identificador da atividade.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityEntryModel.Message">
+            <summary>Mensagem legível.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityEntryModel.ActorUserId">
+            <summary>Identificador do utilizador que executou a ação.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityEntryModel.ActorName">
+            <summary>Nome do utilizador que executou a ação.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityEntryModel.CreatedAtUtc">
+            <summary>Data/hora (UTC) da entrada.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityEntryModel.ListId">
+            <summary>Identificador da lista associada (opcional).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Activity.Models.ActivityEntryModel.EntityId">
+            <summary>Identificador de entidade relacionada (opcional).</summary>
+        </member>
         <member name="T:DomusUnify.Application.Budgets.BudgetService">
             <summary>
             Implementação do serviço de orçamentos.
             </summary>
         </member>
-        <member name="M:DomusUnify.Application.Budgets.BudgetService.#ctor(DomusUnify.Application.Common.Interfaces.IAppDbContext,DomusUnify.Application.Common.Realtime.IRealtimeNotifier,DomusUnify.Application.FinanceCategories.IFinanceCategoryService,DomusUnify.Application.FinanceAccounts.IFinanceAccountService)">
+        <member name="M:DomusUnify.Application.Budgets.BudgetService.#ctor(DomusUnify.Application.Common.Interfaces.IAppDbContext,DomusUnify.Application.Common.Realtime.IRealtimeNotifier,DomusUnify.Application.FinanceCategories.IFinanceCategoryService,DomusUnify.Application.FinanceAccounts.IFinanceAccountService,DomusUnify.Application.Activity.IActivityService)">
             <summary>
             Inicializa uma nova instância de <see cref="T:DomusUnify.Application.Budgets.BudgetService"/>.
             </summary>
@@ -17,6 +159,7 @@
             <param name="rt">Notificador em tempo real.</param>
             <param name="cats">Serviço de categorias financeiras.</param>
             <param name="accounts">Serviço de contas financeiras.</param>
+            <param name="activity">Serviço de feed de atividade.</param>
         </member>
         <member name="M:DomusUnify.Application.Budgets.BudgetService.GetAsync(System.Guid,System.Guid,System.Threading.CancellationToken)">
             <inheritdoc />
@@ -534,15 +677,16 @@
             Implementação do serviço de calendário.
             </summary>
         </member>
-        <member name="M:DomusUnify.Application.Calendar.CalendarService.#ctor(DomusUnify.Application.Common.Interfaces.IAppDbContext,DomusUnify.Application.Common.Realtime.IRealtimeNotifier,DomusUnify.Application.Calendar.IRecurrenceService)">
+        <member name="M:DomusUnify.Application.Calendar.CalendarService.#ctor(DomusUnify.Application.Common.Interfaces.IAppDbContext,DomusUnify.Application.Common.Realtime.IRealtimeNotifier,DomusUnify.Application.Calendar.IRecurrenceService,DomusUnify.Application.Activity.IActivityService)">
             <summary>
             Inicializa uma nova instância de <see cref="T:DomusUnify.Application.Calendar.CalendarService"/>.
             </summary>
             <param name="db">Contexto de base de dados.</param>
             <param name="rt">Notificador em tempo real.</param>
             <param name="rec">Serviço de recorrência para expandir ocorrências.</param>
+            <param name="activity">Serviço de feed de atividade.</param>
         </member>
-        <member name="M:DomusUnify.Application.Calendar.CalendarService.GetEventsAsync(System.Guid,System.Guid,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.Nullable{System.Guid},System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Calendar.CalendarService.GetEventsAsync(System.Guid,System.Guid,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.Nullable{System.Guid},System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:DomusUnify.Application.Calendar.CalendarService.GetEventByIdAsync(System.Guid,System.Guid,System.Guid,System.Threading.CancellationToken)">
@@ -586,13 +730,13 @@
             Serviço do módulo de calendário (eventos, recorrências, cópias e exportação).
             </summary>
         </member>
-        <member name="M:DomusUnify.Application.Calendar.ICalendarService.GetEventsAsync(System.Guid,System.Guid,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.Nullable{System.Guid},System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Calendar.ICalendarService.GetEventsAsync(System.Guid,System.Guid,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.Nullable{System.Guid},System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <summary>
             Obtém eventos do calendário visíveis para o utilizador, com filtros opcionais.
             </summary>
             <remarks>
             Pode filtrar por intervalo (<paramref name="fromUtc"/>/<paramref name="toUtc"/>), por dia inteiro (<paramref name="dateUtc"/>),
-            por texto (<paramref name="search"/>) e por participante (<paramref name="participantUserId"/>).
+            por texto (<paramref name="search"/>), por participante (<paramref name="participantUserId"/>) e limitar resultados com <paramref name="take"/>.
             </remarks>
             <param name="userId">Identificador do utilizador autenticado.</param>
             <param name="familyId">Identificador da família.</param>
@@ -601,6 +745,7 @@
             <param name="dateUtc">Data (UTC) para filtrar por dia inteiro, opcional.</param>
             <param name="search">Texto a procurar no título, opcional.</param>
             <param name="participantUserId">Filtra por participante, opcional.</param>
+            <param name="take">Número máximo de instâncias a devolver. Se <c>null</c>, devolve todas as instâncias que correspondem aos filtros.</param>
             <param name="ct">Token de cancelamento.</param>
             <returns>Lista de instâncias de eventos (inclui ocorrências de recorrências).</returns>
         </member>
@@ -1601,6 +1746,20 @@
         <member name="P:DomusUnify.Application.Categories.Models.CategoryModel.SortOrder">
             <summary>Ordem de apresentação.</summary>
         </member>
+        <member name="T:DomusUnify.Application.Common.Covers.IStockPhotoProvider">
+            <summary>
+            Abstração para obter uma foto "stock" (URL pública) a partir de uma query.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Application.Common.Covers.IStockPhotoProvider.TryGetPhotoUrlAsync(System.String,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Tenta obter um URL de foto para a query.
+            </summary>
+            <param name="query">Texto de pesquisa (keywords).</param>
+            <param name="seed">Seed estável para escolher uma foto de forma determinística.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>URL público da foto (ou null se não estiver configurado/sem resultados).</returns>
+        </member>
         <member name="T:DomusUnify.Application.Common.Interfaces.IAppDbContext">
             <summary>
             Abstração do <see cref="T:Microsoft.EntityFrameworkCore.DbContext"/> para a camada de aplicação.
@@ -1635,9 +1794,24 @@
             Conjunto de listas partilhadas.
             </summary>
         </member>
+        <member name="P:DomusUnify.Application.Common.Interfaces.IAppDbContext.ListUserAccess">
+            <summary>
+            Conjunto de acessos de utilizadores a listas (quando a visibilidade é por membros específicos).
+            </summary>
+        </member>
         <member name="P:DomusUnify.Application.Common.Interfaces.IAppDbContext.ListItems">
             <summary>
             Conjunto de itens de listas.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Application.Common.Interfaces.IAppDbContext.ActivityEntries">
+            <summary>
+            Conjunto de entradas de atividade (feed) da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Application.Common.Interfaces.IAppDbContext.UserNotificationStates">
+            <summary>
+            Conjunto de estados de notificações (por utilizador e família).
             </summary>
         </member>
         <member name="P:DomusUnify.Application.Common.Interfaces.IAppDbContext.ItemCategories">
@@ -2790,40 +2964,48 @@
         </member>
         <member name="M:DomusUnify.Application.Lists.IListService.GetListsAsync(System.Guid,System.Guid,System.Threading.CancellationToken)">
             <summary>
-            Obtém as listas da família.
+            Obtém as listas visíveis para o utilizador na família.
             </summary>
             <param name="userId">Identificador do utilizador autenticado.</param>
             <param name="familyId">Identificador da família.</param>
             <param name="ct">Token de cancelamento.</param>
-            <returns>Lista de listas com contagens.</returns>
+            <returns>Lista de listas com contagens e informação de partilha.</returns>
         </member>
-        <member name="M:DomusUnify.Application.Lists.IListService.CreateListAsync(System.Guid,System.Guid,System.String,System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Lists.IListService.CreateListAsync(System.Guid,System.Guid,DomusUnify.Application.Lists.Models.ListCreateInput,System.Threading.CancellationToken)">
             <summary>
             Cria uma nova lista.
             </summary>
             <param name="userId">Identificador do utilizador autenticado.</param>
             <param name="familyId">Identificador da família.</param>
-            <param name="name">Nome da lista.</param>
-            <param name="colorHex">Cor em formato HEX.</param>
-            <param name="type">Tipo da lista (ex.: <c>Shopping</c>, <c>Tasks</c>).</param>
+            <param name="input">Dados para criação da lista (inclui visibilidade e membros, quando aplicável).</param>
             <param name="ct">Token de cancelamento.</param>
             <returns>Resumo da lista criada.</returns>
         </member>
-        <member name="M:DomusUnify.Application.Lists.IListService.UpdateListAsync(System.Guid,System.Guid,System.Guid,System.String,System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Lists.IListService.RegenerateListCoversAsync(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Regenera as capas (imagens) das listas visíveis ao utilizador na família atual.
+            </summary>
+            <remarks>
+            Útil quando a API de stock images foi configurada depois de já existirem listas (capas antigas em SVG).
+            </remarks>
+            <param name="userId">Identificador do utilizador autenticado.</param>
+            <param name="familyId">Identificador da família.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Número de listas atualizadas.</returns>
+        </member>
+        <member name="M:DomusUnify.Application.Lists.IListService.UpdateListAsync(System.Guid,System.Guid,System.Guid,DomusUnify.Application.Lists.Models.ListUpdateInput,System.Threading.CancellationToken)">
             <summary>
             Atualiza uma lista existente.
             </summary>
             <param name="userId">Identificador do utilizador autenticado.</param>
             <param name="familyId">Identificador da família.</param>
             <param name="listId">Identificador da lista.</param>
-            <param name="newName">Novo nome.</param>
-            <param name="colorHex">Nova cor (HEX).</param>
-            <param name="type">Novo tipo.</param>
+            <param name="input">Dados de atualização (inclui visibilidade e membros, quando aplicável).</param>
             <param name="ct">Token de cancelamento.</param>
         </member>
         <member name="M:DomusUnify.Application.Lists.IListService.DeleteListAsync(System.Guid,System.Guid,System.Guid,System.Threading.CancellationToken)">
             <summary>
-            Elimina uma lista.
+            Elimina uma lista existente.
             </summary>
             <param name="userId">Identificador do utilizador autenticado.</param>
             <param name="familyId">Identificador da família.</param>
@@ -2840,7 +3022,7 @@
             <param name="ct">Token de cancelamento.</param>
             <returns>Lista de itens.</returns>
         </member>
-        <member name="M:DomusUnify.Application.Lists.IListService.AddItemAsync(System.Guid,System.Guid,System.Guid,System.String,System.Nullable{System.Guid},System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Lists.IListService.AddItemAsync(System.Guid,System.Guid,System.Guid,System.String,System.Nullable{System.Guid},System.Nullable{System.Guid},System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Adiciona um item a uma lista.
             </summary>
@@ -2849,10 +3031,13 @@
             <param name="listId">Identificador da lista.</param>
             <param name="name">Nome do item.</param>
             <param name="categoryId">Categoria opcional.</param>
+            <param name="assigneeUserId">Utilizador a quem o item fica atribuÃ­do (opcional).</param>
+            <param name="note">Nota opcional.</param>
+            <param name="photoUrl">URL (ou data URL) de uma foto opcional.</param>
             <param name="ct">Token de cancelamento.</param>
             <returns>O item criado.</returns>
         </member>
-        <member name="M:DomusUnify.Application.Lists.IListService.UpdateItemAsync(System.Guid,System.Guid,System.Guid,System.String,System.Nullable{System.Boolean},System.Boolean,System.Nullable{System.Guid},System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Lists.IListService.UpdateItemAsync(System.Guid,System.Guid,System.Guid,System.String,System.Nullable{System.Boolean},System.Boolean,System.Nullable{System.Guid},System.Boolean,System.Nullable{System.Guid},System.Boolean,System.String,System.Boolean,System.String,System.Threading.CancellationToken)">
             <summary>
             Atualiza um item existente.
             </summary>
@@ -2866,11 +3051,17 @@
             <param name="isCompleted">Novo estado de conclusão (opcional).</param>
             <param name="categoryChangeRequested">Indica se existe pedido explícito de alteração de categoria.</param>
             <param name="categoryId">Nova categoria; <c>null</c> remove a categoria.</param>
+            <param name="assigneeChangeRequested">Indica se existe pedido explÃ­cito de alteraÃ§Ã£o do atribuÃ­do.</param>
+            <param name="assigneeUserId">Novo atribuÃ­do; <c>null</c> remove a atribuiÃ§Ã£o.</param>
+            <param name="noteChangeRequested">Indica se existe pedido explÃ­cito de alteraÃ§Ã£o/limpeza da nota.</param>
+            <param name="note">Nova nota; <c>null</c> remove a nota.</param>
+            <param name="photoChangeRequested">Indica se existe pedido explÃ­cito de alteraÃ§Ã£o/limpeza da foto.</param>
+            <param name="photoUrl">Nova foto (URL ou data URL); <c>null</c> remove a foto.</param>
             <param name="ct">Token de cancelamento.</param>
         </member>
         <member name="M:DomusUnify.Application.Lists.IListService.DeleteItemAsync(System.Guid,System.Guid,System.Guid,System.Threading.CancellationToken)">
             <summary>
-            Elimina um item de lista.
+            Elimina um item de lista existente.
             </summary>
             <param name="userId">Identificador do utilizador autenticado.</param>
             <param name="familyId">Identificador da família.</param>
@@ -2882,20 +3073,25 @@
             Implementação do serviço de listas e itens.
             </summary>
         </member>
-        <member name="M:DomusUnify.Application.Lists.ListService.#ctor(DomusUnify.Application.Common.Interfaces.IAppDbContext,DomusUnify.Application.Common.Realtime.IRealtimeNotifier)">
+        <member name="M:DomusUnify.Application.Lists.ListService.#ctor(DomusUnify.Application.Common.Interfaces.IAppDbContext,DomusUnify.Application.Common.Realtime.IRealtimeNotifier,DomusUnify.Application.Activity.IActivityService,DomusUnify.Application.Common.Covers.IStockPhotoProvider)">
             <summary>
             Inicializa uma nova instância de <see cref="T:DomusUnify.Application.Lists.ListService"/>.
             </summary>
             <param name="db">Contexto de base de dados.</param>
             <param name="rt">Notificador em tempo real.</param>
+            <param name="activity">Serviço de feed de atividade.</param>
+            <param name="stockPhotos">Provider de fotos stock (opcional / best-effort).</param>
         </member>
         <member name="M:DomusUnify.Application.Lists.ListService.GetListsAsync(System.Guid,System.Guid,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:DomusUnify.Application.Lists.ListService.CreateListAsync(System.Guid,System.Guid,System.String,System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Lists.ListService.CreateListAsync(System.Guid,System.Guid,DomusUnify.Application.Lists.Models.ListCreateInput,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:DomusUnify.Application.Lists.ListService.UpdateListAsync(System.Guid,System.Guid,System.Guid,System.String,System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Lists.ListService.RegenerateListCoversAsync(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Application.Lists.ListService.UpdateListAsync(System.Guid,System.Guid,System.Guid,DomusUnify.Application.Lists.Models.ListUpdateInput,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:DomusUnify.Application.Lists.ListService.DeleteListAsync(System.Guid,System.Guid,System.Guid,System.Threading.CancellationToken)">
@@ -2904,10 +3100,10 @@
         <member name="M:DomusUnify.Application.Lists.ListService.GetItemsAsync(System.Guid,System.Guid,System.Guid,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:DomusUnify.Application.Lists.ListService.AddItemAsync(System.Guid,System.Guid,System.Guid,System.String,System.Nullable{System.Guid},System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Lists.ListService.AddItemAsync(System.Guid,System.Guid,System.Guid,System.String,System.Nullable{System.Guid},System.Nullable{System.Guid},System.String,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:DomusUnify.Application.Lists.ListService.UpdateItemAsync(System.Guid,System.Guid,System.Guid,System.String,System.Nullable{System.Boolean},System.Boolean,System.Nullable{System.Guid},System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Application.Lists.ListService.UpdateItemAsync(System.Guid,System.Guid,System.Guid,System.String,System.Nullable{System.Boolean},System.Boolean,System.Nullable{System.Guid},System.Boolean,System.Nullable{System.Guid},System.Boolean,System.String,System.Boolean,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:DomusUnify.Application.Lists.ListService.DeleteItemAsync(System.Guid,System.Guid,System.Guid,System.Threading.CancellationToken)">
@@ -2920,18 +3116,28 @@
             <param name="Id">Identificador da lista.</param>
             <param name="Name">Nome da lista.</param>
             <param name="ColorHex">Cor da lista em hexadecimal.</param>
+            <param name="CoverImageUrl">URL da imagem de capa da lista.</param>
             <param name="Type">Tipo de lista (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).</param>
+            <param name="OwnerUserId">Identificador do utilizador proprietário (criador).</param>
+            <param name="VisibilityMode">Modo de visibilidade (<c>Private</c>, <c>AllMembers</c> ou <c>SpecificMembers</c>).</param>
+            <param name="AllowedUserIds">Lista de utilizadores com acesso quando a visibilidade é <c>SpecificMembers</c>.</param>
+            <param name="SharedWithMembers">Membros com os quais a lista é partilhada (quem tem acesso).</param>
             <param name="ItemsCount">Número total de itens.</param>
             <param name="CompletedCount">Número de itens concluídos.</param>
         </member>
-        <member name="M:DomusUnify.Application.Lists.Models.ListSummary.#ctor(System.Guid,System.String,System.String,System.String,System.Int32,System.Int32)">
+        <member name="M:DomusUnify.Application.Lists.Models.ListSummary.#ctor(System.Guid,System.String,System.String,System.String,System.String,System.Guid,System.String,System.Collections.Generic.IReadOnlyList{System.Guid},System.Collections.Generic.IReadOnlyList{DomusUnify.Application.Lists.Models.ListMemberPreview},System.Int32,System.Int32)">
             <summary>
             Modelo com informação resumida de uma lista.
             </summary>
             <param name="Id">Identificador da lista.</param>
             <param name="Name">Nome da lista.</param>
             <param name="ColorHex">Cor da lista em hexadecimal.</param>
+            <param name="CoverImageUrl">URL da imagem de capa da lista.</param>
             <param name="Type">Tipo de lista (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).</param>
+            <param name="OwnerUserId">Identificador do utilizador proprietário (criador).</param>
+            <param name="VisibilityMode">Modo de visibilidade (<c>Private</c>, <c>AllMembers</c> ou <c>SpecificMembers</c>).</param>
+            <param name="AllowedUserIds">Lista de utilizadores com acesso quando a visibilidade é <c>SpecificMembers</c>.</param>
+            <param name="SharedWithMembers">Membros com os quais a lista é partilhada (quem tem acesso).</param>
             <param name="ItemsCount">Número total de itens.</param>
             <param name="CompletedCount">Número de itens concluídos.</param>
         </member>
@@ -2944,14 +3150,119 @@
         <member name="P:DomusUnify.Application.Lists.Models.ListSummary.ColorHex">
             <summary>Cor da lista em hexadecimal.</summary>
         </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListSummary.CoverImageUrl">
+            <summary>URL da imagem de capa da lista.</summary>
+        </member>
         <member name="P:DomusUnify.Application.Lists.Models.ListSummary.Type">
             <summary>Tipo de lista (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListSummary.OwnerUserId">
+            <summary>Identificador do utilizador proprietário (criador).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListSummary.VisibilityMode">
+            <summary>Modo de visibilidade (<c>Private</c>, <c>AllMembers</c> ou <c>SpecificMembers</c>).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListSummary.AllowedUserIds">
+            <summary>Lista de utilizadores com acesso quando a visibilidade é <c>SpecificMembers</c>.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListSummary.SharedWithMembers">
+            <summary>Membros com os quais a lista é partilhada (quem tem acesso).</summary>
         </member>
         <member name="P:DomusUnify.Application.Lists.Models.ListSummary.ItemsCount">
             <summary>Número total de itens.</summary>
         </member>
         <member name="P:DomusUnify.Application.Lists.Models.ListSummary.CompletedCount">
             <summary>Número de itens concluídos.</summary>
+        </member>
+        <member name="T:DomusUnify.Application.Lists.Models.ListMemberPreview">
+            <summary>
+            Modelo com informação mínima de um membro (para pré-visualizações, como avatares).
+            </summary>
+            <param name="UserId">Identificador do utilizador.</param>
+            <param name="Name">Nome do utilizador.</param>
+        </member>
+        <member name="M:DomusUnify.Application.Lists.Models.ListMemberPreview.#ctor(System.Guid,System.String)">
+            <summary>
+            Modelo com informação mínima de um membro (para pré-visualizações, como avatares).
+            </summary>
+            <param name="UserId">Identificador do utilizador.</param>
+            <param name="Name">Nome do utilizador.</param>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListMemberPreview.UserId">
+            <summary>Identificador do utilizador.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListMemberPreview.Name">
+            <summary>Nome do utilizador.</summary>
+        </member>
+        <member name="T:DomusUnify.Application.Lists.Models.ListCreateInput">
+            <summary>
+            Pedido interno para criar uma lista.
+            </summary>
+            <param name="Name">Nome da lista.</param>
+            <param name="ColorHex">Cor em formato HEX.</param>
+            <param name="Type">Tipo de lista.</param>
+            <param name="VisibilityMode">Modo de visibilidade.</param>
+            <param name="AllowedUserIds">Utilizadores com acesso, quando aplicável.</param>
+        </member>
+        <member name="M:DomusUnify.Application.Lists.Models.ListCreateInput.#ctor(System.String,System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.Guid})">
+            <summary>
+            Pedido interno para criar uma lista.
+            </summary>
+            <param name="Name">Nome da lista.</param>
+            <param name="ColorHex">Cor em formato HEX.</param>
+            <param name="Type">Tipo de lista.</param>
+            <param name="VisibilityMode">Modo de visibilidade.</param>
+            <param name="AllowedUserIds">Utilizadores com acesso, quando aplicável.</param>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListCreateInput.Name">
+            <summary>Nome da lista.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListCreateInput.ColorHex">
+            <summary>Cor em formato HEX.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListCreateInput.Type">
+            <summary>Tipo de lista.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListCreateInput.VisibilityMode">
+            <summary>Modo de visibilidade.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListCreateInput.AllowedUserIds">
+            <summary>Utilizadores com acesso, quando aplicável.</summary>
+        </member>
+        <member name="T:DomusUnify.Application.Lists.Models.ListUpdateInput">
+            <summary>
+            Pedido interno para atualizar uma lista.
+            </summary>
+            <param name="Name">Novo nome da lista.</param>
+            <param name="ColorHex">Nova cor (HEX).</param>
+            <param name="Type">Novo tipo.</param>
+            <param name="VisibilityMode">Novo modo de visibilidade (opcional).</param>
+            <param name="AllowedUserIds">Lista de utilizadores com acesso, quando aplicável (opcional).</param>
+        </member>
+        <member name="M:DomusUnify.Application.Lists.Models.ListUpdateInput.#ctor(System.String,System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.Guid})">
+            <summary>
+            Pedido interno para atualizar uma lista.
+            </summary>
+            <param name="Name">Novo nome da lista.</param>
+            <param name="ColorHex">Nova cor (HEX).</param>
+            <param name="Type">Novo tipo.</param>
+            <param name="VisibilityMode">Novo modo de visibilidade (opcional).</param>
+            <param name="AllowedUserIds">Lista de utilizadores com acesso, quando aplicável (opcional).</param>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListUpdateInput.Name">
+            <summary>Novo nome da lista.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListUpdateInput.ColorHex">
+            <summary>Nova cor (HEX).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListUpdateInput.Type">
+            <summary>Novo tipo.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListUpdateInput.VisibilityMode">
+            <summary>Novo modo de visibilidade (opcional).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListUpdateInput.AllowedUserIds">
+            <summary>Lista de utilizadores com acesso, quando aplicável (opcional).</summary>
         </member>
         <member name="T:DomusUnify.Application.Lists.Models.ListItemModel">
             <summary>
@@ -2961,11 +3272,14 @@
             <param name="ListId">Identificador da lista.</param>
             <param name="Name">Nome do item.</param>
             <param name="CategoryId">Identificador da categoria (opcional).</param>
+            <param name="AssigneeUserId">Identificador do utilizador a quem estÃ¡ atribuÃ­do (opcional).</param>
+            <param name="Note">Nota opcional.</param>
+            <param name="PhotoUrl">URL (ou data URL) de uma foto (opcional).</param>
             <param name="IsCompleted">Indica se o item está concluído.</param>
             <param name="CompletedAtUtc">Data/hora de conclusão (UTC), se aplicável.</param>
             <param name="CompletedByUserId">Utilizador que concluiu o item, se aplicável.</param>
         </member>
-        <member name="M:DomusUnify.Application.Lists.Models.ListItemModel.#ctor(System.Guid,System.Guid,System.String,System.Nullable{System.Guid},System.Boolean,System.Nullable{System.DateTime},System.Nullable{System.Guid})">
+        <member name="M:DomusUnify.Application.Lists.Models.ListItemModel.#ctor(System.Guid,System.Guid,System.String,System.Nullable{System.Guid},System.Nullable{System.Guid},System.String,System.String,System.Boolean,System.Nullable{System.DateTime},System.Nullable{System.Guid})">
             <summary>
             Modelo de item de lista.
             </summary>
@@ -2973,6 +3287,9 @@
             <param name="ListId">Identificador da lista.</param>
             <param name="Name">Nome do item.</param>
             <param name="CategoryId">Identificador da categoria (opcional).</param>
+            <param name="AssigneeUserId">Identificador do utilizador a quem estÃ¡ atribuÃ­do (opcional).</param>
+            <param name="Note">Nota opcional.</param>
+            <param name="PhotoUrl">URL (ou data URL) de uma foto (opcional).</param>
             <param name="IsCompleted">Indica se o item está concluído.</param>
             <param name="CompletedAtUtc">Data/hora de conclusão (UTC), se aplicável.</param>
             <param name="CompletedByUserId">Utilizador que concluiu o item, se aplicável.</param>
@@ -2989,6 +3306,15 @@
         <member name="P:DomusUnify.Application.Lists.Models.ListItemModel.CategoryId">
             <summary>Identificador da categoria (opcional).</summary>
         </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListItemModel.AssigneeUserId">
+            <summary>Identificador do utilizador a quem estÃ¡ atribuÃ­do (opcional).</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListItemModel.Note">
+            <summary>Nota opcional.</summary>
+        </member>
+        <member name="P:DomusUnify.Application.Lists.Models.ListItemModel.PhotoUrl">
+            <summary>URL (ou data URL) de uma foto (opcional).</summary>
+        </member>
         <member name="P:DomusUnify.Application.Lists.Models.ListItemModel.IsCompleted">
             <summary>Indica se o item está concluído.</summary>
         </member>
@@ -2997,6 +3323,46 @@
         </member>
         <member name="P:DomusUnify.Application.Lists.Models.ListItemModel.CompletedByUserId">
             <summary>Utilizador que concluiu o item, se aplicável.</summary>
+        </member>
+        <member name="T:DomusUnify.Application.Notifications.INotificationService">
+            <summary>
+            Serviço de notificações (não vistas) baseado no feed de atividade.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Application.Notifications.INotificationService.GetUnreadAsync(System.Guid,System.Guid,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Obtém as notificações não vistas do utilizador na família.
+            </summary>
+            <param name="userId">Utilizador autenticado.</param>
+            <param name="familyId">Família.</param>
+            <param name="take">Número máximo a devolver.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de entradas de atividade não vistas.</returns>
+        </member>
+        <member name="M:DomusUnify.Application.Notifications.INotificationService.MarkAllSeenAsync(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Marca todas as notificações como vistas (atualiza o marcador de última visualização).
+            </summary>
+            <param name="userId">Utilizador autenticado.</param>
+            <param name="familyId">Família.</param>
+            <param name="ct">Token de cancelamento.</param>
+        </member>
+        <member name="T:DomusUnify.Application.Notifications.NotificationService">
+            <summary>
+            Implementação do serviço de notificações (não vistas).
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Application.Notifications.NotificationService.#ctor(DomusUnify.Application.Common.Interfaces.IAppDbContext)">
+            <summary>
+            Inicializa uma nova instância de <see cref="T:DomusUnify.Application.Notifications.NotificationService"/>.
+            </summary>
+            <param name="db">Contexto de base de dados.</param>
+        </member>
+        <member name="M:DomusUnify.Application.Notifications.NotificationService.GetUnreadAsync(System.Guid,System.Guid,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Application.Notifications.NotificationService.MarkAllSeenAsync(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <inheritdoc />
         </member>
         <member name="T:DomusUnify.Application.Recurrence.CalendarEditScope">
             <summary>
@@ -3031,6 +3397,16 @@
         <member name="P:DomusUnify.Api.DTOs.Auth.AuthResponse.ExpiresAtUtc">
             <summary>
             Data/hora de expiração do token (UTC).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Auth.ExternalLoginRequest">
+            <summary>
+            Pedido de login via provider externo (ex.: Google).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Auth.ExternalLoginRequest.IdToken">
+            <summary>
+            ID token (JWT) devolvido pelo provider.
             </summary>
         </member>
         <member name="T:DomusUnify.Api.DTOs.Auth.LoginRequest">

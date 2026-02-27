@@ -11,6 +11,11 @@ public sealed class CreateCategoryRequest
     public string Name { get; set; } = null!;
 
     /// <summary>
+    /// Tipo de lista ao qual esta categoria pertence (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).
+    /// </summary>
+    public string Type { get; set; } = "Custom";
+
+    /// <summary>
     /// Chave do ícone da categoria.
     /// </summary>
     public string IconKey { get; set; } = "tag";

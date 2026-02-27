@@ -1,4 +1,5 @@
 using DomusUnify.Domain.Common;
+using DomusUnify.Domain.Enums;
 
 namespace DomusUnify.Domain.Entities;
 
@@ -21,6 +22,11 @@ public class ItemCategory : BaseEntity
     /// Nome da categoria.
     /// </summary>
     public string Name { get; set; } = null!;
+
+    /// <summary>
+    /// Tipo de lista ao qual esta categoria pertence.
+    /// </summary>
+    public ListType Type { get; set; } = ListType.Custom;
 
     /// <summary>
     /// Chave do ícone da categoria.

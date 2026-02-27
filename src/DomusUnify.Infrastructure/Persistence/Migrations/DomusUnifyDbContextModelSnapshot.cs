@@ -22,6 +22,51 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("DomusUnify.Domain.Entities.ActivityEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<Guid?>("ListId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("ListId");
+
+                    b.HasIndex("FamilyId", "CreatedAtUtc");
+
+                    b.ToTable("ActivityEntries", (string)null);
+                });
+
             modelBuilder.Entity("DomusUnify.Domain.Entities.Budget", b =>
                 {
                     b.Property<Guid>("Id")
@@ -672,12 +717,15 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FamilyId", "Name")
+                    b.HasIndex("FamilyId", "Type", "Name")
                         .IsUnique();
 
                     b.ToTable("ItemCategories", (string)null);
@@ -687,6 +735,9 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssigneeUserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("CategoryId")
@@ -709,6 +760,13 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("PhotoUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("SharedListId")
                         .HasColumnType("uniqueidentifier");
 
@@ -716,6 +774,8 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssigneeUserId");
 
                     b.HasIndex("CategoryId");
 
@@ -737,6 +797,10 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Property<string>("ColorHex")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CoverImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -748,17 +812,50 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("VisibilityMode")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId");
 
                     b.HasIndex("FamilyId", "Name");
 
                     b.ToTable("Lists", (string)null);
+                });
+
+            modelBuilder.Entity("DomusUnify.Domain.Entities.SharedListUserAccess", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SharedListId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SharedListId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ListUserAccess", (string)null);
                 });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.User", b =>
@@ -830,6 +927,104 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("UserCalendarSettings", (string)null);
+                });
+
+            modelBuilder.Entity("DomusUnify.Domain.Entities.UserExternalLogin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("ProviderSubject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Provider", "ProviderSubject")
+                        .IsUnique();
+
+                    b.ToTable("UserExternalLogins", (string)null);
+                });
+
+            modelBuilder.Entity("DomusUnify.Domain.Entities.UserNotificationState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("LastSeenAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FamilyId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "FamilyId")
+                        .IsUnique();
+
+                    b.ToTable("UserNotificationStates", (string)null);
+                });
+
+            modelBuilder.Entity("DomusUnify.Domain.Entities.ActivityEntry", b =>
+                {
+                    b.HasOne("DomusUnify.Domain.Entities.User", "ActorUser")
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("DomusUnify.Domain.Entities.SharedList", "List")
+                        .WithMany()
+                        .HasForeignKey("ListId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ActorUser");
+
+                    b.Navigation("Family");
+
+                    b.Navigation("List");
                 });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.Budget", b =>
@@ -1110,6 +1305,11 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.ListItem", b =>
                 {
+                    b.HasOne("DomusUnify.Domain.Entities.User", "AssigneeUser")
+                        .WithMany()
+                        .HasForeignKey("AssigneeUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("DomusUnify.Domain.Entities.ItemCategory", "Category")
                         .WithMany("Items")
                         .HasForeignKey("CategoryId")
@@ -1126,6 +1326,8 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("AssigneeUser");
+
                     b.Navigation("Category");
 
                     b.Navigation("CompletedByUser");
@@ -1141,7 +1343,34 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DomusUnify.Domain.Entities.User", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.Navigation("Family");
+
+                    b.Navigation("OwnerUser");
+                });
+
+            modelBuilder.Entity("DomusUnify.Domain.Entities.SharedListUserAccess", b =>
+                {
+                    b.HasOne("DomusUnify.Domain.Entities.SharedList", "SharedList")
+                        .WithMany("AllowedUsers")
+                        .HasForeignKey("SharedListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DomusUnify.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("SharedList");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.User", b =>
@@ -1161,6 +1390,36 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .HasForeignKey("DomusUnify.Domain.Entities.UserCalendarSettings", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DomusUnify.Domain.Entities.UserExternalLogin", b =>
+                {
+                    b.HasOne("DomusUnify.Domain.Entities.User", "User")
+                        .WithMany("ExternalLogins")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DomusUnify.Domain.Entities.UserNotificationState", b =>
+                {
+                    b.HasOne("DomusUnify.Domain.Entities.Family", "Family")
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DomusUnify.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Family");
 
                     b.Navigation("User");
                 });
@@ -1207,12 +1466,16 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.SharedList", b =>
                 {
+                    b.Navigation("AllowedUsers");
+
                     b.Navigation("Items");
                 });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.User", b =>
                 {
                     b.Navigation("CreatedEvents");
+
+                    b.Navigation("ExternalLogins");
 
                     b.Navigation("FamilyMemberships");
                 });

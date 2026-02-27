@@ -19,6 +19,41 @@
             <param name="user">Principal autenticado.</param>
             <returns>Identificador do utilizador.</returns>
         </member>
+        <member name="T:DomusUnify.Api.Controllers.ActivityController">
+            <summary>
+            Endpoints do feed de atividade (Recent Updates / All Activity) da família atual.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ActivityController.GetRecent(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Obtém as entradas mais recentes do feed de atividade.
+            </summary>
+            <remarks>
+            Útil para o cartão "Recent Updates" no dashboard (ex.: os primeiros 4 updates).
+            </remarks>
+            <param name="take">Número de entradas a devolver (por defeito 4).</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de entradas de atividade.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ActivityController.GetAll(System.Int32,System.Int32,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateOnly},System.Threading.CancellationToken)">
+            <summary>
+            Obtém entradas do feed de atividade (paginado).
+            </summary>
+            <remarks>
+            Útil para "View All Activity".
+            </remarks>
+            <param name="skip">Número de registos a saltar (por defeito 0).</param>
+            <param name="take">Número de registos a devolver (por defeito 50).</param>
+            <param name="type">
+            Filtro opcional por tipo/área.
+            Valores suportados: <c>lists</c>, <c>budget</c>, <c>calendar</c>.
+            </param>
+            <param name="fromUtc">Filtro opcional por data/hora inicial (UTC).</param>
+            <param name="toUtc">Filtro opcional por data/hora final (UTC, exclusivo).</param>
+            <param name="dateUtc">Filtro opcional por dia inteiro (UTC). Não pode ser usado em conjunto com <paramref name="fromUtc"/>/<paramref name="toUtc"/>.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de entradas de atividade.</returns>
+        </member>
         <member name="T:DomusUnify.Api.Controllers.AuthController">
             <summary>
             Endpoints de autenticação e registo de utilizadores.
@@ -42,6 +77,14 @@
             Verifica as credenciais fornecidas. Se inválidas, retorna erro de não autorizado.
             </remarks>
             <param name="request">O pedido de login contendo email e palavra-passe.</param>
+            <returns>Uma resposta de autenticação com token de acesso e tempo de expiração.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.AuthController.LoginWithGoogle(DomusUnify.Api.DTOs.Auth.ExternalLoginRequest,System.Threading.CancellationToken)">
+            <summary>
+            Login com Google (ID token devolvido pelo Google Identity Services).
+            </summary>
+            <param name="request">Pedido com o ID token devolvido pelo Google.</param>
+            <param name="cancellationToken">Token de cancelamento.</param>
             <returns>Uma resposta de autenticação com token de acesso e tempo de expiração.</returns>
         </member>
         <member name="T:DomusUnify.Api.Controllers.BudgetsController">
@@ -154,7 +197,7 @@
             Endpoints do módulo de calendário para a família atual.
             </summary>
         </member>
-        <member name="M:DomusUnify.Api.Controllers.CalendarController.GetEvents(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateOnly},System.String,System.Nullable{System.Guid},System.Threading.CancellationToken)">
+        <member name="M:DomusUnify.Api.Controllers.CalendarController.GetEvents(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateOnly},System.String,System.Nullable{System.Guid},System.Nullable{System.Int32},System.Threading.CancellationToken)">
              <summary>
              Lista eventos do calendário visíveis para o utilizador autenticado.
              </summary>
@@ -164,6 +207,7 @@
              - intervalo (fromUtc/toUtc)
              - search (parte do título)
              - participantUserId (participante específico)
+             - take (limitar o número de eventos devolvidos)
             
              Se nenhum filtro for fornecido, devolve uma janela default (ex: últimos 7 dias + próximos 30).
              </remarks>
@@ -172,6 +216,7 @@
              <param name="dateUtc">Dia (UTC) para filtrar por dia inteiro, opcional.</param>
              <param name="search">Texto para procurar no título, opcional.</param>
              <param name="participantUserId">Filtra por participante específico, opcional.</param>
+             <param name="take">Número máximo de eventos a devolver. Se não for fornecido, devolve todos os eventos que correspondem aos outros filtros.</param>
              <param name="ct">Token de cancelamento.</param>
              <returns>Uma lista de respostas de eventos do calendário.</returns>
         </member>
@@ -710,6 +755,19 @@
             <param name="ct">Token de cancelamento.</param>
             <returns>Sem conteúdo se bem-sucedido.</returns>
         </member>
+        <member name="T:DomusUnify.Api.Controllers.ListCoversController">
+            <summary>
+            Geração de imagens de capa (SVG) para listas.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListCoversController.GetSvg(System.String,System.Int32,System.String)">
+            <summary>
+            Devolve uma imagem SVG gerada de forma determinística a partir de uma categoria e seed.
+            </summary>
+            <remarks>
+            Este endpoint é público (sem auth) porque imagens carregadas por CSS/IMG não incluem o header Authorization.
+            </remarks>
+        </member>
         <member name="T:DomusUnify.Api.Controllers.ListsController">
             <summary>
             Endpoints de gestão de listas (ex.: compras/tarefas) e respetivos itens na família atual.
@@ -717,10 +775,10 @@
         </member>
         <member name="M:DomusUnify.Api.Controllers.ListsController.GetLists(System.Threading.CancellationToken)">
             <summary>
-            Obtém todas as listas para a família atual.
+            Obtém todas as listas visíveis para o utilizador na família atual.
             </summary>
             <remarks>
-            Lista todas as listas visíveis para o utilizador, incluindo contagem de itens e completados.
+            Lista todas as listas visíveis para o utilizador, incluindo contagem de itens, concluídos e informação de partilha.
             </remarks>
             <param name="ct">Token de cancelamento.</param>
             <returns>Uma lista de respostas de listas.</returns>
@@ -730,18 +788,26 @@
             Cria uma nova lista para a família atual.
             </summary>
             <remarks>
-            Permite definir nome, cor e tipo da lista. O utilizador deve ter permissões na família.
+            Permite definir nome, cor, tipo e visibilidade da lista.
             </remarks>
             <param name="request">O pedido contendo detalhes da lista a criar.</param>
             <param name="ct">Token de cancelamento.</param>
             <returns>A resposta da lista criada.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.ListsController.RegenerateCovers(System.Threading.CancellationToken)">
+            <summary>
+            Regenera as capas (imagens) das listas visíveis para o utilizador.
+            </summary>
+            <remarks>
+            Útil quando a API de stock images foi configurada depois de já existirem listas (capas antigas em SVG).
+            </remarks>
         </member>
         <member name="M:DomusUnify.Api.Controllers.ListsController.UpdateList(System.Guid,DomusUnify.Api.DTOs.Lists.UpdateListRequest,System.Threading.CancellationToken)">
             <summary>
             Atualiza uma lista existente.
             </summary>
             <remarks>
-            Permite alterar nome, cor e tipo da lista. O utilizador deve ter permissões na família.
+            Permite alterar nome, cor e tipo da lista. A visibilidade/partilha pode ser alterada (opcional).
             </remarks>
             <param name="listId">O ID da lista a atualizar.</param>
             <param name="request">O pedido contendo detalhes atualizados da lista.</param>
@@ -775,7 +841,7 @@
             Adiciona um novo item a uma lista.
             </summary>
             <remarks>
-            Permite definir nome e categoria opcional do item. O utilizador deve ter permissões na família.
+            Permite definir nome e categoria opcional do item.
             </remarks>
             <param name="listId">O ID da lista.</param>
             <param name="request">O pedido contendo detalhes do item a adicionar.</param>
@@ -799,11 +865,82 @@
             Elimina um item de lista existente.
             </summary>
             <remarks>
-            Remove o item da lista. O utilizador deve ter permissões na família.
+            Remove o item da lista.
             </remarks>
             <param name="itemId">O ID do item a eliminar.</param>
             <param name="ct">Token de cancelamento.</param>
             <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.NotificationsController">
+            <summary>
+            Endpoints de notificações (não vistas) da família atual.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.NotificationsController.GetUnread(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Obtém notificações não vistas do utilizador na família atual.
+            </summary>
+            <remarks>
+            As notificações são baseadas no feed de atividade e filtradas por visibilidade.
+            </remarks>
+            <param name="take">Número máximo a devolver (por defeito 50).</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de notificações (entradas de atividade não vistas).</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.NotificationsController.MarkAllSeen(System.Threading.CancellationToken)">
+            <summary>
+            Marca todas as notificações como vistas.
+            </summary>
+            <remarks>
+            Atualiza o marcador interno (<c>LastSeenAtUtc</c>) para a data/hora atual.
+            </remarks>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse">
+            <summary>
+            Resposta com uma entrada do feed de atividade.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse.Id">
+            <summary>
+            Identificador da entrada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse.Kind">
+            <summary>
+            Tipo/identificador da atividade.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse.Message">
+            <summary>
+            Mensagem legível (sem incluir o nome do ator).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse.ActorUserId">
+            <summary>
+            Identificador do utilizador que executou a ação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse.ActorName">
+            <summary>
+            Nome do utilizador que executou a ação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse.CreatedAtUtc">
+            <summary>
+            Data/hora (UTC) da entrada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse.ListId">
+            <summary>
+            Identificador da lista associada (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse.EntityId">
+            <summary>
+            Identificador de entidade relacionada (opcional).
+            </summary>
         </member>
         <member name="T:DomusUnify.Api.DTOs.Budgets.BudgetCategoryLimitRequest">
             <summary>
@@ -2380,6 +2517,21 @@
             Identificador da categoria do item (opcional).
             </summary>
         </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListItemRequest.AssigneeUserId">
+            <summary>
+            Identificador do utilizador a quem o item estÃ¡ atribuÃ­do (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListItemRequest.Note">
+            <summary>
+            Nota opcional associada ao item.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListItemRequest.PhotoUrl">
+            <summary>
+            URL (ou data URL) de uma foto associada ao item (opcional).
+            </summary>
+        </member>
         <member name="T:DomusUnify.Api.DTOs.Lists.CreateListRequest">
             <summary>
             Pedido para criar uma nova lista.
@@ -2398,6 +2550,16 @@
         <member name="P:DomusUnify.Api.DTOs.Lists.CreateListRequest.ColorHex">
             <summary>
             Cor da lista em hexadecimal (ex.: <c>#FFAA00</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListRequest.VisibilityMode">
+            <summary>
+            Modo de visibilidade da lista (<c>Private</c>, <c>AllMembers</c> ou <c>SpecificMembers</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.CreateListRequest.AllowedUserIds">
+            <summary>
+            Lista de utilizadores com acesso quando a visibilidade é <c>SpecificMembers</c>.
             </summary>
         </member>
         <member name="T:DomusUnify.Api.DTOs.Lists.ListItemResponse">
@@ -2428,6 +2590,21 @@
         <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.CategoryId">
             <summary>
             Identificador da categoria do item (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.AssigneeUserId">
+            <summary>
+            Identificador do utilizador a quem o item estÃ¡ atribuÃ­do (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.Note">
+            <summary>
+            Nota opcional associada ao item.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.PhotoUrl">
+            <summary>
+            URL (ou data URL) de uma foto associada ao item (opcional).
             </summary>
         </member>
         <member name="P:DomusUnify.Api.DTOs.Lists.ListItemResponse.CompletedAtUtc">
@@ -2465,6 +2642,31 @@
             Cor da lista em hexadecimal.
             </summary>
         </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.CoverImageUrl">
+            <summary>
+            URL da imagem de capa da lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.OwnerUserId">
+            <summary>
+            Identificador do utilizador proprietário (criador).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.VisibilityMode">
+            <summary>
+            Modo de visibilidade da lista (<c>Private</c>, <c>AllMembers</c> ou <c>SpecificMembers</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.AllowedUserIds">
+            <summary>
+            Lista de utilizadores com acesso quando a visibilidade é <c>SpecificMembers</c>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.SharedWithMembers">
+            <summary>
+            Membros com os quais a lista é partilhada (ou seja, quem tem acesso à lista).
+            </summary>
+        </member>
         <member name="P:DomusUnify.Api.DTOs.Lists.ListResponse.ItemsCount">
             <summary>
             Número total de itens na lista.
@@ -2483,6 +2685,21 @@
         <member name="P:DomusUnify.Api.DTOs.Lists.RenameListRequest.Name">
             <summary>
             Novo nome da lista.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Lists.SharedListMemberPreviewResponse">
+            <summary>
+            Resposta com informação mínima de um membro (para pré-visualizações, como avatares).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.SharedListMemberPreviewResponse.UserId">
+            <summary>
+            Identificador do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.SharedListMemberPreviewResponse.Name">
+            <summary>
+            Nome do utilizador.
             </summary>
         </member>
         <member name="T:DomusUnify.Api.DTOs.Lists.UpdateListItemRequest">
@@ -2508,6 +2725,30 @@
             Tipicamente é um GUID; é recebido como JSON para suportar pedidos onde o valor pode vir nulo/variável.
             </remarks>
         </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListItemRequest.AssigneeUserId">
+            <summary>
+            Identificador do utilizador a quem o item estÃ¡ atribuÃ­do (opcional).
+            </summary>
+            <remarks>
+            Tipicamente Ã© um GUID; Ã© recebido como JSON para suportar pedidos onde o valor pode vir nulo/variÃ¡vel.
+            </remarks>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListItemRequest.Note">
+            <summary>
+            Nota do item (opcional).
+            </summary>
+            <remarks>
+            Recebido como JSON para distinguir entre "nÃ£o alterar" (propriedade ausente) e "limpar" (null).
+            </remarks>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListItemRequest.PhotoUrl">
+            <summary>
+            URL (ou data URL) da foto do item (opcional).
+            </summary>
+            <remarks>
+            Recebido como JSON para distinguir entre "nÃ£o alterar" (propriedade ausente) e "limpar" (null).
+            </remarks>
+        </member>
         <member name="T:DomusUnify.Api.DTOs.Lists.UpdateListRequest">
             <summary>
             Pedido para atualizar uma lista.
@@ -2526,6 +2767,16 @@
         <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListRequest.Type">
             <summary>
             Tipo de lista (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListRequest.VisibilityMode">
+            <summary>
+            Novo modo de visibilidade (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListRequest.AllowedUserIds">
+            <summary>
+            Lista de utilizadores com acesso, quando aplicável (opcional).
             </summary>
         </member>
         <member name="T:DomusUnify.Api.Hubs.FamilyHub">
@@ -2564,6 +2815,31 @@
         <member name="M:DomusUnify.Api.Realtime.SignalRRealtimeNotifier.NotifyFamilyAsync(System.Guid,System.String,System.Object,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="T:DomusUnify.Api.Services.Auth.ExternalAuthOptions">
+            <summary>
+            Opções de autenticação externa.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Api.Services.Auth.ExternalAuthOptions.SectionName">
+            <summary>
+            Nome da secção no ficheiro de configuração.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.Services.Auth.ExternalAuthOptions.GoogleOptions.ClientId">
+            <summary>
+            OAuth Client ID (Web) do Google.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.Services.Auth.ExternalIdTokenValidator">
+            <summary>
+            Valida ID tokens (JWT) emitidos por providers externos (ex.: Google) via OpenID Connect.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.Services.Auth.IExternalIdTokenValidator">
+            <summary>
+            Valida ID tokens (JWT) emitidos por providers externos (ex.: Google).
+            </summary>
+        </member>
         <member name="T:DomusUnify.Api.Services.Auth.IJwtTokenService">
             <summary>
             Serviço responsável por emitir tokens JWT para autenticação.
@@ -2583,6 +2859,11 @@
         </member>
         <member name="M:DomusUnify.Api.Services.Auth.JwtTokenService.CreateToken(DomusUnify.Domain.Entities.User)">
             <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Api.Services.Covers.PexelsStockPhotoProvider">
+            <summary>
+            Provider de fotos stock via Pexels API (https://www.pexels.com/api/).
+            </summary>
         </member>
         <member name="T:DomusUnify.Api.Services.CurrentUser.CurrentUserContext">
             <summary>

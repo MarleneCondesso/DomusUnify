@@ -16,6 +16,35 @@ public sealed class CategoryService : ICategoryService
     private static readonly Regex IconKeyRegex = new("^[a-z0-9_-]{1,40}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex ColorHexRegex = new("^#[0-9a-fA-F]{6}$", RegexOptions.Compiled);
 
+    private static readonly IReadOnlyList<(ListType Type, string Name, string IconKey, int SortOrder)> DefaultItemCategories =
+    [
+        // Shopping
+        (ListType.Shopping, "Sushi", "emoji_1f363", 0),
+        (ListType.Shopping, "Frutas & Legumes", "emoji_1f34e", 1),
+        (ListType.Shopping, "Carne & Peixe", "emoji_1f357", 2),
+        (ListType.Shopping, "Pão & Confeitaria", "emoji_1f35e", 3),
+        (ListType.Shopping, "Laticínios", "emoji_1f95b", 4),
+        (ListType.Shopping, "Congelados & Conveniente", "emoji_2744_fe0f", 5),
+        (ListType.Shopping, "Cereais & Grãos", "emoji_1f33e", 6),
+        (ListType.Shopping, "Bebidas", "emoji_1f9c3", 7),
+        (ListType.Shopping, "Ingredientes & Condimentos", "emoji_1f9c2", 8),
+        (ListType.Shopping, "Lanches & Doces", "emoji_1f36b", 9),
+        (ListType.Shopping, "Artesanato & Jardim", "emoji_1f9f4", 10),
+        (ListType.Shopping, "Limpeza & Higiene", "emoji_1f9fc", 11),
+        (ListType.Shopping, "Animais", "emoji_1f436", 12),
+        (ListType.Shopping, "Cozinha", "emoji_1f37d_fe0f", 13),
+
+        // Tasks
+        (ListType.Tasks, "Cozinha", "emoji_1f468_200d_1f373", 0),
+        (ListType.Tasks, "Quarto", "emoji_1f6cf_fe0f", 1),
+        (ListType.Tasks, "Sala", "emoji_1f6cb_fe0f", 2),
+        (ListType.Tasks, "Escritório", "emoji_1f469_200d_1f4bb", 3),
+        (ListType.Tasks, "Roupa", "emoji_1f9fa", 4),
+        (ListType.Tasks, "Lixo", "emoji_1f6ae", 5),
+        (ListType.Tasks, "Casa de banho", "emoji_1f6c1", 6),
+        (ListType.Tasks, "Corredor", "emoji_1f6aa", 7),
+    ];
+
     private readonly IAppDbContext _db;
     private readonly IRealtimeNotifier _rt;
 
@@ -37,17 +66,19 @@ public sealed class CategoryService : ICategoryService
     {
         await EnsureMemberAsync(userId, familyId, ct);
 
+        await EnsureDefaultItemCategoriesAsync(familyId, ct);
+
         return await _db.ItemCategories
             .AsNoTracking()
             .Where(c => c.FamilyId == familyId)
             .OrderBy(c => c.SortOrder)
             .ThenBy(c => c.Name)
-            .Select(c => new CategoryModel(c.Id, c.Name, c.IconKey, "", c.SortOrder))
+            .Select(c => new CategoryModel(c.Id, c.Name, c.Type, c.IconKey, "", c.SortOrder))
             .ToListAsync(ct);
     }
 
     /// <inheritdoc />
-    public async Task<CategoryModel> CreateItemCategoryAsync(Guid userId, Guid familyId, string name, string iconKey, int sortOrder, CancellationToken ct)
+    public async Task<CategoryModel> CreateItemCategoryAsync(Guid userId, Guid familyId, string name, ListType type, string iconKey, int sortOrder, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
         EnsureNotViewer(role);
@@ -58,6 +89,7 @@ public sealed class CategoryService : ICategoryService
         {
             FamilyId = familyId,
             Name = data.Name,
+            Type = type,
             IconKey = data.IconKey,
             SortOrder = sortOrder
         };
@@ -75,6 +107,7 @@ public sealed class CategoryService : ICategoryService
             {
                 id = model.Id,
                 name = model.Name,
+                type = model.Type.ToString(),
                 iconKey = model.IconKey,
                 sortOrder = model.SortOrder
             }
@@ -84,7 +117,7 @@ public sealed class CategoryService : ICategoryService
     }
 
     /// <inheritdoc />
-    public async Task<CategoryModel> UpdateItemCategoryAsync(Guid userId, Guid familyId, Guid categoryId, string? name, string? iconKey, int? sortOrder, CancellationToken ct)
+    public async Task<CategoryModel> UpdateItemCategoryAsync(Guid userId, Guid familyId, Guid categoryId, string? name, ListType? type, string? iconKey, int? sortOrder, CancellationToken ct)
     {
         var role = await EnsureMemberAsync(userId, familyId, ct);
         EnsureNotViewer(role);
@@ -93,6 +126,7 @@ public sealed class CategoryService : ICategoryService
         if (entity is null) throw new KeyNotFoundException("Categoria não encontrada.");
 
         if (name is not null) entity.Name = NormalizeName(name);
+        if (type.HasValue) entity.Type = type.Value;
         if (iconKey is not null) entity.IconKey = NormalizeIconKey(iconKey);
         if (sortOrder.HasValue) entity.SortOrder = sortOrder.Value;
 
@@ -109,6 +143,7 @@ public sealed class CategoryService : ICategoryService
             {
                 id = model.Id,
                 name = model.Name,
+                type = model.Type.ToString(),
                 iconKey = model.IconKey,
                 sortOrder = model.SortOrder
             }
@@ -143,7 +178,7 @@ public sealed class CategoryService : ICategoryService
     }
 
     // ---------------- Helpers ----------------
-    private static CategoryModel ToModel(ItemCategory c) => new(c.Id, c.Name, c.IconKey, "", c.SortOrder);
+    private static CategoryModel ToModel(ItemCategory c) => new(c.Id, c.Name, c.Type, c.IconKey, "", c.SortOrder);
 
     private sealed record Normalized(string Name, string IconKey);
 
@@ -181,6 +216,50 @@ public sealed class CategoryService : ICategoryService
     {
         if (string.IsNullOrWhiteSpace(entity.Name)) throw new ArgumentException("Nome é obrigatório.");
         if (!IconKeyRegex.IsMatch(entity.IconKey)) throw new ArgumentException("IconKey inválido.");
+    }
+
+    private async Task EnsureDefaultItemCategoriesAsync(Guid familyId, CancellationToken ct)
+    {
+        // Seed defaults for Shopping/Tasks only. Custom lists start empty by design.
+        var hasShopping = await _db.ItemCategories
+            .AsNoTracking()
+            .AnyAsync(c => c.FamilyId == familyId && c.Type == ListType.Shopping, ct);
+
+        var hasTasks = await _db.ItemCategories
+            .AsNoTracking()
+            .AnyAsync(c => c.FamilyId == familyId && c.Type == ListType.Tasks, ct);
+
+        if (hasShopping && hasTasks) return;
+
+        var toAdd = new List<ItemCategory>();
+
+        foreach (var def in DefaultItemCategories)
+        {
+            if (def.Type == ListType.Shopping && hasShopping) continue;
+            if (def.Type == ListType.Tasks && hasTasks) continue;
+
+            toAdd.Add(new ItemCategory
+            {
+                FamilyId = familyId,
+                Name = def.Name,
+                Type = def.Type,
+                IconKey = def.IconKey,
+                SortOrder = def.SortOrder
+            });
+        }
+
+        if (toAdd.Count == 0) return;
+
+        _db.ItemCategories.AddRange(toAdd);
+
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // If two requests race, the unique index will prevent duplicates.
+        }
     }
 
     private async Task<FamilyRole> EnsureMemberAsync(Guid userId, Guid familyId, CancellationToken ct)

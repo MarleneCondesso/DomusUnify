@@ -18,6 +18,156 @@
     "version": "v1"
   },
   "paths": {
+    "/api/v1/activity/recent": {
+      "get": {
+        "tags": [
+          "Activity"
+        ],
+        "summary": "Obtém as entradas mais recentes do feed de atividade.",
+        "description": "Útil para o cartão \"Recent Updates\" no dashboard (ex.: os primeiros 4 updates).",
+        "parameters": [
+          {
+            "name": "take",
+            "in": "query",
+            "description": "Número de entradas a devolver (por defeito 4).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 4
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity": {
+      "get": {
+        "tags": [
+          "Activity"
+        ],
+        "summary": "Obtém entradas do feed de atividade (paginado).",
+        "description": "Útil para \"View All Activity\".",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Número de registos a saltar (por defeito 0).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "description": "Número de registos a devolver (por defeito 50).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filtro opcional por tipo/área.\r\nValores suportados: `lists`, `budget`, `calendar`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "description": "Filtro opcional por data/hora inicial (UTC).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "description": "Filtro opcional por data/hora final (UTC, exclusivo).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "dateUtc",
+            "in": "query",
+            "description": "Filtro opcional por dia inteiro (UTC). Não pode ser usado em conjunto com fromUtc/toUtc.",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/register": {
       "post": {
         "tags": [
@@ -92,6 +242,56 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oauth/google": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login com Google (ID token devolvido pelo Google Identity Services).",
+        "requestBody": {
+          "description": "Pedido com o ID token devolvido pelo Google.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalLoginRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalLoginRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalLoginRequest"
               }
             }
           }
@@ -491,7 +691,7 @@
           "Calendar"
         ],
         "summary": "Lista eventos do calendário visíveis para o utilizador autenticado.",
-        "description": "Pode filtrar por:\r\n- dateUtc (dia inteiro, UTC)\r\n- intervalo (fromUtc/toUtc)\r\n- search (parte do título)\r\n- participantUserId (participante específico)\r\n            \r\nSe nenhum filtro for fornecido, devolve uma janela default (ex: últimos 7 dias + próximos 30).",
+        "description": "Pode filtrar por:\r\n- dateUtc (dia inteiro, UTC)\r\n- intervalo (fromUtc/toUtc)\r\n- search (parte do título)\r\n- participantUserId (participante específico)\r\n- take (limitar o número de eventos devolvidos)\r\n            \r\nSe nenhum filtro for fornecido, devolve uma janela default (ex: últimos 7 dias + próximos 30).",
         "parameters": [
           {
             "name": "fromUtc",
@@ -536,6 +736,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "description": "Número máximo de eventos a devolver. Se não for fornecido, devolve todos os eventos que correspondem aos outros filtros.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -2478,13 +2687,52 @@
         }
       }
     },
+    "/api/v1/list-covers/svg": {
+      "get": {
+        "tags": [
+          "ListCovers"
+        ],
+        "summary": "Devolve uma imagem SVG gerada de forma determinística a partir de uma categoria e seed.",
+        "description": "Este endpoint é público (sem auth) porque imagens carregadas por CSS/IMG não incluem o header Authorization.",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seed",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "accent",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/lists": {
       "get": {
         "tags": [
           "Lists"
         ],
-        "summary": "Obtém todas as listas para a família atual.",
-        "description": "Lista todas as listas visíveis para o utilizador, incluindo contagem de itens e completados.",
+        "summary": "Obtém todas as listas visíveis para o utilizador na família atual.",
+        "description": "Lista todas as listas visíveis para o utilizador, incluindo contagem de itens, concluídos e informação de partilha.",
         "responses": {
           "200": {
             "description": "OK",
@@ -2522,7 +2770,7 @@
           "Lists"
         ],
         "summary": "Cria uma nova lista para a família atual.",
-        "description": "Permite definir nome, cor e tipo da lista. O utilizador deve ter permissões na família.",
+        "description": "Permite definir nome, cor, tipo e visibilidade da lista.",
         "requestBody": {
           "description": "O pedido contendo detalhes da lista a criar.",
           "content": {
@@ -2567,13 +2815,27 @@
         }
       }
     },
+    "/api/v1/lists/regenerate-covers": {
+      "post": {
+        "tags": [
+          "Lists"
+        ],
+        "summary": "Regenera as capas (imagens) das listas visíveis para o utilizador.",
+        "description": "Útil quando a API de stock images foi configurada depois de já existirem listas (capas antigas em SVG).",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/lists/{listId}": {
       "patch": {
         "tags": [
           "Lists"
         ],
         "summary": "Atualiza uma lista existente.",
-        "description": "Permite alterar nome, cor e tipo da lista. O utilizador deve ter permissões na família.",
+        "description": "Permite alterar nome, cor e tipo da lista. A visibilidade/partilha pode ser alterada (opcional).",
         "parameters": [
           {
             "name": "listId",
@@ -2693,7 +2955,7 @@
           "Lists"
         ],
         "summary": "Adiciona um novo item a uma lista.",
-        "description": "Permite definir nome e categoria opcional do item. O utilizador deve ter permissões na família.",
+        "description": "Permite definir nome e categoria opcional do item.",
         "parameters": [
           {
             "name": "listId",
@@ -2800,7 +3062,7 @@
           "Lists"
         ],
         "summary": "Elimina um item de lista existente.",
-        "description": "Remove o item da lista. O utilizador deve ter permissões na família.",
+        "description": "Remove o item da lista.",
         "parameters": [
           {
             "name": "itemId",
@@ -2813,6 +3075,72 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/unread": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Obtém notificações não vistas do utilizador na família atual.",
+        "description": "As notificações são baseadas no feed de atividade e filtradas por visibilidade.",
+        "parameters": [
+          {
+            "name": "take",
+            "in": "query",
+            "description": "Número máximo a devolver (por defeito 50).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/mark-all-seen": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Marca todas as notificações como vistas.",
+        "description": "Atualiza o marcador interno (`LastSeenAtUtc`) para a data/hora atual.",
         "responses": {
           "200": {
             "description": "OK"
@@ -2849,6 +3177,55 @@
         },
         "additionalProperties": false,
         "description": "Resposta com resumo de despesas/rendimentos por conta."
+      },
+      "ActivityEntryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador da entrada.",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "description": "Tipo/identificador da atividade.",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensagem legível (sem incluir o nome do ator).",
+            "nullable": true
+          },
+          "actorUserId": {
+            "type": "string",
+            "description": "Identificador do utilizador que executou a ação.",
+            "format": "uuid"
+          },
+          "actorName": {
+            "type": "string",
+            "description": "Nome do utilizador que executou a ação.",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "description": "Data/hora (UTC) da entrada.",
+            "format": "date-time"
+          },
+          "listId": {
+            "type": "string",
+            "description": "Identificador da lista associada (opcional).",
+            "format": "uuid",
+            "nullable": true
+          },
+          "entityId": {
+            "type": "string",
+            "description": "Identificador de entidade relacionada (opcional).",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com uma entrada do feed de atividade."
       },
       "AuthResponse": {
         "type": "object",
@@ -3859,6 +4236,22 @@
             "description": "Identificador da categoria do item (opcional).",
             "format": "uuid",
             "nullable": true
+          },
+          "assigneeUserId": {
+            "type": "string",
+            "description": "Identificador do utilizador a quem o item estÃ¡ atribuÃ­do (opcional).",
+            "format": "uuid",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nota opcional associada ao item.",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "description": "URL (ou data URL) de uma foto associada ao item (opcional).",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -3881,6 +4274,20 @@
             "type": "string",
             "description": "Cor da lista em hexadecimal (ex.: `#FFAA00`).",
             "nullable": true
+          },
+          "visibilityMode": {
+            "type": "string",
+            "description": "Modo de visibilidade da lista (`Private`, `AllMembers` ou `SpecificMembers`).",
+            "nullable": true
+          },
+          "allowedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores com acesso quando a visibilidade é `SpecificMembers`.",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -3902,6 +4309,18 @@
         },
         "additionalProperties": false,
         "description": "Pedido para duplicar um evento numa nova data/hora."
+      },
+      "ExternalLoginRequest": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "ID token (JWT) devolvido pelo provider.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido de login via provider externo (ex.: Google)."
       },
       "FamilyMemberResponse": {
         "type": "object",
@@ -4221,6 +4640,22 @@
             "format": "uuid",
             "nullable": true
           },
+          "assigneeUserId": {
+            "type": "string",
+            "description": "Identificador do utilizador a quem o item estÃ¡ atribuÃ­do (opcional).",
+            "format": "uuid",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Nota opcional associada ao item.",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "description": "URL (ou data URL) de uma foto associada ao item (opcional).",
+            "nullable": true
+          },
           "completedAtUtc": {
             "type": "string",
             "description": "Data/hora de conclusão (UTC), se concluído.",
@@ -4258,6 +4693,38 @@
           "colorHex": {
             "type": "string",
             "description": "Cor da lista em hexadecimal.",
+            "nullable": true
+          },
+          "coverImageUrl": {
+            "type": "string",
+            "description": "URL da imagem de capa da lista.",
+            "nullable": true
+          },
+          "ownerUserId": {
+            "type": "string",
+            "description": "Identificador do utilizador proprietário (criador).",
+            "format": "uuid"
+          },
+          "visibilityMode": {
+            "type": "string",
+            "description": "Modo de visibilidade da lista (`Private`, `AllMembers` ou `SpecificMembers`).",
+            "nullable": true
+          },
+          "allowedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores com acesso quando a visibilidade é `SpecificMembers`.",
+            "nullable": true
+          },
+          "sharedWithMembers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedListMemberPreviewResponse"
+            },
+            "description": "Membros com os quais a lista é partilhada (ou seja, quem tem acesso à lista).",
             "nullable": true
           },
           "itemsCount": {
@@ -4351,6 +4818,23 @@
         },
         "additionalProperties": false,
         "description": "Pedido para definir a família ativa (contexto atual) do utilizador autenticado."
+      },
+      "SharedListMemberPreviewResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Identificador do utilizador.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome do utilizador.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação mínima de um membro (para pré-visualizações, como avatares)."
       },
       "UpdateBudgetCategoryLimitsRequest": {
         "type": "object",
@@ -4739,6 +5223,18 @@
           "categoryId": {
             "description": "Identificador da categoria do item (opcional).",
             "nullable": true
+          },
+          "assigneeUserId": {
+            "description": "Identificador do utilizador a quem o item estÃ¡ atribuÃ­do (opcional).",
+            "nullable": true
+          },
+          "note": {
+            "description": "Nota do item (opcional).",
+            "nullable": true
+          },
+          "photoUrl": {
+            "description": "URL (ou data URL) da foto do item (opcional).",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -4760,6 +5256,20 @@
           "type": {
             "type": "string",
             "description": "Tipo de lista (`Shopping`, `Tasks` ou `Custom`).",
+            "nullable": true
+          },
+          "visibilityMode": {
+            "type": "string",
+            "description": "Novo modo de visibilidade (opcional).",
+            "nullable": true
+          },
+          "allowedUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lista de utilizadores com acesso, quando aplicável (opcional).",
             "nullable": true
           }
         },

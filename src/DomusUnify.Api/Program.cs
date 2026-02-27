@@ -1,25 +1,30 @@
+using DomusUnify.Api.Hubs;
+using DomusUnify.Api.Realtime;
+using DomusUnify.Api.Services.Covers;
+using DomusUnify.Api.Services.Auth;
+using DomusUnify.Api.Services.CurrentUser;
+using DomusUnify.Application.Activity;
+using DomusUnify.Application.Budgets;
+using DomusUnify.Application.Calendar;
+using DomusUnify.Application.Categories;
+using DomusUnify.Application.Common.Covers;
+using DomusUnify.Application.Common.Realtime;
+using DomusUnify.Application.Family;
+using DomusUnify.Application.FinanceAccounts;
+using DomusUnify.Application.FinanceCategories;
+using DomusUnify.Application.FinanceTransactions;
+using DomusUnify.Application.Lists;
+using DomusUnify.Application.Notifications;
 using DomusUnify.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.OpenApi.Models;
-using DomusUnify.Application.Lists;
-using DomusUnify.Application.Common.Realtime;
-using DomusUnify.Application.Categories;
-using DomusUnify.Application.Calendar;
-using DomusUnify.Application.Family;
-using DomusUnify.Application.Budgets;
-using DomusUnify.Application.FinanceCategories;
-using DomusUnify.Application.FinanceAccounts;
-using DomusUnify.Application.FinanceTransactions;
-using DomusUnify.Api.Services.Auth;
-using DomusUnify.Api.Services.CurrentUser;
-using DomusUnify.Api.Realtime;
-using DomusUnify.Api.Hubs;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -84,7 +89,6 @@ builder.Services.AddSwaggerGen(c =>
         if (File.Exists(xmlPath))
             c.IncludeXmlComments(xmlPath);
     }
-
 });
 
 // JWT Auth
@@ -122,19 +126,23 @@ builder.Services
                 return Task.CompletedTask;
             }
         };
-
     });
 
 builder.Services.AddAuthorization();
 
-
 // DB + Infra
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.Configure<ExternalAuthOptions>(
+    builder.Configuration.GetSection(ExternalAuthOptions.SectionName));
+builder.Services.AddSingleton<IExternalIdTokenValidator, ExternalIdTokenValidator>();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 
 // Application
+builder.Services.AddScoped<IActivityService, ActivityService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
 builder.Services.AddScoped<IListService, ListService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
@@ -150,6 +158,13 @@ builder.Services.Configure<FamilyInviteOptions>(
 
 builder.Services.AddScoped<IFamilyInviteService, FamilyInviteService>();
 
+// Stock images (covers)
+builder.Services.AddHttpClient<IStockPhotoProvider, PexelsStockPhotoProvider>(client =>
+{
+    client.BaseAddress = new Uri("https://api.pexels.com/v1/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
 // Realtime
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
@@ -162,7 +177,6 @@ if (app.Environment.IsDevelopment())
     var db = scope.ServiceProvider.GetRequiredService<DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext>();
     await DomusUnify.Infrastructure.Persistence.DbSeeder.SeedAsync(db);
 }
-
 
 if (app.Environment.IsDevelopment())
 {
@@ -180,3 +194,6 @@ app.MapControllers();
 app.MapHub<FamilyHub>("/hubs/family");
 
 app.Run();
+
+// Exposto para `WebApplicationFactory<Program>` nos testes de integração.
+public partial class Program { }

@@ -1,5 +1,4 @@
 using DomusUnify.Application.Lists.Models;
-using DomusUnify.Domain.Enums;
 
 namespace DomusUnify.Application.Lists;
 
@@ -9,12 +8,12 @@ namespace DomusUnify.Application.Lists;
 public interface IListService
 {
     /// <summary>
-    /// Obtém as listas da família.
+    /// Obtém as listas visíveis para o utilizador na família.
     /// </summary>
     /// <param name="userId">Identificador do utilizador autenticado.</param>
     /// <param name="familyId">Identificador da família.</param>
     /// <param name="ct">Token de cancelamento.</param>
-    /// <returns>Lista de listas com contagens.</returns>
+    /// <returns>Lista de listas com contagens e informação de partilha.</returns>
     Task<IReadOnlyList<ListSummary>> GetListsAsync(Guid userId, Guid familyId, CancellationToken ct);
 
     /// <summary>
@@ -22,12 +21,22 @@ public interface IListService
     /// </summary>
     /// <param name="userId">Identificador do utilizador autenticado.</param>
     /// <param name="familyId">Identificador da família.</param>
-    /// <param name="name">Nome da lista.</param>
-    /// <param name="colorHex">Cor em formato HEX.</param>
-    /// <param name="type">Tipo da lista (ex.: <c>Shopping</c>, <c>Tasks</c>).</param>
+    /// <param name="input">Dados para criação da lista (inclui visibilidade e membros, quando aplicável).</param>
     /// <param name="ct">Token de cancelamento.</param>
     /// <returns>Resumo da lista criada.</returns>
-    Task<ListSummary> CreateListAsync(Guid userId, Guid familyId, string name, string colorHex, string type, CancellationToken ct);
+    Task<ListSummary> CreateListAsync(Guid userId, Guid familyId, ListCreateInput input, CancellationToken ct);
+
+    /// <summary>
+    /// Regenera as capas (imagens) das listas visíveis ao utilizador na família atual.
+    /// </summary>
+    /// <remarks>
+    /// Útil quando a API de stock images foi configurada depois de já existirem listas (capas antigas em SVG).
+    /// </remarks>
+    /// <param name="userId">Identificador do utilizador autenticado.</param>
+    /// <param name="familyId">Identificador da família.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Número de listas atualizadas.</returns>
+    Task<int> RegenerateListCoversAsync(Guid userId, Guid familyId, CancellationToken ct);
 
     /// <summary>
     /// Atualiza uma lista existente.
@@ -35,14 +44,12 @@ public interface IListService
     /// <param name="userId">Identificador do utilizador autenticado.</param>
     /// <param name="familyId">Identificador da família.</param>
     /// <param name="listId">Identificador da lista.</param>
-    /// <param name="newName">Novo nome.</param>
-    /// <param name="colorHex">Nova cor (HEX).</param>
-    /// <param name="type">Novo tipo.</param>
+    /// <param name="input">Dados de atualização (inclui visibilidade e membros, quando aplicável).</param>
     /// <param name="ct">Token de cancelamento.</param>
-    Task UpdateListAsync(Guid userId, Guid familyId, Guid listId, string newName, string colorHex, string type, CancellationToken ct);
+    Task UpdateListAsync(Guid userId, Guid familyId, Guid listId, ListUpdateInput input, CancellationToken ct);
 
     /// <summary>
-    /// Elimina uma lista.
+    /// Elimina uma lista existente.
     /// </summary>
     /// <param name="userId">Identificador do utilizador autenticado.</param>
     /// <param name="familyId">Identificador da família.</param>
@@ -68,9 +75,21 @@ public interface IListService
     /// <param name="listId">Identificador da lista.</param>
     /// <param name="name">Nome do item.</param>
     /// <param name="categoryId">Categoria opcional.</param>
+    /// <param name="assigneeUserId">Utilizador a quem o item fica atribuÃ­do (opcional).</param>
+    /// <param name="note">Nota opcional.</param>
+    /// <param name="photoUrl">URL (ou data URL) de uma foto opcional.</param>
     /// <param name="ct">Token de cancelamento.</param>
     /// <returns>O item criado.</returns>
-    Task<ListItemModel> AddItemAsync(Guid userId, Guid familyId, Guid listId, string name, Guid? categoryId, CancellationToken ct);
+    Task<ListItemModel> AddItemAsync(
+        Guid userId,
+        Guid familyId,
+        Guid listId,
+        string name,
+        Guid? categoryId,
+        Guid? assigneeUserId,
+        string? note,
+        string? photoUrl,
+        CancellationToken ct);
 
     /// <summary>
     /// Atualiza um item existente.
@@ -85,6 +104,12 @@ public interface IListService
     /// <param name="isCompleted">Novo estado de conclusão (opcional).</param>
     /// <param name="categoryChangeRequested">Indica se existe pedido explícito de alteração de categoria.</param>
     /// <param name="categoryId">Nova categoria; <c>null</c> remove a categoria.</param>
+    /// <param name="assigneeChangeRequested">Indica se existe pedido explÃ­cito de alteraÃ§Ã£o do atribuÃ­do.</param>
+    /// <param name="assigneeUserId">Novo atribuÃ­do; <c>null</c> remove a atribuiÃ§Ã£o.</param>
+    /// <param name="noteChangeRequested">Indica se existe pedido explÃ­cito de alteraÃ§Ã£o/limpeza da nota.</param>
+    /// <param name="note">Nova nota; <c>null</c> remove a nota.</param>
+    /// <param name="photoChangeRequested">Indica se existe pedido explÃ­cito de alteraÃ§Ã£o/limpeza da foto.</param>
+    /// <param name="photoUrl">Nova foto (URL ou data URL); <c>null</c> remove a foto.</param>
     /// <param name="ct">Token de cancelamento.</param>
     Task UpdateItemAsync(
         Guid userId,
@@ -94,10 +119,16 @@ public interface IListService
         bool? isCompleted,
         bool categoryChangeRequested,
         Guid? categoryId,
+        bool assigneeChangeRequested,
+        Guid? assigneeUserId,
+        bool noteChangeRequested,
+        string? note,
+        bool photoChangeRequested,
+        string? photoUrl,
         CancellationToken ct);
 
     /// <summary>
-    /// Elimina um item de lista.
+    /// Elimina um item de lista existente.
     /// </summary>
     /// <param name="userId">Identificador do utilizador autenticado.</param>
     /// <param name="familyId">Identificador da família.</param>

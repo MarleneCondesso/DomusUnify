@@ -40,5 +40,10 @@ public class User : BaseEntity
     /// <summary>
     /// Eventos de calendário criados pelo utilizador.
     /// </summary>
-    public ICollection<CalendarEvent> CreatedEvents  { get; set; } = new List<CalendarEvent>();
+    public ICollection<CalendarEvent> CreatedEvents { get; set; } = new List<CalendarEvent>();
+
+    /// <summary>
+    /// Logins externos associados ao utilizador.
+    /// </summary>
+    public ICollection<UserExternalLogin> ExternalLogins { get; set; } = new List<UserExternalLogin>();
 }

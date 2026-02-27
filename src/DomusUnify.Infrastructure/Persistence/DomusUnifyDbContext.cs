@@ -22,6 +22,11 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     /// <inheritdoc />
     public DbSet<User> Users => Set<User>();
 
+    /// <summary>
+    /// Logins externos associados a utilizadores.
+    /// </summary>
+    public DbSet<UserExternalLogin> UserExternalLogins => Set<UserExternalLogin>();
+
     /// <inheritdoc />
     public DbSet<Family> Families => Set<Family>();
 
@@ -35,7 +40,16 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     public DbSet<SharedList> Lists => Set<SharedList>();
 
     /// <inheritdoc />
+    public DbSet<SharedListUserAccess> ListUserAccess => Set<SharedListUserAccess>();
+
+    /// <inheritdoc />
     public DbSet<ListItem> ListItems => Set<ListItem>();
+
+    /// <inheritdoc />
+    public DbSet<ActivityEntry> ActivityEntries => Set<ActivityEntry>();
+
+    /// <inheritdoc />
+    public DbSet<UserNotificationState> UserNotificationStates => Set<UserNotificationState>();
 
     /// <inheritdoc />
     public DbSet<ItemCategory> ItemCategories => Set<ItemCategory>();
@@ -111,6 +125,26 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
             b.Property(x => x.CurrentFamilyId);
         });
 
+        modelBuilder.Entity<UserExternalLogin>(b =>
+        {
+            b.ToTable("UserExternalLogins");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Provider).HasMaxLength(30).IsRequired();
+            b.Property(x => x.ProviderSubject).HasMaxLength(200).IsRequired();
+            b.Property(x => x.Email).HasMaxLength(200);
+
+            b.HasIndex(x => new { x.Provider, x.ProviderSubject }).IsUnique();
+
+            b.Property(x => x.CreatedAtUtc).IsRequired();
+            b.Property(x => x.UpdatedAtUtc);
+
+            b.HasOne(x => x.User)
+                .WithMany(x => x.ExternalLogins)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // FAMILY
         modelBuilder.Entity<Family>(b =>
         {
@@ -178,7 +212,7 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
             b.Property(x => x.Name).HasMaxLength(80).IsRequired();
             b.Property(x => x.SortOrder).IsRequired();
 
-            b.HasIndex(x => new { x.FamilyId, x.Name }).IsUnique();
+            b.HasIndex(x => new { x.FamilyId, x.Type, x.Name }).IsUnique();
 
             b.HasOne(x => x.Family)
                 .WithMany()
@@ -329,6 +363,14 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
 
             b.Property(x => x.Name).HasMaxLength(200).IsRequired();
             b.Property(x => x.Type).IsRequired();
+            b.Property(x => x.VisibilityMode).IsRequired();
+            b.Property(x => x.OwnerUserId).IsRequired();
+            b.Property(x => x.CoverImageUrl).HasMaxLength(2048);
+
+            b.HasOne(x => x.OwnerUser)
+                .WithMany()
+                .HasForeignKey(x => x.OwnerUserId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             b.HasIndex(x => new { x.FamilyId, x.Name });
 
@@ -339,6 +381,28 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
 
         });
 
+        // LIST USER ACCESS (specific members)
+        modelBuilder.Entity<SharedListUserAccess>(b =>
+        {
+            b.ToTable("ListUserAccess");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.CreatedAtUtc).IsRequired();
+
+            b.HasOne(x => x.SharedList)
+                .WithMany(e => e.AllowedUsers)
+                .HasForeignKey(x => x.SharedListId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasIndex(x => new { x.SharedListId, x.UserId }).IsUnique();
+            b.HasIndex(x => x.UserId);
+        });
+
         // LIST ITEM
         modelBuilder.Entity<ListItem>(b =>
         {
@@ -347,6 +411,8 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
 
             b.Property(x => x.Name).HasMaxLength(200).IsRequired();
             b.Property(x => x.IsCompleted).IsRequired();
+            b.Property(x => x.Note).HasMaxLength(2000);
+            b.Property(x => x.PhotoUrl).HasColumnType("nvarchar(max)");
 
             b.HasIndex(x => new { x.SharedListId, x.IsCompleted });
 
@@ -360,13 +426,73 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
                 .HasForeignKey(x => x.CompletedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            b.HasOne(x => x.AssigneeUser)
+                .WithMany()
+                .HasForeignKey(x => x.AssigneeUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
             b.HasOne(x => x.Category)
                 .WithMany(c => c.Items)
                 .HasForeignKey(x => x.CategoryId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             b.HasIndex(x => new { x.SharedListId, x.CategoryId });
+            b.HasIndex(x => x.AssigneeUserId);
 
+        });
+
+        // ACTIVITY ENTRY (feed)
+        modelBuilder.Entity<ActivityEntry>(b =>
+        {
+            b.ToTable("ActivityEntries");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Kind).HasMaxLength(80).IsRequired();
+            b.Property(x => x.Message).HasMaxLength(500).IsRequired();
+            b.Property(x => x.CreatedAtUtc).IsRequired();
+
+            b.HasIndex(x => new { x.FamilyId, x.CreatedAtUtc });
+            b.HasIndex(x => x.ActorUserId);
+            b.HasIndex(x => x.ListId);
+
+            b.HasOne(x => x.Family)
+                .WithMany()
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasOne(x => x.ActorUser)
+                .WithMany()
+                .HasForeignKey(x => x.ActorUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasOne(x => x.List)
+                .WithMany()
+                .HasForeignKey(x => x.ListId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // USER NOTIFICATION STATE (unread marker)
+        modelBuilder.Entity<UserNotificationState>(b =>
+        {
+            b.ToTable("UserNotificationStates");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.CreatedAtUtc).IsRequired();
+            b.Property(x => x.LastSeenAtUtc);
+
+            b.HasIndex(x => new { x.UserId, x.FamilyId }).IsUnique();
+            b.HasIndex(x => x.FamilyId);
+            b.HasIndex(x => x.UserId);
+
+            b.HasOne(x => x.Family)
+                .WithMany()
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         // FINANCE CATEGORY

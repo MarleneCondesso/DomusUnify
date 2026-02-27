@@ -24,6 +24,56 @@
             Data/hora da última atualização (UTC), se aplicável.
             </summary>
         </member>
+        <member name="T:DomusUnify.Domain.Entities.ActivityEntry">
+            <summary>
+            Representa uma entrada de atividade (feed) dentro de uma família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ActivityEntry.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ActivityEntry.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ActivityEntry.ActorUserId">
+            <summary>
+            Identificador do utilizador que executou a ação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ActivityEntry.ActorUser">
+            <summary>
+            Utilizador que executou a ação.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ActivityEntry.Kind">
+            <summary>
+            Tipo/identificador da atividade (ex.: <c>lists:item_added</c>).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ActivityEntry.Message">
+            <summary>
+            Mensagem legível da atividade (para apresentação direta no UI).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ActivityEntry.ListId">
+            <summary>
+            Identificador da lista associada (quando aplicável).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ActivityEntry.List">
+            <summary>
+            Lista associada (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ActivityEntry.EntityId">
+            <summary>
+            Identificador de entidade relacionada (opcional) - ex.: um item de lista.
+            </summary>
+        </member>
         <member name="T:DomusUnify.Domain.Entities.CalendarEvent">
             <summary>
             Representa um evento de calendário (inclui suporte a recorrência e exceções).
@@ -999,6 +1049,26 @@
             Categoria do item (opcional).
             </summary>
         </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.AssigneeUserId">
+            <summary>
+            Identificador do utilizador a quem o item estÃ¡ atribuÃ­do (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.AssigneeUser">
+            <summary>
+            Utilizador a quem o item estÃ¡ atribuÃ­do (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.Note">
+            <summary>
+            Nota opcional associada ao item.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ListItem.PhotoUrl">
+            <summary>
+            URL (ou data URL) de uma foto associada ao item (opcional).
+            </summary>
+        </member>
         <member name="P:DomusUnify.Domain.Entities.ListItem.CompletedAtUtc">
             <summary>
             Data/hora de conclusão (UTC), se aplicável.
@@ -1019,6 +1089,16 @@
             Família associada.
             </summary>
         </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.OwnerUserId">
+            <summary>
+            Identificador do utilizador proprietário (criador).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.OwnerUser">
+            <summary>
+            Utilizador proprietário (criador).
+            </summary>
+        </member>
         <member name="P:DomusUnify.Domain.Entities.SharedList.ColorHex">
             <summary>
             Cor da lista em hexadecimal (opcional).
@@ -1034,9 +1114,89 @@
             Tipo de lista.
             </summary>
         </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.CoverImageUrl">
+            <summary>
+            URL da imagem de capa da lista (gerada automaticamente).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.VisibilityMode">
+            <summary>
+            Modo de visibilidade da lista dentro da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedList.AllowedUsers">
+            <summary>
+            Lista de utilizadores com acesso explícito quando a visibilidade é por membros específicos.
+            </summary>
+        </member>
         <member name="P:DomusUnify.Domain.Entities.SharedList.Items">
             <summary>
             Itens da lista.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.SharedListUserAccess">
+            <summary>
+            Representa o acesso explícito de um utilizador a uma lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedListUserAccess.Id">
+            <summary>
+            Identificador do registo.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedListUserAccess.SharedListId">
+            <summary>
+            Identificador da lista.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedListUserAccess.SharedList">
+            <summary>
+            Lista associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedListUserAccess.UserId">
+            <summary>
+            Identificador do utilizador com acesso.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedListUserAccess.User">
+            <summary>
+            Utilizador com acesso.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.SharedListUserAccess.CreatedAtUtc">
+            <summary>
+            Data/hora de criação (UTC).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.UserNotificationState">
+            <summary>
+            Representa o estado de leitura/visualização de notificações de um utilizador dentro de uma família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserNotificationState.UserId">
+            <summary>
+            Identificador do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserNotificationState.User">
+            <summary>
+            Utilizador associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserNotificationState.FamilyId">
+            <summary>
+            Identificador da família.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserNotificationState.Family">
+            <summary>
+            Família associada.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserNotificationState.LastSeenAtUtc">
+            <summary>
+            Data/hora (UTC) em que o utilizador marcou as notificações como vistas pela última vez.
             </summary>
         </member>
         <member name="T:DomusUnify.Domain.Entities.User">
@@ -1077,6 +1237,41 @@
         <member name="P:DomusUnify.Domain.Entities.User.CreatedEvents">
             <summary>
             Eventos de calendário criados pelo utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.ExternalLogins">
+            <summary>
+            Logins externos associados ao utilizador.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Entities.UserExternalLogin">
+            <summary>
+            Vínculo entre um utilizador e um provider externo (ex.: Google).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserExternalLogin.UserId">
+            <summary>
+            Identificador do utilizador (FK).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserExternalLogin.User">
+            <summary>
+            Utilizador associado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserExternalLogin.Provider">
+            <summary>
+            Nome do provider (ex.: "google").
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserExternalLogin.ProviderSubject">
+            <summary>
+            Subject/identificador do utilizador no provider (claim "sub").
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.UserExternalLogin.Email">
+            <summary>
+            Email devolvido pelo provider (quando disponível).
             </summary>
         </member>
         <member name="T:DomusUnify.Domain.Enums.BudgetMainIndicator">
@@ -1377,6 +1572,26 @@
         <member name="F:DomusUnify.Domain.Enums.ListType.Custom">
             <summary>
             Lista personalizada.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Domain.Enums.ListVisibilityMode">
+            <summary>
+            Define a visibilidade e acesso de uma lista dentro da famÃ­lia.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ListVisibilityMode.Private">
+            <summary>
+            Apenas o proprietÃ¡rio (criador) tem acesso.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ListVisibilityMode.AllMembers">
+            <summary>
+            Todos os membros da famÃ­lia tÃªm acesso.
+            </summary>
+        </member>
+        <member name="F:DomusUnify.Domain.Enums.ListVisibilityMode.SpecificMembers">
+            <summary>
+            Apenas membros especÃ­ficos tÃªm acesso.
             </summary>
         </member>
         <member name="T:DomusUnify.Domain.Enums.TransactionReminderType">

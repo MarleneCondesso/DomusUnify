@@ -20,6 +20,18 @@ obj/
 node_modules/
 **/node_modules/
 
+# Frontend (Vite/React)
+frontend/dist/
+frontend/dist-ssr/
+**/.vite/
+frontend/.env*
+!frontend/.env.example
+.env.local
+.env.*.local
+
+# Private docs (não commitar)
+docs/auth-social-frontend.md
+
 # Local tooling (do not commit)
 tools/
 
@@ -45,6 +57,7 @@ Thumbs.db
 appsettings.Development.json
 appsettings.Production.json
 .env
+.env.test
 
 # Coverage
 coverage/
@@ -57,3 +70,6 @@ publish/
 *.bak
 *.tmp
 *.swp
+
+# Local scratch
+tmp/

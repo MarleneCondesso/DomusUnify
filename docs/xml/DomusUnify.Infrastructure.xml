@@ -51,6 +51,11 @@
         <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.Users">
             <inheritdoc />
         </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.UserExternalLogins">
+            <summary>
+            Logins externos associados a utilizadores.
+            </summary>
+        </member>
         <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.Families">
             <inheritdoc />
         </member>
@@ -63,7 +68,16 @@
         <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.Lists">
             <inheritdoc />
         </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.ListUserAccess">
+            <inheritdoc />
+        </member>
         <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.ListItems">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.ActivityEntries">
+            <inheritdoc />
+        </member>
+        <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.UserNotificationStates">
             <inheritdoc />
         </member>
         <member name="P:DomusUnify.Infrastructure.Persistence.DomusUnifyDbContext.ItemCategories">
@@ -232,6 +246,54 @@
             <inheritdoc />
         </member>
         <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddBudgetModule.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddUserExternalLogins">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddUserExternalLogins.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddUserExternalLogins.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddUserExternalLogins.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddListVisibilityAndActivityNotifications">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListVisibilityAndActivityNotifications.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListVisibilityAndActivityNotifications.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListVisibilityAndActivityNotifications.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddListCoverImageUrl">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListCoverImageUrl.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListCoverImageUrl.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListCoverImageUrl.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddListItemDetails">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListItemDetails.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListItemDetails.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListItemDetails.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
     </members>

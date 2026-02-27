@@ -38,9 +38,24 @@ public interface IAppDbContext
     DbSet<SharedList> Lists { get; }
 
     /// <summary>
+    /// Conjunto de acessos de utilizadores a listas (quando a visibilidade é por membros específicos).
+    /// </summary>
+    DbSet<SharedListUserAccess> ListUserAccess { get; }
+
+    /// <summary>
     /// Conjunto de itens de listas.
     /// </summary>
     DbSet<ListItem> ListItems { get; }
+
+    /// <summary>
+    /// Conjunto de entradas de atividade (feed) da família.
+    /// </summary>
+    DbSet<ActivityEntry> ActivityEntries { get; }
+
+    /// <summary>
+    /// Conjunto de estados de notificações (por utilizador e família).
+    /// </summary>
+    DbSet<UserNotificationState> UserNotificationStates { get; }
 
     /// <summary>
     /// Conjunto de categorias de itens (listas).

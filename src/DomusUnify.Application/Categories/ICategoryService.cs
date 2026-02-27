@@ -1,4 +1,5 @@
 using DomusUnify.Application.Categories.Models;
+using DomusUnify.Domain.Enums;
 
 namespace DomusUnify.Application.Categories;
 
@@ -26,7 +27,7 @@ public interface ICategoryService
     /// <param name="sortOrder">Ordem de apresentação.</param>
     /// <param name="ct">Token de cancelamento.</param>
     /// <returns>A categoria criada.</returns>
-    Task<CategoryModel> CreateItemCategoryAsync(Guid userId, Guid familyId, string name, string iconKey, int sortOrder, CancellationToken ct);
+    Task<CategoryModel> CreateItemCategoryAsync(Guid userId, Guid familyId, string name, ListType type, string iconKey, int sortOrder, CancellationToken ct);
 
     /// <summary>
     /// Atualiza uma categoria de itens existente.
@@ -39,7 +40,7 @@ public interface ICategoryService
     /// <param name="sortOrder">Nova ordem (opcional).</param>
     /// <param name="ct">Token de cancelamento.</param>
     /// <returns>A categoria atualizada.</returns>
-    Task<CategoryModel> UpdateItemCategoryAsync(Guid userId, Guid familyId, Guid categoryId, string? name, string? iconKey, int? sortOrder, CancellationToken ct);
+    Task<CategoryModel> UpdateItemCategoryAsync(Guid userId, Guid familyId, Guid categoryId, string? name, ListType? type, string? iconKey, int? sortOrder, CancellationToken ct);
 
     /// <summary>
     /// Elimina uma categoria de itens.

@@ -19,4 +19,14 @@ public sealed class UpdateListRequest
     /// Tipo de lista (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).
     /// </summary>
     public string Type { get; set; } = "Custom"; // Shopping | Tasks | Custom
+
+    /// <summary>
+    /// Novo modo de visibilidade (opcional).
+    /// </summary>
+    public string? VisibilityMode { get; set; }
+
+    /// <summary>
+    /// Lista de utilizadores com acesso, quando aplicável (opcional).
+    /// </summary>
+    public List<Guid>? AllowedUserIds { get; set; }
 }

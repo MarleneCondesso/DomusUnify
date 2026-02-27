@@ -31,6 +31,21 @@ public sealed class ListItemResponse
     public Guid? CategoryId { get; set; }
 
     /// <summary>
+    /// Identificador do utilizador a quem o item estÃ¡ atribuÃ­do (opcional).
+    /// </summary>
+    public Guid? AssigneeUserId { get; set; }
+
+    /// <summary>
+    /// Nota opcional associada ao item.
+    /// </summary>
+    public string? Note { get; set; }
+
+    /// <summary>
+    /// URL (ou data URL) de uma foto associada ao item (opcional).
+    /// </summary>
+    public string? PhotoUrl { get; set; }
+
+    /// <summary>
     /// Data/hora de conclusão (UTC), se concluído.
     /// </summary>
     public DateTime? CompletedAtUtc { get; set; }

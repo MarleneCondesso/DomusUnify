@@ -34,6 +34,7 @@ public sealed class CalendarController : ControllerBase
     /// - intervalo (fromUtc/toUtc)
     /// - search (parte do título)
     /// - participantUserId (participante específico)
+    /// - take (limitar o número de eventos devolvidos)
     ///
     /// Se nenhum filtro for fornecido, devolve uma janela default (ex: últimos 7 dias + próximos 30).
     /// </remarks>
@@ -42,6 +43,7 @@ public sealed class CalendarController : ControllerBase
     /// <param name="dateUtc">Dia (UTC) para filtrar por dia inteiro, opcional.</param>
     /// <param name="search">Texto para procurar no título, opcional.</param>
     /// <param name="participantUserId">Filtra por participante específico, opcional.</param>
+    /// <param name="take">Número máximo de eventos a devolver. Se não for fornecido, devolve todos os eventos que correspondem aos outros filtros.</param>
     /// <param name="ct">Token de cancelamento.</param>
     /// <returns>Uma lista de respostas de eventos do calendário.</returns>
     // GET api/v1/calendar/events?dateUtc=2026-02-04&search=...&participantUserId=...
@@ -52,8 +54,12 @@ public sealed class CalendarController : ControllerBase
         [FromQuery] DateOnly? dateUtc,
         [FromQuery] string? search,
         [FromQuery] Guid? participantUserId,
+        [FromQuery] int? take,
         CancellationToken ct)
     {
+        if (take.HasValue && take.Value <= 0)
+            return BadRequest("take tem de ser >= 1.");
+
         var familyId = await _ctx.GetCurrentFamilyIdAsync(ct);
 
         // DateOnly -> DateTime UTC (dia inteiro)
@@ -61,7 +67,7 @@ public sealed class CalendarController : ControllerBase
             ? dateUtc.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)
             : null;
 
-        var data = await _cal.GetEventsAsync(_ctx.UserId, familyId, fromUtc, toUtc, dateAsUtc, search, participantUserId, ct);
+        var data = await _cal.GetEventsAsync(_ctx.UserId, familyId, fromUtc, toUtc, dateAsUtc, search, participantUserId, take, ct);
 
         return Ok(data.Select(e => new CalendarEventResponse
         {
