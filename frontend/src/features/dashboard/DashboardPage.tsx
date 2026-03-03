@@ -1,11 +1,16 @@
-import { useMemo } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { queryKeys } from '../../api/queryKeys'
 import { domusApi, type ActivityEntryResponse, type FamilyResponse } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
+import { ActionSheet, type ActionSheetItem } from '../../ui/ActionSheet'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { ErrorDisplay } from '../../utils/ErrorDisplay'
+import { useAppSettings } from '../../utils/appSettings'
+import { getUserIdFromAccessToken } from '../../utils/jwt'
+import { pickTipOfDay, type Tip } from '../../utils/tips'
+import { CreateBudgetSheet } from '../budget/CreateBudgetSheet'
 
 type DashboardPageProps = {
   token: string
@@ -16,6 +21,17 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { settings } = useAppSettings()
+  const [createBudgetOpen, setCreateBudgetOpen] = useState(false)
+  const [groupMenuOpen, setGroupMenuOpen] = useState(false)
+  const switchFamilyMutation = useMutation({
+    mutationFn: (familyId: string) => domusApi.setCurrentFamily(token, { familyId }),
+    onSuccess: () => {
+      // Trocar de grupo muda o "contexto" para quase todas as queries; limpamos a cache para evitar dados cruzados.
+      queryClient.clear()
+      navigate('/', { replace: true })
+    },
+  })
   const todayUtc = useMemo(() => new Date().toISOString().slice(0, 10), [])
   const currentUserId = useMemo(() => getUserIdFromAccessToken(token), [token])
   const calendarWindow = useMemo(() => {
@@ -42,6 +58,12 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
   const familyMembersQuery = useQuery({
     queryKey: queryKeys.familyMembers,
     queryFn: () => domusApi.getFamilyMembers(token),
+  })
+
+  // My Families Query - usado para trocar/criar grupos.
+  const myFamiliesQuery = useQuery({
+    queryKey: queryKeys.familiesMy,
+    queryFn: () => domusApi.getMyFamilies(token),
   })
   //#endregion
 
@@ -126,6 +148,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
   //#region ...[Loading]...
   const isLoading =
     familyMembersQuery.isLoading ||
+    myFamiliesQuery.isLoading ||
     listQuery.isLoading ||
     budgetsQuery.isLoading ||
     listUpdatesTodayQuery.isLoading ||
@@ -149,6 +172,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
   //#region ...[Errors]...
   const apiFamilyError = familyMembersQuery.error instanceof ApiError ? familyMembersQuery.error : null
+  const apiMyFamiliesError = myFamiliesQuery.error instanceof ApiError ? myFamiliesQuery.error : null
   const apiListsError = listQuery.error instanceof ApiError ? listQuery.error : null
   const apiBudgetsError = budgetsQuery.error instanceof ApiError ? budgetsQuery.error : null
   const apiBudgetDetailError = budgetDetailQuery.error instanceof ApiError ? budgetDetailQuery.error : null
@@ -166,6 +190,17 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         queryKey={queryKeys.familyMembers}
         queryClient={queryClient}
         title="Erro ao obter membros da família"
+      />
+    )
+  }
+
+  if (myFamiliesQuery.isError) {
+    return (
+      <ErrorDisplay
+        apiError={apiMyFamiliesError}
+        queryKey={queryKeys.familiesMy}
+        queryClient={queryClient}
+        title="Erro ao obter grupos"
       />
     )
   }
@@ -267,6 +302,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
   //#region ...[Data processing]...
 
   const familyMembers = familyMembersQuery.data!
+  const myFamilies = myFamiliesQuery.data ?? []
 
   const lists = listQuery.data!
   const listUpdatesToday = listUpdatesTodayQuery.data!
@@ -310,12 +346,85 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
   //#endregion
 
+  const currentMember = familyMembers.find((m) => Boolean(m.userId) && m.userId === currentUserId) ?? null
+
+  const groupMenuItems: ActionSheetItem[] = [
+    {
+      id: 'create-group',
+      label: 'Criar novo Grupo',
+      icon: 'ri-add-line',
+      onPress: () => {
+        setGroupMenuOpen(false)
+        navigate('/groups/new')
+      },
+    },
+    ...myFamilies
+      .filter((f) => Boolean(f.id))
+      .map((f) => {
+        const id = f.id!
+        const isCurrent = Boolean(family.id) && id === family.id
+        const label = (f.name ?? '').trim() || 'Sem nome'
+
+        return {
+          id,
+          label,
+          icon: 'ri-group-line',
+          disabled: switchFamilyMutation.isPending,
+          right: isCurrent ? <i className="ri-check-line text-lg text-forest" /> : null,
+          onPress: () => {
+            if (isCurrent) {
+              setGroupMenuOpen(false)
+              return
+            }
+
+            setGroupMenuOpen(false)
+            switchFamilyMutation.mutate(id)
+          },
+        } satisfies ActionSheetItem
+      }),
+  ]
+
+  const tip = settings.showSmartCard && settings.showTips ? pickTipOfDay(new Date()) : null
+
   return (
     <div className="min-h-screen bg-offwhite w-full p-0">
 
       {/** FAMILY */}
       <section className="bg-linear-to-b from-sage-light to-offwhite py-20">
         <div className="max-w-7xl mx-auto px-6">
+          <nav className="flex w-full items-center justify-between mb-10">
+            <button
+              type="button"
+              className="relative grid h-12 w-12 place-items-center rounded-full bg-white/60 text-forest shadow-sm hover:bg-white"
+              aria-label="Perfil"
+              onClick={() => navigate('/profile')}
+            >
+              <span className="text-base font-bold">{safeInitial(currentMember?.name ?? 'Me')}</span>
+              <span className="absolute -top-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-white text-amber shadow">
+                <i className="ri-vip-crown-2-fill text-base leading-none" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-full bg-white/40 px-4 py-2 text-forest hover:bg-white/60"
+              aria-label="Selecionar grupo"
+              onClick={() => setGroupMenuOpen(true)}
+            >
+              <span className="text-lg font-semibold">{family.name}</span>
+              <i className="ri-arrow-down-s-line text-2xl leading-none" />
+            </button>
+
+            <button
+              type="button"
+              className="grid h-12 w-12 place-items-center rounded-full bg-white/60 text-forest shadow-sm hover:bg-white"
+              aria-label="Configurações"
+              onClick={() => navigate('/settings')}
+            >
+              <i className="ri-settings-3-line text-2xl leading-none" />
+            </button>
+          </nav>
+
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center gap-2 bg-forest/10 text-forest px-3 py-1.5 rounded-full text-xs font-medium">
               <i className="ri-vip-diamond-line"></i>
@@ -326,41 +435,46 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
           <p className="text-lg text-charcoal/80 mb-6">
             {familyMembers.length} members · You are {family.role}
           </p>
+
+          {settings.showSmartCard ? (
+            <div className="mt-10">
+              <SmartCard
+                event={nextCalendarEvent}
+                tip={tip}
+                onOpenCalendar={() => navigate('/calendar')}
+              />
+            </div>
+          ) : null}
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 -mt-12 pb-16 gap-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-
+      <section className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-6 -mt-12 pb-16">
         {/** LISTS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-sage-light rounded-2xl p-8 hover:shadow-xl transition-all cursor-pointer">
-            <div className="flex items-center gap-2 mb-6 ">
-              {sharedPreviewMembers.map((member) => (
-                <i
-                  key={member.userId}
-                  className="w-10 h-10 rounded-full border-2 border-white object-cover content-center text-center"
-                >
-                  {safeInitial(member.name)}
-                </i>
-              ))}
-            </div>
-            <div className="text-8xl font-serif font-medium text-forest mb-2">{lists.length}</div>
-            <p className="text-xl font-semibold text-forest mb-1">Shared Lists</p>
-            <p className="text-sm text-charcoal/80">{updatedListsTodayCount} updated today</p>
-            <div className="flex justify-end">
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                  <i
-                    className="ri-arrow-right-up-line text-forest"
-                    onClick={() => {
-                      navigate('/lists')
-                    }}
-                  ></i>
-              </div>
+        <div
+          className="bg-sage-light rounded-2xl p-8 hover:shadow-xl transition-all cursor-pointer"
+          onClick={() => navigate('/lists')}
+        >
+          <div className="flex items-center gap-2 mb-6 ">
+            {sharedPreviewMembers.map((member) => (
+              <i
+                key={member.userId}
+                className="w-10 h-10 rounded-full border-2 border-white object-cover content-center text-center"
+              >
+                {safeInitial(member.name)}
+              </i>
+            ))}
+          </div>
+          <div className="text-8xl font-serif font-medium text-forest mb-2">{lists.length}</div>
+          <p className="text-xl font-semibold text-forest mb-1">Shared Lists</p>
+          <p className="text-sm text-charcoal/80">{updatedListsTodayCount} updated today</p>
+          <div className="flex justify-end">
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+              <i className="ri-arrow-right-up-line text-forest" />
             </div>
           </div>
         </div>
-        
-      {/** CALENDAR */}
+
+        {/** CALENDAR */}
         <div className="bg-amber rounded-2xl p-8 text-white hover:shadow-2xl transition-all cursor-pointer">
           <span className="text-xs font-medium mb-4 opacity-90">UPCOMING</span>
           <h3 className="text-3xl font-bold mb-2">{nextCalendarEvent?.title ?? 'No upcoming events'}</h3>
@@ -380,8 +494,12 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         <div
           className="bg-forest rounded-2xl p-8 text-white relative overflow-hidden hover:shadow-2xl transition-all cursor-pointer"
           onClick={() => {
-            if (!primaryBudgetId) return
-            navigate(`/budgets/${primaryBudgetId}`)
+            if (primaryBudgetId) {
+              navigate(`/budgets/${primaryBudgetId}`)
+              return
+            }
+
+            setCreateBudgetOpen(true)
           }}
         >
           <img
@@ -390,23 +508,41 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
           />
           <div className="absolute inset-0 bg-linear-to-t from-forest via-forest/80 to-transparent"></div>
           <div className="relative z-10">
-            <div className="text-xl font-semibold mb-4">{monthLabel[0].toLocaleUpperCase() + monthLabel.substring(1)}</div>
-            <div className="mb-4">
-              <div className="h-2 bg-white/20 rounded-full overflow-hidden mb-2">
-                <div
-                  className="h-full bg-amber rounded-full"
-                  style={{ width: `${budgetProgressBar}%` }}
-                ></div>
+            {hasBudget ? (
+              <>
+                <div className="text-xl font-semibold mb-4">
+                  {monthLabel[0].toLocaleUpperCase() + monthLabel.substring(1)}
+                </div>
+                <div className="mb-4">
+                  <div className="h-2 bg-white/20 rounded-full overflow-hidden mb-2">
+                    <div className="h-full bg-amber rounded-full" style={{ width: `${budgetProgressBar}%` }}></div>
+                  </div>
+                  <div className="text-sm opacity-90 font-semibold">{budgetProgress}% spent this month</div>
+                  <div className="text-4xl font-bold">{monthlyBudgetTotal}</div>
+                  <div className="text-sm opacity-90 font-semibold">remaining</div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-xl font-semibold">Ainda não possui um orçamento.</div>
+                <div className="text-sm opacity-90">Create a new.</div>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-2.5 text-sm font-semibold hover:bg-white/20 transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setCreateBudgetOpen(true)
+                  }}
+                >
+                  Create a new <i className="ri-arrow-right-line text-lg leading-none" />
+                </button>
               </div>
-              <div className="text-sm opacity-90 font-semibold">{budgetProgress}% spent this month</div>
-              <div className="text-4xl font-bold">{monthlyBudgetTotal}</div>
-              <div className="text-sm opacity-90 font-semibold">remaining</div>
-            </div>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-white rounded-2xl p-8 hover:shadow-xl transition-all">
+        <div className="grid grid-cols-1 gap-6">
+          <div className="bg-white rounded-2xl p-8 hover:shadow-xl transition-all">
             <h3 className="text-2xl font-bold text-forest mb-6">Recent Updates</h3>
             <div className="space-y-4">
               {recentUpdates.length > 0 ? (
@@ -432,18 +568,28 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
                 <p className="text-sm text-gray-500">No activity yet.</p>
               )}
             </div>
-            <button className="mt-6 text-sm text-amber-dark hover:text-amber font-medium transition-colors cursor-pointer">
+            <button
+              type="button"
+              className="mt-6 text-sm text-amber-dark hover:text-amber font-medium transition-colors cursor-pointer"
+              onClick={() => navigate('/activity')}
+            >
               View All Activity →
             </button>
           </div>
           <div className="space-y-6">
-            <div className="bg-sand rounded-2xl p-8 hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center text-center h-40">
+            <div
+              className="bg-sand rounded-2xl p-8 hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center text-center h-40"
+              onClick={() => navigate('/quick-add')}
+            >
               <div className="w-12 h-12 bg-amber rounded-full flex items-center justify-center mb-3">
                 <i className="ri-add-line text-2xl text-white"></i>
               </div>
               <div className="text-lg font-semibold text-forest">Quick Add Item</div>
             </div>
-            <div className="bg-amber/10 rounded-2xl p-8 hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center text-center h-40">
+            <div
+              className="bg-amber/10 rounded-2xl p-8 hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center text-center h-40"
+              onClick={() => navigate('/notifications')}
+            >
               <div className="w-12 h-12 bg-amber rounded-full flex items-center justify-center mb-3 relative">
                 <i className="ri-notification-3-line text-2xl text-white"></i>
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-forest text-white text-xs rounded-full flex items-center justify-center">
@@ -456,6 +602,85 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
           </div>
         </div>
       </section>
+
+      {createBudgetOpen ? (
+        <CreateBudgetSheet
+          token={token}
+          defaultCurrencyCode={currencyCode}
+          onClose={() => setCreateBudgetOpen(false)}
+          onCreated={(newBudgetId) => {
+            setCreateBudgetOpen(false)
+            navigate(`/budgets/${newBudgetId}`)
+          }}
+        />
+      ) : null}
+
+      {groupMenuOpen ? (
+        <ActionSheet title="Grupos" items={groupMenuItems} onClose={() => setGroupMenuOpen(false)} />
+      ) : null}
+    </div>
+  )
+}
+
+function SmartCard({
+  event,
+  tip,
+  onOpenCalendar,
+}: {
+  event: { title?: string | null; isAllDay?: boolean; startUtc?: string; endUtc?: string } | null
+  tip: Tip | null
+  onOpenCalendar: () => void
+}) {
+  const now = new Date()
+  const weekday = now.toLocaleDateString(undefined, { weekday: 'long' })
+  const weekdayLabel = weekday ? weekday[0]!.toLocaleUpperCase() + weekday.slice(1) : ''
+  const dateLabel = now.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+
+  const title = (event?.title ?? '').trim() || 'Sem eventos'
+  const when = event?.startUtc ? formatEventWhen(event) : 'Nenhum evento agendado.'
+
+  return (
+    <div className="relative overflow-hidden rounded-3xl bg-[#57bcc6] text-white shadow-lg">
+      <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+      <div className="absolute -left-20 -bottom-24 h-64 w-64 rounded-full bg-forest/10 blur-2xl" />
+
+      <div className="relative p-8">
+        <div className="text-5xl font-extrabold leading-tight">
+          {weekdayLabel}
+          <br />
+          {dateLabel}
+        </div>
+
+        <div className="mt-6 flex items-start gap-4">
+          <div className="mt-1 h-14 w-1.5 rounded-full bg-amber" />
+          <div className="min-w-0">
+            <div className="text-xl font-bold truncate">{title}</div>
+            <div className="text-sm opacity-90">{when}</div>
+          </div>
+        </div>
+
+        {tip ? (
+          <div className="mt-6 rounded-2xl bg-white/15 p-4">
+            <div className="flex items-start gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15">
+                <i className={`${tip.icon} text-xl`} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold">{tip.title}</div>
+                <div className="text-sm opacity-90">{tip.body}</div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          className="mt-6 inline-flex items-center gap-2 rounded-full border-2 border-white/80 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white hover:text-[#57bcc6] transition-colors"
+          onClick={onOpenCalendar}
+        >
+          Ver calendário <i className="ri-arrow-right-line text-lg leading-none" />
+        </button>
+      </div>
     </div>
   )
 }
@@ -498,30 +723,6 @@ function formatCurrency(amount: number, currencyCode: string): string {
 function safeInitial(name: string | null | undefined): string {
   const trimmed = (name ?? '').trim()
   return trimmed ? trimmed[0]!.toUpperCase() : '?'
-}
-
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split('.')
-    if (parts.length < 2) return null
-
-    const payload = parts[1]!
-    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
-    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
-    const json = atob(padded)
-
-    const parsed = JSON.parse(json)
-    if (!parsed || typeof parsed !== 'object') return null
-    return parsed as Record<string, unknown>
-  } catch {
-    return null
-  }
-}
-
-function getUserIdFromAccessToken(token: string): string | null {
-  const payload = decodeJwtPayload(token)
-  const sub = payload?.sub
-  return typeof sub === 'string' ? sub : null
 }
 
 function countUniqueListUpdatesToday(rows: ActivityEntryResponse[]): number {
@@ -575,4 +776,24 @@ function formatUpcomingWhen(startUtc: string): string {
 
   const timeLabel = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
   return `${dayLabel} at ${timeLabel}.`
+}
+
+function formatEventWhen(event: { isAllDay?: boolean; startUtc?: string; endUtc?: string }): string {
+  if (event.isAllDay) return 'Dia inteiro'
+
+  const start = event.startUtc ? new Date(event.startUtc) : null
+  const end = event.endUtc ? new Date(event.endUtc) : null
+
+  const startLabel =
+    start && !Number.isNaN(start.getTime())
+      ? start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+      : null
+
+  const endLabel =
+    end && !Number.isNaN(end.getTime())
+      ? end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+      : null
+
+  if (startLabel && endLabel) return `${startLabel} - ${endLabel}`
+  return startLabel || endLabel || '—'
 }

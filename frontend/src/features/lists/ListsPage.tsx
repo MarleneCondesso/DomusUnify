@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
 import { domusApi, type FamilyResponse } from '../../api/domusApi'
 import { queryKeys } from '../../api/queryKeys'
 import { useFamilyHub } from '../../realtime/useFamilyHub'
+import { ActionSheet, type ActionSheetItem } from '../../ui/ActionSheet'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 
 type Props = {
@@ -22,6 +24,7 @@ type Props = {
 export function ListsPage({ token, family }: Props) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   //#region ...[SignalR]...
   const familyId = family.id ?? ''
@@ -45,6 +48,37 @@ export function ListsPage({ token, family }: Props) {
   const hasPexelsCovers = Boolean(
     listsQuery.data?.some((l) => (l.coverImageUrl ?? '').includes('pexels.com')),
   )
+
+  const menuItems = useMemo<ActionSheetItem[]>(() => {
+    const items: ActionSheetItem[] = [
+      {
+        id: 'refresh',
+        label: 'Atualizar',
+        icon: 'ri-refresh-line',
+        onPress: () => {
+          setMenuOpen(false)
+          queryClient.invalidateQueries({ queryKey: queryKeys.lists })
+        },
+      },
+    ]
+
+    if (hasPexelsCovers) {
+      items.push({
+        id: 'regenerate-covers',
+        label: 'Regenerar capas',
+        icon: 'ri-image-line',
+        disabled: regenerateCoversMutation.isPending,
+        onPress: () => {
+          setMenuOpen(false)
+          const ok = window.confirm('Regenerar imagens de capa das listas?')
+          if (!ok) return
+          regenerateCoversMutation.mutate()
+        },
+      })
+    }
+
+    return items
+  }, [hasPexelsCovers, queryClient, regenerateCoversMutation, setMenuOpen])
 
   //#endregion
 
@@ -88,9 +122,7 @@ export function ListsPage({ token, family }: Props) {
             aria-label="Menu"
             disabled={regenerateCoversMutation.isPending}
             onClick={() => {
-              const ok = window.confirm('Regenerar imagens de capa das listas?')
-              if (!ok) return
-              regenerateCoversMutation.mutate()
+              setMenuOpen(true)
             }}
           >
             <i className={`${regenerateCoversMutation.isPending ? 'ri-loader-4-line animate-spin' : 'ri-more-2-fill'} text-2xl leading-none`} />
@@ -196,6 +228,8 @@ export function ListsPage({ token, family }: Props) {
           )}
         </section>
       )}
+
+      {menuOpen ? <ActionSheet title="Opções" items={menuItems} onClose={() => setMenuOpen(false)} /> : null}
 
     </div >
 

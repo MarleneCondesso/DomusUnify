@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { domusApi, type FamilyResponse, type ListItemResponse, type ListResponse } from '../../api/domusApi'
+import { type PointerEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { domusApi, type CategoryResponse, type FamilyResponse, type ListItemResponse, type ListResponse } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
 import { useFamilyHub } from '../../realtime/useFamilyHub'
@@ -22,6 +22,33 @@ type SortMode = 'default' | 'name-asc' | 'name-desc'
 type ListType = 'Shopping' | 'Tasks' | 'Custom'
 
 const UNCATEGORIZED_ID = '__uncategorized__'
+const LONG_PRESS_MS = 260
+const DRAG_CANCEL_DISTANCE_PX = 10
+
+type DragState = {
+  itemId: string
+  itemName: string
+  pointerId: number
+  originCategoryId: string | null
+  targetKey: string
+  x: number
+  y: number
+  offsetX: number
+  offsetY: number
+  width: number
+}
+
+type PressState = {
+  timerId: number
+  pointerId: number
+  startX: number
+  startY: number
+  itemId: string
+  itemName: string
+  originCategoryId: string | null
+  originKey: string
+  element: HTMLDivElement
+}
 
 function normalizeListType(value: unknown): ListType {
   return value === 'Shopping' || value === 'Tasks' || value === 'Custom' ? value : 'Shopping'
@@ -51,12 +78,26 @@ type ListItemsPageProps = {
 export function ListItemsPage({ token, family }: ListItemsPageProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const location = useLocation()
   const { listId } = useParams<{ listId: string }>()
 
   const addInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
   const [isAddBottomSheetOpen, setIsAddBottomSheetOpen] = useState(false)
+
+  useEffect(() => {
+    if (!listId) return
+
+    const params = new URLSearchParams(location.search)
+    if (params.get('add') !== '1') return
+
+    setIsAddBottomSheetOpen(true)
+
+    params.delete('add')
+    const nextSearch = params.toString()
+    navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : '' }, { replace: true })
+  }, [listId, location.pathname, location.search, navigate])
 
   const [newItemName, setNewItemName] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
@@ -82,6 +123,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
   const [detailsState, setDetailsState] = useState<DetailsState | null>(null)
   const [togglingItemIds, setTogglingItemIds] = useState<Set<string>>(() => new Set())
   const [movingItemIds, setMovingItemIds] = useState<Set<string>>(() => new Set())
+  const [deletingItemIds, setDeletingItemIds] = useState<Set<string>>(() => new Set())
 
   const [isListOptionsOpen, setIsListOptionsOpen] = useState(false)
   const [isEditListOpen, setIsEditListOpen] = useState(false)
@@ -99,6 +141,30 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
   const [hideCompleted, setHideCompleted] = useState(false)
   const [sortMode, setSortMode] = useState<SortMode>('default')
   const [collapsedCategoryKeys, setCollapsedCategoryKeys] = useState<Set<string>>(() => new Set())
+
+  const scrollContainerRef = useRef<HTMLElement | null>(null)
+  const sectionHeaderRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const dropSectionKeysRef = useRef<string[]>([])
+
+  const suppressClickRef = useRef(false)
+  const pressRef = useRef<PressState | null>(null)
+  const lastClientYRef = useRef<number | null>(null)
+
+  const [dragState, setDragState] = useState<DragState | null>(null)
+  const dragStateRef = useRef<DragState | null>(null)
+
+  useEffect(() => {
+    dragStateRef.current = dragState
+  }, [dragState])
+
+  useEffect(() => {
+    return () => {
+      if (pressRef.current) {
+        window.clearTimeout(pressRef.current.timerId)
+        pressRef.current = null
+      }
+    }
+  }, [])
 
   const closeDetails = () => {
     setDetailsState(null)
@@ -440,6 +506,57 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
   })
 
+  const deleteItemMutation = useMutation({
+    mutationFn: async (vars: { itemId: string }) => domusApi.deleteListItem(token, vars.itemId),
+    onMutate: async (vars) => {
+      setDeletingItemIds((prev) => {
+        const next = new Set(prev)
+        next.add(vars.itemId)
+        return next
+      })
+
+      if (!listId) return undefined
+
+      await queryClient.cancelQueries({ queryKey: queryKeys.listItems(listId) })
+
+      const previous = queryClient.getQueryData<ListItemResponse[]>(queryKeys.listItems(listId))
+      queryClient.setQueryData<ListItemResponse[]>(queryKeys.listItems(listId), (current) => {
+        const items = current ?? []
+        return items.filter((it) => it.id !== vars.itemId)
+      })
+
+      return { previous }
+    },
+    onError: (err, vars, ctx) => {
+      if (listId && ctx?.previous) queryClient.setQueryData(queryKeys.listItems(listId), ctx.previous)
+
+      if (err instanceof ApiError) {
+        const msg = typeof err.body === 'string' ? err.body : JSON.stringify(err.body)
+        window.alert(msg)
+      } else {
+        window.alert(err instanceof Error ? err.message : 'Erro ao eliminar item.')
+      }
+
+      setDeletingItemIds((prev) => {
+        const next = new Set(prev)
+        next.delete(vars.itemId)
+        return next
+      })
+    },
+    onSettled: async (_data, _err, vars) => {
+      setDeletingItemIds((prev) => {
+        const next = new Set(prev)
+        next.delete(vars.itemId)
+        return next
+      })
+
+      if (listId) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.listItems(listId) })
+        await queryClient.invalidateQueries({ queryKey: queryKeys.lists })
+      }
+    },
+  })
+
   const refreshList = async () => {
     if (listId) {
       await queryClient.invalidateQueries({ queryKey: queryKeys.listItems(listId) })
@@ -496,8 +613,11 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
   })
 
   const updateCategoryMutation = useMutation({
-    mutationFn: async (vars: { categoryId: string; patch: { name?: string; type?: ListType; iconKey?: string } }) => {
-      const patch: { name?: string; type?: ListType; iconKey?: string } = {}
+    mutationFn: async (vars: {
+      categoryId: string
+      patch: { name?: string; type?: ListType; iconKey?: string; sortOrder?: number }
+    }) => {
+      const patch: { name?: string; type?: ListType; iconKey?: string; sortOrder?: number } = {}
 
       if (vars.patch.name !== undefined) {
         const trimmed = vars.patch.name.trim()
@@ -507,6 +627,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
       if (vars.patch.type !== undefined) patch.type = normalizeListType(vars.patch.type)
       if (vars.patch.iconKey !== undefined) patch.iconKey = vars.patch.iconKey
+      if (vars.patch.sortOrder !== undefined) patch.sortOrder = vars.patch.sortOrder
 
       return domusApi.updateItemCategory(token, vars.categoryId, patch)
     },
@@ -522,13 +643,47 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
   })
 
+  const reorderCategoriesMutation = useMutation({
+    mutationFn: async (vars: { updates: Array<{ categoryId: string; sortOrder: number }> }) => {
+      await Promise.all(vars.updates.map((u) => domusApi.updateItemCategory(token, u.categoryId, { sortOrder: u.sortOrder })))
+    },
+    onMutate: async (vars) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.listItemsCategories })
+      const previous = queryClient.getQueryData<CategoryResponse[]>(queryKeys.listItemsCategories)
+
+      const updatesById = new Map(vars.updates.map((u) => [u.categoryId, u.sortOrder]))
+      queryClient.setQueryData<CategoryResponse[]>(queryKeys.listItemsCategories, (current) => {
+        const rows = current ?? []
+        return rows.map((c) => (c.id && updatesById.has(c.id) ? { ...c, sortOrder: updatesById.get(c.id)! } : c))
+      })
+
+      return { previous }
+    },
+    onError: (err, _vars, ctx) => {
+      window.alert(err instanceof Error ? err.message : 'Erro ao reordenar categorias.')
+      if (ctx?.previous) queryClient.setQueryData(queryKeys.listItemsCategories, ctx.previous)
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.listItemsCategories })
+    },
+  })
+
   const categoriesErrorMessage = useMemo(() => {
-    const err = createCategoryMutation.error || updateCategoryMutation.error || deleteCategoryMutation.error
+    const err =
+      createCategoryMutation.error ||
+      updateCategoryMutation.error ||
+      deleteCategoryMutation.error ||
+      reorderCategoriesMutation.error
     if (!err) return null
 
     if (err instanceof ApiError) return typeof err.body === 'string' ? err.body : JSON.stringify(err.body)
     return err instanceof Error ? err.message : 'Erro inesperado.'
-  }, [createCategoryMutation.error, deleteCategoryMutation.error, updateCategoryMutation.error])
+  }, [
+    createCategoryMutation.error,
+    deleteCategoryMutation.error,
+    reorderCategoriesMutation.error,
+    updateCategoryMutation.error,
+  ])
 
   const markAllItemsMutation = useMutation({
     mutationFn: async () => {
@@ -639,10 +794,6 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     } catch {
       window.prompt('Copiar lista:', text)
     }
-  }
-
-  if (listItemsQuery.isLoading || listsCategoriesQuery.isLoading) {
-    return <LoadingSpinner size="lg" />
   }
 
   const incompleteCount = listItems.filter((i) => Boolean(i.id) && !i.isCompleted).length
@@ -809,6 +960,74 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     ].filter((s) => Boolean(s.key) && s.items.length > 0)
     : []
 
+  const dropSectionKeys = useMemo(() => groupedSections.map((s) => s.key).filter((key) => Boolean(key)), [groupedSections])
+
+  useEffect(() => {
+    dropSectionKeysRef.current = dropSectionKeys
+  }, [dropSectionKeys])
+
+  const resolveTargetKey = (clientY: number): string | null => {
+    const keys = dropSectionKeysRef.current
+    if (keys.length === 0) return null
+
+    const entries: Array<{ key: string; top: number }> = []
+    for (const key of keys) {
+      const el = sectionHeaderRefs.current[key]
+      if (!el) continue
+      entries.push({ key, top: el.getBoundingClientRect().top })
+    }
+
+    if (entries.length === 0) return null
+    entries.sort((a, b) => a.top - b.top)
+
+    let current = entries[0]!.key
+    for (const entry of entries) {
+      if (clientY >= entry.top - 8) current = entry.key
+    }
+    return current
+  }
+
+  const dragActiveItemId = dragState?.itemId ?? null
+
+  useEffect(() => {
+    if (!dragActiveItemId) return
+    const prev = document.body.style.userSelect
+    document.body.style.userSelect = 'none'
+    return () => {
+      document.body.style.userSelect = prev
+    }
+  }, [dragActiveItemId])
+
+  useEffect(() => {
+    if (!dragActiveItemId) return
+
+    let rafId = 0
+    const tick = () => {
+      const y = lastClientYRef.current
+      const scroller = scrollContainerRef.current
+      if (y !== null && scroller) {
+        const rect = scroller.getBoundingClientRect()
+        const topZone = rect.top + 72
+        const bottomZone = rect.bottom - 72
+
+        let delta = 0
+        if (y < topZone) delta = -Math.min(24, (topZone - y) / 6)
+        else if (y > bottomZone) delta = Math.min(24, (y - bottomZone) / 6)
+
+        if (delta !== 0) scroller.scrollTop += delta
+      }
+
+      rafId = window.requestAnimationFrame(tick)
+    }
+
+    rafId = window.requestAnimationFrame(tick)
+    return () => window.cancelAnimationFrame(rafId)
+  }, [dragActiveItemId])
+
+  if (listItemsQuery.isLoading || listsCategoriesQuery.isLoading) {
+    return <LoadingSpinner size="lg" />
+  }
+
   const toggleSectionCollapsed = (key: string) => {
     setCollapsedCategoryKeys((prev) => {
       const next = new Set(prev)
@@ -818,32 +1037,193 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     })
   }
 
-  const orderedCategoryIds = categoriesForActiveType.map((c) => c.id).filter((id): id is string => Boolean(id))
+  const finishDrag = (pointerId: number) => {
+    const current = dragStateRef.current
+    if (!current) return
+    if (current.pointerId !== pointerId) return
 
-  const renderItemRow = (item: ListItemResponse, key: string, options: { showCategoryChip: boolean }) => {
+    const targetCategoryId =
+      current.targetKey === UNCATEGORIZED_ID
+        ? null
+        : current.targetKey === '__other__'
+          ? current.originCategoryId
+          : current.targetKey
+    if (targetCategoryId !== current.originCategoryId) {
+      moveItemCategoryMutation.mutate({ itemId: current.itemId, categoryId: targetCategoryId })
+    }
+
+    dragStateRef.current = null
+    setDragState(null)
+    lastClientYRef.current = null
+    window.setTimeout(() => {
+      suppressClickRef.current = false
+    }, 0)
+  }
+
+  const renderItemRow = (
+    item: ListItemResponse,
+    rowKey: string,
+    options: { showCategoryChip: boolean; sectionKey?: string },
+  ) => {
+    const itemId = item.id ?? null
     const categoryName = item.categoryId ? categoryNameById.get(item.categoryId) ?? 'Categoria' : 'Não classificado'
     const isCompleted = Boolean(item.isCompleted)
-    const isToggling = Boolean(item.id && togglingItemIds.has(item.id))
-    const isMoving = Boolean(item.id && movingItemIds.has(item.id))
-    const swipeEnabled = showCategories && !options.showCategoryChip
+    const isToggling = Boolean(itemId && togglingItemIds.has(itemId))
+    const isMoving = Boolean(itemId && movingItemIds.has(itemId))
+    const isDeleting = Boolean(itemId && deletingItemIds.has(itemId))
+    const categoryMoveEnabled = showCategories && !options.showCategoryChip
+    const canMoveCategory = Boolean(itemId) && !isMoving && !isToggling && !isDeleting && dropSectionKeys.length > 0
+    const isDragging = Boolean(itemId && dragActiveItemId === itemId)
+    const canDelete = Boolean(itemId) && !isMoving && !isToggling && !isDeleting && !dragStateRef.current
 
-    const currentCategoryId = item.categoryId ?? null
-    const currentIndex = currentCategoryId ? orderedCategoryIds.indexOf(currentCategoryId) : -1
-    const prevCategoryId = currentIndex > 0 ? orderedCategoryIds[currentIndex - 1] : null
-    const nextCategoryId = currentCategoryId
-      ? currentIndex >= 0 && currentIndex < orderedCategoryIds.length - 1
-        ? orderedCategoryIds[currentIndex + 1]
-        : null
-      : orderedCategoryIds[0] ?? null
+    const sectionKey = options.sectionKey ?? (item.categoryId ?? UNCATEGORIZED_ID)
 
-    const prevLabel = prevCategoryId ? categoryNameById.get(prevCategoryId) ?? 'Categoria' : null
-    const nextLabel = nextCategoryId ? categoryNameById.get(nextCategoryId) ?? 'Categoria' : null
+    const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+      if (!categoryMoveEnabled || !canMoveCategory) return
+      if (!itemId) return
+      if (dragStateRef.current) return
+
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+
+      const target = e.target as HTMLElement | null
+      if (target?.closest('button')) return
+
+      suppressClickRef.current = false
+
+      const pointerId = e.pointerId
+      const startX = e.clientX
+      const startY = e.clientY
+      const element = e.currentTarget
+      const originCategoryId = item.categoryId ?? null
+      const itemName = item.name ?? 'Item'
+      const pressedItemId = itemId
+
+      const timerId = window.setTimeout(() => {
+        const press = pressRef.current
+        if (!press) return
+        if (press.pointerId !== pointerId) return
+        if (press.itemId !== pressedItemId) return
+
+        suppressClickRef.current = true
+        pressRef.current = null
+
+        const rect = element.getBoundingClientRect()
+        const initialTargetKey = press.originKey
+
+        const next: DragState = {
+          itemId: press.itemId,
+          itemName: press.itemName,
+          pointerId,
+          originCategoryId: press.originCategoryId,
+          targetKey: initialTargetKey,
+          x: startX,
+          y: startY,
+          offsetX: startX - rect.left,
+          offsetY: startY - rect.top,
+          width: rect.width,
+        }
+
+        dragStateRef.current = next
+        setDragState(next)
+        lastClientYRef.current = startY
+        try {
+          element.setPointerCapture(pointerId)
+        } catch {
+          // ignore
+        }
+      }, LONG_PRESS_MS)
+
+      pressRef.current = {
+        timerId,
+        pointerId,
+        startX,
+        startY,
+        itemId: pressedItemId,
+        itemName,
+        originCategoryId,
+        originKey: sectionKey,
+        element,
+      }
+    }
+
+    const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
+      if (!itemId) return
+      const activeItemId = itemId
+      const currentDrag = dragStateRef.current
+      if (currentDrag && currentDrag.pointerId === e.pointerId && currentDrag.itemId === activeItemId) {
+        e.preventDefault()
+        lastClientYRef.current = e.clientY
+        const targetKey = resolveTargetKey(e.clientY) ?? currentDrag.targetKey
+        const next: DragState = { ...currentDrag, x: e.clientX, y: e.clientY, targetKey }
+        dragStateRef.current = next
+        setDragState(next)
+        return
+      }
+
+      const press = pressRef.current
+      if (!press) return
+      if (press.pointerId !== e.pointerId) return
+      if (press.itemId !== activeItemId) return
+
+      const dx = e.clientX - press.startX
+      const dy = e.clientY - press.startY
+      if (Math.hypot(dx, dy) >= DRAG_CANCEL_DISTANCE_PX) {
+        window.clearTimeout(press.timerId)
+        pressRef.current = null
+      }
+    }
+
+    const clearPressIfMatchingPointer = (pointerId: number) => {
+      const press = pressRef.current
+      if (!press) return
+      if (press.pointerId !== pointerId) return
+      window.clearTimeout(press.timerId)
+      pressRef.current = null
+    }
+
+    const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
+      if (!itemId) return
+      const activeItemId = itemId
+      const currentDrag = dragStateRef.current
+      if (currentDrag && currentDrag.pointerId === e.pointerId && currentDrag.itemId === activeItemId) {
+        e.preventDefault()
+        finishDrag(e.pointerId)
+        return
+      }
+      clearPressIfMatchingPointer(e.pointerId)
+    }
+
+    const handlePointerCancel = (e: PointerEvent<HTMLDivElement>) => {
+      if (!itemId) return
+      const activeItemId = itemId
+      const currentDrag = dragStateRef.current
+      if (currentDrag && currentDrag.pointerId === e.pointerId && currentDrag.itemId === activeItemId) {
+        finishDrag(e.pointerId)
+        return
+      }
+      clearPressIfMatchingPointer(e.pointerId)
+    }
 
     const content = (
       <div
-        className={`flex cursor-pointer items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-all hover:shadow-md ${isMoving ? 'opacity-60' : ''}`}
+        className={`flex cursor-pointer items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-all hover:shadow-md ${isMoving ? 'opacity-60' : ''} ${isDragging ? 'opacity-0' : ''}`}
         role="button"
         tabIndex={0}
+        aria-grabbed={isDragging}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onContextMenu={(e) => {
+          if (!categoryMoveEnabled) return
+          e.preventDefault()
+        }}
+        onClickCapture={(e) => {
+          if (!suppressClickRef.current) return
+          suppressClickRef.current = false
+          e.preventDefault()
+          e.stopPropagation()
+        }}
         onClick={() => openEditDetails(item)}
         onKeyDown={(e) => {
           if (e.key !== 'Enter' && e.key !== ' ') return
@@ -857,11 +1237,11 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
           type="button"
           aria-label={isCompleted ? 'Desmarcar item' : 'Marcar item'}
           aria-pressed={isCompleted}
-          disabled={isToggling || !item.id}
+          disabled={isToggling || !itemId}
           onClick={(e) => {
             e.stopPropagation()
-            if (!item.id) return
-            toggleCompletionMutation.mutate({ itemId: item.id, isCompleted: !isCompleted })
+            if (!itemId) return
+            toggleCompletionMutation.mutate({ itemId, isCompleted: !isCompleted })
           }}
         >
           {isToggling ? (
@@ -898,46 +1278,29 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
       </div>
     )
 
-    if (!swipeEnabled) {
-      return <div key={key}>{content}</div>
-    }
-
-    const canSwipe = Boolean(item.id) && !isMoving
-
     return (
-      <SwipeableRow
-        key={key}
-        className="rounded-xl bg-sand-light"
-        disabled={!canSwipe}
-        leftAction={
-          prevLabel ? (
-            <div className="rounded-full bg-forest/10 px-3 py-2 text-xs font-semibold text-forest">
-              <i className="ri-arrow-up-s-line mr-1" />
-              {prevLabel}
+      <div key={rowKey}>
+        <SwipeableRow
+          className="rounded-xl bg-red-50"
+          disabled={!canDelete}
+          threshold={108}
+          rightAction={
+            <div className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white">
+              <i className="ri-delete-bin-6-line text-xl" aria-hidden="true" />
             </div>
-          ) : null
-        }
-        rightAction={
-          nextLabel ? (
-            <div className="rounded-full bg-amber/10 px-3 py-2 text-xs font-semibold text-amber-700">
-              <i className="ri-arrow-down-s-line mr-1" />
-              {nextLabel}
-            </div>
-          ) : null
-        }
-        onSwipedRight={
-          canSwipe && prevCategoryId
-            ? () => moveItemCategoryMutation.mutate({ itemId: item.id!, categoryId: prevCategoryId })
-            : undefined
-        }
-        onSwipedLeft={
-          canSwipe && nextCategoryId
-            ? () => moveItemCategoryMutation.mutate({ itemId: item.id!, categoryId: nextCategoryId })
-            : undefined
-        }
-      >
-        {content}
-      </SwipeableRow>
+          }
+          onSwipedLeft={
+            canDelete
+              ? () => {
+                  if (!itemId) return
+                  deleteItemMutation.mutate({ itemId })
+                }
+              : undefined
+          }
+        >
+          {content}
+        </SwipeableRow>
+      </div>
     )
   }
 
@@ -999,7 +1362,12 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto pb-48">
+      <main
+        ref={(node) => {
+          scrollContainerRef.current = node
+        }}
+        className="flex-1 overflow-y-auto pb-48"
+      >
         <div className="p-6">
           <nav className="sticky top-0 z-20 -mx-6 mb-4 bg-offwhite/90 px-6 py-3 backdrop-blur md:hidden">
             <div className="flex items-center justify-between gap-3">
@@ -1055,7 +1423,10 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
                   <div key={section.key} className="space-y-3">
                     <button
                       type="button"
-                      className="flex w-full items-center justify-between rounded-xl bg-white/70 px-4 py-3 text-left shadow-sm"
+                      ref={(node) => {
+                        sectionHeaderRefs.current[section.key] = node
+                      }}
+                      className={`flex w-full items-center justify-between rounded-xl bg-white/70 px-4 py-3 text-left shadow-sm transition-colors ${dragState?.targetKey === section.key ? 'ring-2 ring-amber/40 bg-amber/5' : ''}`}
                       onClick={() => toggleSectionCollapsed(section.key)}
                     >
                       <div className="flex min-w-0 items-center gap-3">
@@ -1071,7 +1442,10 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
                     {!isCollapsed ? (
                       <div className="space-y-3">
                         {section.items.map((item, idx) =>
-                          renderItemRow(item, item.id ?? `${section.key}-${idx}`, { showCategoryChip: false }),
+                          renderItemRow(item, item.id ?? `${section.key}-${idx}`, {
+                            showCategoryChip: false,
+                            sectionKey: section.key,
+                          }),
                         )}
                       </div>
                     ) : null}
@@ -1094,6 +1468,26 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
           )}
         </div>
       </main>
+      {dragState ? (
+        <div
+          className="pointer-events-none fixed z-50 rounded-xl bg-white p-4 shadow-2xl ring-1 ring-black/5"
+          style={{
+            left: dragState.x - dragState.offsetX,
+            top: dragState.y - dragState.offsetY,
+            width: dragState.width,
+          }}
+        >
+          <div className="flex items-center gap-4">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-gray-300 text-charcoal/40">
+              <i className="ri-drag-move-2-line text-lg" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-lg font-medium text-charcoal">{dragState.itemName}</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <button
         className='place-items-center h-12 w-12 rounded-full bg-amber fixed bottom-20 right-20'
         onClick={() => setIsAddBottomSheetOpen(true)}>
@@ -1270,10 +1664,16 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
         <ManageCategoriesSheet
           categories={orderedCategories}
           initialType={activeListType}
-          isBusy={createCategoryMutation.isPending || updateCategoryMutation.isPending || deleteCategoryMutation.isPending}
+          isBusy={
+            createCategoryMutation.isPending ||
+            updateCategoryMutation.isPending ||
+            deleteCategoryMutation.isPending ||
+            reorderCategoriesMutation.isPending
+          }
           errorMessage={categoriesErrorMessage}
           onCreate={(input) => createCategoryMutation.mutate(input)}
           onUpdate={(categoryId, patch) => updateCategoryMutation.mutate({ categoryId, patch })}
+          onReorder={(updates) => reorderCategoriesMutation.mutate({ updates })}
           onDelete={(categoryId) => deleteCategoryMutation.mutate({ categoryId })}
           onClose={() => setIsManageCategoriesOpen(false)}
         />

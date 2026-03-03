@@ -1,0 +1,132 @@
+import { useNavigate } from 'react-router-dom'
+import { type NotificationCategoryId, useAppSettings } from '../../utils/appSettings'
+
+const EVENT_CATEGORIES: Array<{ id: NotificationCategoryId; label: string; icon: string }> = [
+  { id: 'note', label: 'Nota', icon: 'ri-sticky-note-line' },
+  { id: 'messages', label: 'Mensagens', icon: 'ri-chat-3-line' },
+  { id: 'shared-location', label: 'Local compartilhado', icon: 'ri-map-pin-line' },
+  { id: 'photos-videos', label: 'Fotos / Vídeos', icon: 'ri-image-line' },
+  { id: 'calendar', label: 'Calendário', icon: 'ri-calendar-line' },
+  { id: 'birthdays', label: 'Aniversários', icon: 'ri-cake-2-line' },
+  { id: 'lists', label: 'Listas', icon: 'ri-file-list-3-line' },
+  { id: 'schedule', label: 'Horário', icon: 'ri-time-line' },
+  { id: 'budget', label: 'Orçamento', icon: 'ri-piggy-bank-line' },
+  { id: 'documents', label: 'Documentos', icon: 'ri-folder-3-line' },
+]
+
+const OTHER_CATEGORIES: Array<{ id: NotificationCategoryId; label: string; icon: string }> = [
+  { id: 'comments', label: 'Comentários', icon: 'ri-chat-1-line' },
+  { id: 'likes', label: 'Curtir', icon: 'ri-heart-line' },
+]
+
+export function ManageNotificationsPage() {
+  const navigate = useNavigate()
+  const { settings, updateSettings } = useAppSettings()
+
+  const setCategory = (id: NotificationCategoryId, enabled: boolean) => {
+    updateSettings({
+      notificationCategories: {
+        ...settings.notificationCategories,
+        [id]: enabled,
+      },
+    })
+  }
+
+  return (
+    <div className="min-h-screen bg-offwhite w-full">
+      <header className="sticky top-0 z-20 bg-white/70 backdrop-blur">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button
+            type="button"
+            className="grid h-12 w-12 place-items-center rounded-full hover:bg-sand-light"
+            aria-label="Voltar"
+            onClick={() => navigate(-1)}
+          >
+            <i className="ri-arrow-left-line text-2xl leading-none text-sage-dark" />
+          </button>
+          <div className="text-lg font-bold text-charcoal">Gerenciar notificações</div>
+          <div className="h-12 w-12" />
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6 space-y-6">
+        {!settings.notificationsEnabled ? (
+          <div className="rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3 text-sm text-amber-dark">
+            As notificações estão desativadas. Ative em Configurações → Notificações.
+          </div>
+        ) : null}
+
+        <div className="text-xs font-bold tracking-wide text-gray-400">NOTIFICAÇÕES DE EVENTOS</div>
+        <section className="rounded-2xl bg-white shadow-sm divide-y divide-gray-100">
+          {EVENT_CATEGORIES.map((c) => (
+            <Row
+              key={c.id}
+              icon={c.icon}
+              label={c.label}
+              checked={settings.notificationCategories[c.id]}
+              disabled={!settings.notificationsEnabled}
+              onChange={(v) => setCategory(c.id, v)}
+            />
+          ))}
+        </section>
+
+        <div className="text-xs font-bold tracking-wide text-gray-400">OUTRAS NOTIFICAÇÕES</div>
+        <section className="rounded-2xl bg-white shadow-sm divide-y divide-gray-100">
+          {OTHER_CATEGORIES.map((c) => (
+            <Row
+              key={c.id}
+              icon={c.icon}
+              label={c.label}
+              checked={settings.notificationCategories[c.id]}
+              disabled={!settings.notificationsEnabled}
+              onChange={(v) => setCategory(c.id, v)}
+            />
+          ))}
+        </section>
+      </main>
+    </div>
+  )
+}
+
+function Row({
+  icon,
+  label,
+  checked,
+  onChange,
+  disabled,
+}: {
+  icon: string
+  label: string
+  checked: boolean
+  onChange: (value: boolean) => void
+  disabled?: boolean
+}) {
+  return (
+    <div className={`px-5 py-4 flex items-center justify-between gap-4 ${disabled ? 'opacity-60' : ''}`}>
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-sand-light text-sage-dark">
+          <i className={`${icon} text-xl`} />
+        </div>
+        <div className="text-base font-semibold text-charcoal">{label}</div>
+      </div>
+      <button
+        type="button"
+        className={`relative inline-flex h-9 w-16 items-center rounded-full transition-colors ${
+          checked ? 'bg-emerald-500' : 'bg-gray-200'
+        }`}
+        onClick={() => {
+          if (disabled) return
+          onChange(!checked)
+        }}
+        aria-label={checked ? 'Ativado' : 'Desativado'}
+      >
+        <span
+          className={`inline-block h-8 w-8 transform rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-7' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </div>
+  )
+}
+

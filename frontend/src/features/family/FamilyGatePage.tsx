@@ -6,14 +6,30 @@ import { domusApi } from '../../api/domusApi'
 import { queryKeys } from '../../api/queryKeys'
 import type { FamilyResponse } from '../../api/domusApi'
 import { DashboardPage } from '../dashboard/DashboardPage'
+import { ActivityPage } from '../activity/ActivityPage'
 import { CalendarPage } from '../calendar/Calendar'
+import { CreateGroupPage } from './CreateGroupPage'
+import { InviteChildAccountPage } from './InviteChildAccountPage'
+import { InviteDirectPage } from './InviteDirectPage'
+import { InviteLinkPage } from './InviteLinkPage'
+import { InviteMembersPage } from './InviteMembersPage'
+import { InviteOtherGroupsPage } from './InviteOtherGroupsPage'
 import { ListsPage } from '../lists/ListsPage'
 import { CreateListPage } from '../lists/CreateListPage'
 import { ListItemsPage } from '../lists/ListItemsPage'
+import { QuickAddItemPage } from '../lists/QuickAddItemPage'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { BudgetPage } from '../budget/BudgetPage'
 import { ManageAccountsPage } from '../budget/ManageAccountsPage'
 import { ManageCategoriesPage } from '../budget/ManageCategoriesPage'
+import { NotificationsPage } from '../notifications/NotificationsPage'
+import { ProfilePage } from '../profile/ProfilePage'
+import { ManageAccountPage } from '../profile/ManageAccountPage'
+import { DarkModePage } from '../settings/DarkModePage'
+import { HomeCustomizationPage } from '../settings/HomeCustomizationPage'
+import { ManageGroupsPage } from '../settings/ManageGroupsPage'
+import { ManageNotificationsPage } from '../settings/ManageNotificationsPage'
+import { SettingsPage } from '../settings/SettingsPage'
 
 type Props = {
   token: string
@@ -92,6 +108,22 @@ export function FamilyGatePage({ token, onLogout }: Props) {
   return (
     <Routes>
       <Route path="/" element={<DashboardPage token={token} family={family} />} />
+      <Route path="/activity" element={<ActivityPage token={token} family={family} />} />
+      <Route path="/quick-add" element={<QuickAddItemPage token={token} family={family} />} />
+      <Route path="/notifications" element={<NotificationsPage token={token} family={family} />} />
+      <Route path="/profile" element={<ProfilePage token={token} family={family} />} />
+      <Route path="/profile/edit" element={<ManageAccountPage token={token} family={family} />} />
+      <Route path="/settings" element={<SettingsPage token={token} family={family} onLogout={onLogout} />} />
+      <Route path="/settings/dark-mode" element={<DarkModePage />} />
+      <Route path="/settings/home" element={<HomeCustomizationPage />} />
+      <Route path="/settings/notifications" element={<ManageNotificationsPage />} />
+      <Route path="/settings/groups" element={<ManageGroupsPage token={token} family={family} />} />
+      <Route path="/groups/new" element={<CreateGroupPage token={token} />} />
+      <Route path="/groups/invite/:familyId" element={<InviteMembersPage family={family} />} />
+      <Route path="/groups/invite/:familyId/link" element={<InviteLinkPage token={token} family={family} />} />
+      <Route path="/groups/invite/:familyId/direct" element={<InviteDirectPage token={token} family={family} />} />
+      <Route path="/groups/invite/:familyId/child" element={<InviteChildAccountPage />} />
+      <Route path="/groups/invite/:familyId/others" element={<InviteOtherGroupsPage />} />
       <Route path="/budgets/:budgetId" element={<BudgetPage token={token} family={family} />} />
       <Route path="/budgets/:budgetId/categories" element={<ManageCategoriesPage token={token} />} />
       <Route path="/budgets/:budgetId/accounts" element={<ManageAccountsPage token={token} />} />

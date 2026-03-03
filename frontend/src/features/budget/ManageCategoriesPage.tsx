@@ -1,15 +1,27 @@
-import { useMemo, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { domusApi, type FinanceCategoryResponse } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
-import { iconKeyToEmoji } from '../../utils/emojiIconKey'
+import { financeCategoryEmoji } from '../../utils/financeCategoryEmoji'
 import { CreateFinanceCategorySheet } from './CreateFinanceCategorySheet'
+import { EditFinanceCategorySheet } from './EditFinanceCategorySheet'
 
 type Props = {
   token: string
+}
+
+type DragState = {
+  categoryId: string
+  name: string
+  emoji: string
+  x: number
+  y: number
+  offsetX: number
+  offsetY: number
+  width: number
 }
 
 function sortByOrderThenName(rows: FinanceCategoryResponse[]): FinanceCategoryResponse[] {
@@ -28,6 +40,15 @@ export function ManageCategoriesPage({ token }: Props) {
 
   const [type, setType] = useState<'Expense' | 'Income'>('Expense')
   const [createOpen, setCreateOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<FinanceCategoryResponse | null>(null)
+
+  const [orderedRows, setOrderedRows] = useState<FinanceCategoryResponse[]>([])
+  const orderedRowsRef = useRef<FinanceCategoryResponse[]>([])
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const dragStartRowsRef = useRef<FinanceCategoryResponse[] | null>(null)
+
+  const [dragState, setDragState] = useState<DragState | null>(null)
+  const dragStateRef = useRef<DragState | null>(null)
 
   const categoriesQuery = useQuery({
     queryKey: queryKeys.financeCategories(type),
@@ -36,7 +57,123 @@ export function ManageCategoriesPage({ token }: Props) {
 
   const apiError = categoriesQuery.error instanceof ApiError ? categoriesQuery.error : null
 
-  const rows = useMemo(() => sortByOrderThenName(categoriesQuery.data ?? []), [categoriesQuery.data])
+  useEffect(() => {
+    orderedRowsRef.current = orderedRows
+  }, [orderedRows])
+
+  useEffect(() => {
+    dragStateRef.current = dragState
+  }, [dragState])
+
+  useEffect(() => {
+    if (dragStateRef.current) return
+    setOrderedRows(sortByOrderThenName(categoriesQuery.data ?? []))
+  }, [categoriesQuery.data])
+
+  useEffect(() => {
+    setEditingCategory(null)
+  }, [type])
+
+  const reorderMutation = useMutation({
+    mutationFn: async (vars: { updates: Array<{ categoryId: string; sortOrder: number }>; previousRows?: FinanceCategoryResponse[] }) => {
+      await Promise.all(vars.updates.map((u) => domusApi.updateFinanceCategory(token, u.categoryId, { sortOrder: u.sortOrder })))
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['financeCategories'] })
+    },
+    onError: (err, vars) => {
+      window.alert(err instanceof Error ? err.message : 'Erro ao reordenar categorias.')
+      if (vars?.previousRows) setOrderedRows(vars.previousRows)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (vars: { categoryId: string }) => domusApi.deleteFinanceCategory(token, vars.categoryId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['financeCategories'] })
+    },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Erro ao eliminar categoria.')
+    },
+  })
+
+  useEffect(() => {
+    if (!dragState?.categoryId) return
+
+    const onMove = (ev: PointerEvent) => {
+      const current = dragStateRef.current
+      if (!current) return
+
+      setDragState((prev) => (prev ? { ...prev, x: ev.clientX, y: ev.clientY } : prev))
+
+      const all = orderedRowsRef.current
+      const ids = all.map((c) => c.id).filter(Boolean) as string[]
+      const draggingId = current.categoryId
+      const without = ids.filter((id) => id !== draggingId)
+
+      let insertionIndex = without.length
+      for (let i = 0; i < without.length; i++) {
+        const id = without[i]
+        const el = rowRefs.current[id]
+        if (!el) continue
+        const rect = el.getBoundingClientRect()
+        const mid = rect.top + rect.height / 2
+        if (ev.clientY < mid) {
+          insertionIndex = i
+          break
+        }
+      }
+
+      setOrderedRows((prev) => {
+        const dragged = prev.find((c) => c.id === draggingId)
+        if (!dragged) return prev
+
+        const remaining = prev.filter((c) => c.id !== draggingId)
+        const next = [...remaining.slice(0, insertionIndex), dragged, ...remaining.slice(insertionIndex)]
+        const same = next.length === prev.length && next.every((c, idx) => c.id === prev[idx]?.id)
+        return same ? prev : next
+      })
+
+      if (ev.clientY < 80) window.scrollBy(0, -14)
+      else if (ev.clientY > window.innerHeight - 80) window.scrollBy(0, 14)
+    }
+
+    const onUp = () => {
+      const prevRows = dragStartRowsRef.current
+      dragStartRowsRef.current = null
+      dragStateRef.current = null
+      setDragState(null)
+
+      if (!prevRows) return
+
+      const prevIds = prevRows.map((c) => c.id).filter(Boolean) as string[]
+      const nextRows = orderedRowsRef.current
+      const nextIds = nextRows.map((c) => c.id).filter(Boolean) as string[]
+      const changed = prevIds.length !== nextIds.length || prevIds.some((id, idx) => id !== nextIds[idx])
+      if (!changed) return
+
+      const updates = nextRows
+        .filter((c) => Boolean(c.id))
+        .map((c, idx) => ({ categoryId: c.id!, sortOrder: idx }))
+        .filter((u) => {
+          const prev = prevRows.find((c) => c.id === u.categoryId)
+          return (prev?.sortOrder ?? null) !== u.sortOrder
+        })
+
+      if (updates.length === 0) return
+      reorderMutation.mutate({ updates, previousRows: prevRows })
+    }
+
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
+  }, [dragState?.categoryId, reorderMutation])
 
   return (
     <div className="min-h-screen w-full bg-offwhite pb-28">
@@ -63,8 +200,9 @@ export function ManageCategoriesPage({ token }: Props) {
               type="button"
               className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
                 type === 'Expense' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/60 hover:bg-white/60'
-              }`}
+              } disabled:opacity-60 disabled:cursor-not-allowed`}
               onClick={() => setType('Expense')}
+              disabled={reorderMutation.isPending || Boolean(dragState)}
             >
               Despesas
             </button>
@@ -72,8 +210,9 @@ export function ManageCategoriesPage({ token }: Props) {
               type="button"
               className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
                 type === 'Income' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/60 hover:bg-white/60'
-              }`}
+              } disabled:opacity-60 disabled:cursor-not-allowed`}
               onClick={() => setType('Income')}
+              disabled={reorderMutation.isPending || Boolean(dragState)}
             >
               Renda
             </button>
@@ -99,24 +238,88 @@ export function ManageCategoriesPage({ token }: Props) {
                 Tentar novamente
               </button>
             </div>
-          ) : rows.length === 0 ? (
+          ) : orderedRows.length === 0 ? (
             <div className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-sm text-charcoal/70 shadow-sm">
               Sem categorias.
             </div>
           ) : (
             <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-              {rows.map((c, idx) => {
-                const emoji = iconKeyToEmoji(c.iconKey ?? null) ?? (type === 'Income' ? '💰' : '🏷️')
+              {orderedRows.map((c, idx) => {
+                const emoji = financeCategoryEmoji({ iconKey: c.iconKey ?? null, name: c.name ?? null, type })
+                const isDragging = Boolean(dragState?.categoryId && c.id && dragState.categoryId === c.id)
+                const actionsDisabled =
+                  reorderMutation.isPending || deleteMutation.isPending || Boolean(dragState) || Boolean(editingCategory)
                 return (
                   <div
                     key={c.id ?? `c-${idx}`}
-                    className="flex items-center justify-between gap-4 px-4 py-4 border-b border-gray-200 last:border-b-0"
+                    ref={(el) => {
+                      if (!c.id) return
+                      rowRefs.current[c.id] = el
+                    }}
+                    className={`flex items-center justify-between gap-4 px-4 py-4 border-b border-gray-200 last:border-b-0 ${isDragging ? 'opacity-30' : ''}`}
                   >
                     <div className="flex min-w-0 items-center gap-4">
                       <div className="grid h-12 w-12 place-items-center rounded-2xl bg-sand-light text-2xl">{emoji}</div>
                       <div className="truncate text-lg font-extrabold text-charcoal">{c.name ?? '—'}</div>
                     </div>
-                    <i className="ri-menu-line text-2xl text-gray-300" aria-hidden="true" />
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        className="grid h-10 w-10 place-items-center rounded-full text-gray-600 hover:bg-sand-light disabled:opacity-50"
+                        aria-label="Editar"
+                        title="Editar"
+                        disabled={actionsDisabled || !c.id}
+                        onClick={() => {
+                          if (!c.id) return
+                          setEditingCategory(c)
+                        }}
+                      >
+                        <i className="ri-pencil-line text-xl" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        className="grid h-10 w-10 place-items-center rounded-full text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        aria-label="Eliminar"
+                        title="Eliminar"
+                        disabled={actionsDisabled || !c.id}
+                        onClick={() => {
+                          if (!c.id) return
+                          const ok = window.confirm('Eliminar esta categoria?')
+                          if (!ok) return
+                          deleteMutation.mutate({ categoryId: c.id })
+                        }}
+                      >
+                        <i className="ri-delete-bin-line text-xl" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        className="grid h-10 w-10 place-items-center rounded-full text-gray-300 hover:bg-sand-light cursor-grab active:cursor-grabbing disabled:opacity-50"
+                        aria-label="Reordenar"
+                        disabled={actionsDisabled || !c.id}
+                        onPointerDown={(e) => {
+                          if (actionsDisabled) return
+                          if (!c.id) return
+                          const el = rowRefs.current[c.id]
+                          if (!el) return
+                          const rect = el.getBoundingClientRect()
+                          dragStartRowsRef.current = orderedRowsRef.current
+                          setDragState({
+                            categoryId: c.id,
+                            name: (c.name ?? '').trim() || '—',
+                            emoji,
+                            x: e.clientX,
+                            y: e.clientY,
+                            offsetX: e.clientX - rect.left,
+                            offsetY: e.clientY - rect.top,
+                            width: rect.width,
+                          })
+                          ;(e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId)
+                          e.preventDefault()
+                        }}
+                      >
+                        <i className="ri-menu-line text-2xl" aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
                 )
               })}
@@ -154,7 +357,34 @@ export function ManageCategoriesPage({ token }: Props) {
           onCreated={() => setCreateOpen(false)}
         />
       ) : null}
+
+      {editingCategory ? (
+        <EditFinanceCategorySheet
+          token={token}
+          category={editingCategory}
+          onClose={() => setEditingCategory(null)}
+          onSaved={() => setEditingCategory(null)}
+        />
+      ) : null}
+
+      {dragState ? (
+        <div
+          className="pointer-events-none fixed z-50 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-2xl ring-1 ring-black/5"
+          style={{ left: dragState.x - dragState.offsetX, top: dragState.y - dragState.offsetY, width: dragState.width }}
+        >
+          <div className="flex items-center gap-4">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-sand-light text-2xl" aria-hidden="true">
+              {dragState.emoji}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-lg font-extrabold text-charcoal">{dragState.name}</div>
+            </div>
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-sand-light text-gray-400" aria-hidden="true">
+              <i className="ri-drag-move-2-line text-xl" />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
-

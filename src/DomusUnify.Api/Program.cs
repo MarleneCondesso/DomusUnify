@@ -186,6 +186,24 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Alguns endpoints usam `User.GetUserId()` que pode lançar `UnauthorizedAccessException` quando o token não contém o
+// claim esperado. Sem handler isto vira 500; mapeamos para 401 para o frontend conseguir reagir.
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (UnauthorizedAccessException ex)
+    {
+        if (context.Response.HasStarted) throw;
+
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+    }
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 

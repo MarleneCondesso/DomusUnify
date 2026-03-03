@@ -1,7 +1,13 @@
+import type { ReactNode } from 'react'
+
 type Props = {
   onClose: () => void
   onOpenBudgetSettings: () => void
-  onOpenNotifications: () => void
+  dailyReminderEnabled: boolean
+  dailyReminderDisabled?: boolean
+  onToggleDailyReminder: () => void
+  dailyReminderTime: string
+  onEditDailyReminderTime: () => void
   onManageCategories: () => void
   onManageAccounts: () => void
   onChangeBudget: () => void
@@ -14,9 +20,10 @@ type RowProps = {
   label: string
   onPress: () => void
   tone?: 'default' | 'danger'
+  right?: ReactNode
 }
 
-function OptionsRow({ icon, label, onPress, tone = 'default' }: RowProps) {
+function OptionsRow({ icon, label, onPress, tone = 'default', right }: RowProps) {
   const toneClass = tone === 'danger' ? 'text-red-600 hover:bg-red-50' : 'text-charcoal hover:bg-sand-light'
 
   return (
@@ -26,7 +33,51 @@ function OptionsRow({ icon, label, onPress, tone = 'default' }: RowProps) {
       onClick={onPress}
     >
       <i className={`${icon} text-2xl`} aria-hidden="true" />
-      <span className="text-base font-semibold">{label}</span>
+      <span className="min-w-0 flex-1 truncate text-base font-semibold">{label}</span>
+      {right ? <span className="shrink-0">{right}</span> : null}
+    </button>
+  )
+}
+
+type ToggleRowProps = {
+  icon: string
+  label: string
+  description?: string
+  checked: boolean
+  disabled?: boolean
+  onToggle: () => void
+}
+
+function ToggleRow({ icon, label, description, checked, disabled, onToggle }: ToggleRowProps) {
+  return (
+    <button
+      type="button"
+      className="flex w-full items-center gap-4 rounded-2xl px-4 py-4 text-left text-charcoal transition hover:bg-sand-light disabled:opacity-60"
+      onClick={onToggle}
+      disabled={disabled}
+      aria-pressed={checked}
+    >
+      <i className={`${icon} text-2xl`} aria-hidden="true" />
+
+      <div className="min-w-0 flex-1">
+        <div className="text-base font-semibold">{label}</div>
+        {description ? <div className="truncate text-xs font-medium text-charcoal/60">{description}</div> : null}
+      </div>
+
+      <span
+        className={[
+          'relative h-6 w-11 rounded-full transition',
+          checked ? 'bg-sage-dark' : 'bg-gray-300',
+        ].join(' ')}
+        aria-hidden="true"
+      >
+        <span
+          className={[
+            'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition',
+            checked ? 'left-5' : 'left-0.5',
+          ].join(' ')}
+        />
+      </span>
     </button>
   )
 }
@@ -34,7 +85,11 @@ function OptionsRow({ icon, label, onPress, tone = 'default' }: RowProps) {
 export function BudgetOptionsSheet({
   onClose,
   onOpenBudgetSettings,
-  onOpenNotifications,
+  dailyReminderEnabled,
+  dailyReminderDisabled,
+  onToggleDailyReminder,
+  dailyReminderTime,
+  onEditDailyReminderTime,
   onManageCategories,
   onManageAccounts,
   onChangeBudget,
@@ -52,7 +107,25 @@ export function BudgetOptionsSheet({
 
         <div className="space-y-1">
           <OptionsRow icon="ri-settings-3-line" label="Configurações de orçamento" onPress={onOpenBudgetSettings} />
-          <OptionsRow icon="ri-notification-3-line" label="Notificações" onPress={onOpenNotifications} />
+          <ToggleRow
+            icon="ri-notification-3-line"
+            label="Notificações"
+            description="Lembrete diário para adicionar transações"
+            checked={dailyReminderEnabled}
+            disabled={dailyReminderDisabled}
+            onToggle={onToggleDailyReminder}
+          />
+          <OptionsRow
+            icon="ri-time-line"
+            label="Hora do lembrete"
+            onPress={onEditDailyReminderTime}
+            right={
+              <span className="flex items-center gap-2 text-sm font-extrabold text-gray-500">
+                {dailyReminderTime}
+                <i className="ri-arrow-right-s-line text-xl text-gray-300" aria-hidden="true" />
+              </span>
+            }
+          />
           <OptionsRow icon="ri-price-tag-3-line" label="Gerenciar categorias" onPress={onManageCategories} />
           <OptionsRow icon="ri-bank-card-line" label="Gerenciar contas" onPress={onManageAccounts} />
           <OptionsRow icon="ri-swap-2-line" label="Mudar orçamento" onPress={onChangeBudget} />
@@ -63,4 +136,3 @@ export function BudgetOptionsSheet({
     </div>
   )
 }
-

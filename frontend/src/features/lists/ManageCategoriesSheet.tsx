@@ -1,9 +1,20 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CategoryListType, CategoryResponse } from '../../api/domusApi'
 import { encodeEmojiToIconKey, iconKeyToEmoji } from '../../utils/emojiIconKey'
 
 type CategoryCreateInput = { name: string; type: CategoryListType; iconKey: string }
-type CategoryUpdatePatch = { name?: string; type?: CategoryListType; iconKey?: string }
+type CategoryUpdatePatch = { name?: string; type?: CategoryListType; iconKey?: string; sortOrder?: number }
+
+type DragState = {
+  categoryId: string
+  name: string
+  emoji: string
+  x: number
+  y: number
+  offsetX: number
+  offsetY: number
+  width: number
+}
 
 type Props = {
   categories: CategoryResponse[]
@@ -12,6 +23,7 @@ type Props = {
   errorMessage?: string | null
   onCreate: (input: CategoryCreateInput) => void
   onUpdate: (categoryId: string, patch: CategoryUpdatePatch) => void
+  onReorder?: (updates: Array<{ categoryId: string; sortOrder: number }>) => void
   onDelete: (categoryId: string) => void
   onClose: () => void
 }
@@ -48,6 +60,7 @@ export function ManageCategoriesSheet({
   errorMessage,
   onCreate,
   onUpdate,
+  onReorder,
   onDelete,
   onClose,
 }: Props) {
@@ -66,7 +79,16 @@ export function ManageCategoriesSheet({
   const [iconPickerType, setIconPickerType] = useState<CategoryListType>('Shopping')
   const [iconDraft, setIconDraft] = useState('')
 
-  const rows = useMemo(() => {
+  const [orderedRows, setOrderedRows] = useState<CategoryResponse[]>([])
+  const orderedRowsRef = useRef<CategoryResponse[]>([])
+  const rowRefs = useRef<Record<string, HTMLLIElement | null>>({})
+  const dragStartRowsRef = useRef<CategoryResponse[] | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+
+  const [dragState, setDragState] = useState<DragState | null>(null)
+  const dragStateRef = useRef<DragState | null>(null)
+
+  const baseRows = useMemo(() => {
     return categories
       .filter((c) => Boolean(c.id))
       .filter((c) => normalizeCategoryType(c.type) === selectedType)
@@ -79,6 +101,105 @@ export function ManageCategoriesSheet({
         return aName.localeCompare(bName, undefined, { sensitivity: 'base' })
       })
   }, [categories, selectedType])
+
+  const busy = Boolean(isBusy) || Boolean(dragState)
+
+  useEffect(() => {
+    orderedRowsRef.current = orderedRows
+  }, [orderedRows])
+
+  useEffect(() => {
+    dragStateRef.current = dragState
+  }, [dragState])
+
+  useEffect(() => {
+    if (dragStateRef.current) return
+    setOrderedRows(baseRows)
+  }, [baseRows])
+
+  useEffect(() => {
+    if (!dragState?.categoryId) return
+
+    const onMove = (ev: PointerEvent) => {
+      const current = dragStateRef.current
+      if (!current) return
+
+      setDragState((prev) => (prev ? { ...prev, x: ev.clientX, y: ev.clientY } : prev))
+
+      const all = orderedRowsRef.current
+      const ids = all.map((c) => c.id).filter(Boolean) as string[]
+      const draggingId = current.categoryId
+      const without = ids.filter((id) => id !== draggingId)
+
+      let insertionIndex = without.length
+      for (let i = 0; i < without.length; i++) {
+        const id = without[i]
+        const el = rowRefs.current[id]
+        if (!el) continue
+        const rect = el.getBoundingClientRect()
+        const mid = rect.top + rect.height / 2
+        if (ev.clientY < mid) {
+          insertionIndex = i
+          break
+        }
+      }
+
+      setOrderedRows((prev) => {
+        const dragged = prev.find((c) => c.id === draggingId)
+        if (!dragged) return prev
+
+        const remaining = prev.filter((c) => c.id !== draggingId)
+        const next = [...remaining.slice(0, insertionIndex), dragged, ...remaining.slice(insertionIndex)]
+        const same = next.length === prev.length && next.every((c, idx) => c.id === prev[idx]?.id)
+        return same ? prev : next
+      })
+
+      const container = scrollContainerRef.current
+      if (container) {
+        const rect = container.getBoundingClientRect()
+        const margin = 80
+        if (ev.clientY < rect.top + margin) container.scrollBy({ top: -14 })
+        else if (ev.clientY > rect.bottom - margin) container.scrollBy({ top: 14 })
+      }
+    }
+
+    const onUp = () => {
+      const prevRows = dragStartRowsRef.current
+      dragStartRowsRef.current = null
+      dragStateRef.current = null
+      setDragState(null)
+
+      if (!prevRows) return
+
+      const prevIds = prevRows.map((c) => c.id).filter(Boolean) as string[]
+      const nextRows = orderedRowsRef.current
+      const nextIds = nextRows.map((c) => c.id).filter(Boolean) as string[]
+      const changed = prevIds.length !== nextIds.length || prevIds.some((id, idx) => id !== nextIds[idx])
+      if (!changed) return
+
+      const updates = nextRows
+        .filter((c) => Boolean(c.id))
+        .map((c, idx) => ({ categoryId: c.id!, sortOrder: idx }))
+        .filter((u) => {
+          const prev = prevRows.find((c) => c.id === u.categoryId)
+          return (prev?.sortOrder ?? null) !== u.sortOrder
+        })
+
+      if (updates.length === 0) return
+      if (onReorder) onReorder(updates)
+      else updates.forEach((u) => onUpdate(u.categoryId, { sortOrder: u.sortOrder }))
+    }
+
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
+  }, [dragState?.categoryId, onReorder, onUpdate])
 
   const openIconPicker = (target: IconPickerTarget, type: CategoryListType, currentIconKey: string) => {
     setIconPickerTarget(target)
@@ -102,7 +223,7 @@ export function ManageCategoriesSheet({
 
   const submitCreate = () => {
     const trimmed = newCategoryName.trim()
-    if (!trimmed || isBusy) return
+    if (!trimmed || busy) return
 
     onCreate({ name: trimmed, type: selectedType, iconKey: newIconKey || 'tag' })
     setNewCategoryName('')
@@ -111,7 +232,7 @@ export function ManageCategoriesSheet({
 
   const submitEdit = (categoryId: string) => {
     const trimmed = editingName.trim()
-    if (!trimmed || isBusy) return
+    if (!trimmed || busy) return
 
     onUpdate(categoryId, { name: trimmed, type: editingType, iconKey: editingIconKey || 'tag' })
     setEditingId(null)
@@ -121,7 +242,7 @@ export function ManageCategoriesSheet({
     <div className="fixed inset-0 z-50">
       <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
 
-      <div className="absolute inset-x-0 bottom-0 top-0 bg-white sm:inset-x-[10%] sm:bottom-8 sm:top-8 sm:rounded-3xl sm:shadow-2xl">
+      <div className="absolute inset-x-0 bottom-0 top-0 flex flex-col bg-white sm:inset-x-[10%] sm:bottom-8 sm:top-8 sm:rounded-3xl sm:shadow-2xl">
         <div className="flex items-center justify-between px-4 py-3">
           <button type="button" className="rounded-full p-2 hover:bg-sand-light" onClick={onClose} title="Fechar">
             <i className="ri-close-line text-2xl text-gray-600" />
@@ -133,7 +254,10 @@ export function ManageCategoriesSheet({
           <span className="h-10 w-10" />
         </div>
 
-        <div className="px-4 pb-6">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+24px)]"
+        >
           <div className="mb-4 flex items-center justify-center">
             <div className="inline-flex rounded-full bg-sand-light p-1">
               {CATEGORY_TYPES.map((t) => {
@@ -146,7 +270,7 @@ export function ManageCategoriesSheet({
                       active ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/70 hover:text-charcoal'
                     }`}
                     onClick={() => setSelectedType(t)}
-                    disabled={isBusy}
+                    disabled={busy}
                   >
                     {typeLabel(t)}
                   </button>
@@ -168,7 +292,7 @@ export function ManageCategoriesSheet({
                 className="grid h-10 w-10 place-items-center rounded-full text-xl hover:bg-sand-light"
                 title="Selecionar ícone"
                 onClick={() => openIconPicker({ kind: 'new' }, selectedType, newIconKey)}
-                disabled={isBusy}
+                disabled={busy}
               >
                 <span className="text-xl leading-none">{iconPreview(newIconKey)}</span>
               </button>
@@ -183,14 +307,14 @@ export function ManageCategoriesSheet({
                   e.preventDefault()
                   submitCreate()
                 }}
-                disabled={isBusy}
+                disabled={busy}
               />
 
               <button
                 type="button"
                 className="grid h-10 w-10 place-items-center rounded-full bg-forest text-white disabled:opacity-50"
                 onClick={submitCreate}
-                disabled={isBusy || newCategoryName.trim().length === 0}
+                disabled={busy || newCategoryName.trim().length === 0}
                 aria-label="Adicionar categoria"
                 title="Adicionar"
               >
@@ -200,13 +324,13 @@ export function ManageCategoriesSheet({
           </div>
 
           <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white">
-            {rows.length === 0 ? (
+            {orderedRows.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-charcoal/70">
                 Sem categorias para {typeLabel(selectedType)}.
               </div>
             ) : (
               <ul className="divide-y divide-gray-200">
-                {rows.map((c) => {
+                {orderedRows.map((c) => {
                   const id = c.id
                   if (!id) return null
 
@@ -214,9 +338,17 @@ export function ManageCategoriesSheet({
                   const name = c.name ?? 'Categoria'
                   const rowType = normalizeCategoryType(c.type)
                   const rowIconKey = (c.iconKey ?? 'tag').toString()
+                  const emoji = iconPreview(rowIconKey)
+                  const isDragging = Boolean(dragState?.categoryId && dragState.categoryId === id)
 
                   return (
-                    <li key={id} className="px-4 py-3">
+                    <li
+                      key={id}
+                      ref={(el) => {
+                        rowRefs.current[id] = el
+                      }}
+                      className={`px-4 py-3 ${isDragging ? 'opacity-30' : ''}`}
+                    >
                       {isEditing ? (
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-3">
@@ -225,7 +357,7 @@ export function ManageCategoriesSheet({
                               className="grid h-10 w-10 place-items-center rounded-full text-xl hover:bg-sand-light"
                               title="Selecionar ícone"
                               onClick={() => openIconPicker({ kind: 'edit' }, editingType, editingIconKey)}
-                              disabled={isBusy}
+                              disabled={busy}
                             >
                               <span className="text-xl leading-none">{iconPreview(editingIconKey)}</span>
                             </button>
@@ -239,7 +371,7 @@ export function ManageCategoriesSheet({
                                 e.preventDefault()
                                 submitEdit(id)
                               }}
-                              disabled={isBusy}
+                              disabled={busy}
                               autoFocus
                             />
 
@@ -247,7 +379,7 @@ export function ManageCategoriesSheet({
                               type="button"
                               className="grid h-10 w-10 place-items-center rounded-full text-forest hover:bg-sand-light disabled:opacity-50"
                               onClick={() => submitEdit(id)}
-                              disabled={isBusy || editingName.trim().length === 0}
+                              disabled={busy || editingName.trim().length === 0}
                               aria-label="Guardar"
                               title="Guardar"
                             >
@@ -257,7 +389,7 @@ export function ManageCategoriesSheet({
                               type="button"
                               className="grid h-10 w-10 place-items-center rounded-full text-gray-600 hover:bg-sand-light disabled:opacity-50"
                               onClick={() => setEditingId(null)}
-                              disabled={isBusy}
+                              disabled={busy}
                               aria-label="Cancelar"
                               title="Cancelar"
                             >
@@ -271,7 +403,7 @@ export function ManageCategoriesSheet({
                               className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-charcoal outline-none"
                               value={editingType}
                               onChange={(e) => setEditingType(normalizeCategoryType(e.target.value))}
-                              disabled={isBusy}
+                              disabled={busy}
                             >
                               {CATEGORY_TYPES.map((t) => (
                                 <option key={t} value={t}>
@@ -284,7 +416,7 @@ export function ManageCategoriesSheet({
                       ) : (
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex min-w-0 items-center gap-3">
-                            <span className="text-xl leading-none">{iconPreview(rowIconKey)}</span>
+                            <span className="text-xl leading-none">{emoji}</span>
                             <div className="min-w-0">
                               <div className="truncate text-sm font-medium text-charcoal">{name}</div>
                               <div className="text-xs text-charcoal/60">{typeLabel(rowType)}</div>
@@ -294,6 +426,34 @@ export function ManageCategoriesSheet({
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
+                              className="grid h-10 w-10 place-items-center rounded-full text-gray-300 hover:bg-sand-light disabled:opacity-50 cursor-grab active:cursor-grabbing"
+                              aria-label="Reordenar"
+                              disabled={busy || Boolean(editingId)}
+                              onPointerDown={(e) => {
+                                if (busy) return
+                                if (editingId) return
+                                const el = rowRefs.current[id]
+                                if (!el) return
+                                const rect = el.getBoundingClientRect()
+                                dragStartRowsRef.current = orderedRowsRef.current
+                                setDragState({
+                                  categoryId: id,
+                                  name: name.trim() || '—',
+                                  emoji,
+                                  x: e.clientX,
+                                  y: e.clientY,
+                                  offsetX: e.clientX - rect.left,
+                                  offsetY: e.clientY - rect.top,
+                                  width: rect.width,
+                                })
+                                ;(e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId)
+                                e.preventDefault()
+                              }}
+                            >
+                              <i className="ri-menu-line text-2xl" aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
                               className="grid h-10 w-10 place-items-center rounded-full text-gray-600 hover:bg-sand-light disabled:opacity-50"
                               onClick={() => {
                                 setEditingId(id)
@@ -301,7 +461,7 @@ export function ManageCategoriesSheet({
                                 setEditingType(rowType)
                                 setEditingIconKey(rowIconKey || 'tag')
                               }}
-                              disabled={isBusy}
+                              disabled={busy}
                               aria-label="Editar"
                               title="Editar"
                             >
@@ -315,7 +475,7 @@ export function ManageCategoriesSheet({
                                 if (!ok) return
                                 onDelete(id)
                               }}
-                              disabled={isBusy}
+                              disabled={busy}
                               aria-label="Eliminar"
                               title="Eliminar"
                             >
@@ -421,6 +581,25 @@ export function ManageCategoriesSheet({
                   Aplicar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {dragState ? (
+        <div
+          className="pointer-events-none fixed z-[70] rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-2xl ring-1 ring-black/5"
+          style={{ left: dragState.x - dragState.offsetX, top: dragState.y - dragState.offsetY, width: dragState.width }}
+        >
+          <div className="flex items-center gap-4">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-sand-light text-2xl" aria-hidden="true">
+              {dragState.emoji}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-base font-extrabold text-charcoal">{dragState.name}</div>
+            </div>
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-sand-light text-gray-400" aria-hidden="true">
+              <i className="ri-drag-move-2-line text-xl" />
             </div>
           </div>
         </div>

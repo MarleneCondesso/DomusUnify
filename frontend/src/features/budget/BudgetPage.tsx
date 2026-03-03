@@ -13,15 +13,16 @@ import {
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
+import { SwipeableRow } from '../../ui/SwipeableRow'
 import { ErrorDisplay } from '../../utils/ErrorDisplay'
 import { iconKeyToEmoji } from '../../utils/emojiIconKey'
+import { financeCategoryEmoji } from '../../utils/financeCategoryEmoji'
 import { AddTransactionSheet } from './AddTransactionSheet'
 import { BudgetOptionsSheet } from './BudgetOptionsSheet'
 import { BudgetSettingsSheet } from './BudgetSettingsSheet'
 import { BudgetSwitcherSheet } from './BudgetSwitcherSheet'
 import { CreateBudgetSheet } from './CreateBudgetSheet'
 import { ExportDataSheet } from './ExportDataSheet'
-import { NotificationsSheet } from './NotificationsSheet'
 
 type Props = {
   token: string
@@ -30,6 +31,15 @@ type Props = {
 
 type TabId = 'list' | 'categories' | 'members' | 'accounts'
 type IndicatorId = 'Balance' | 'TotalExpenses' | 'TotalIncome' | 'BalanceToday'
+
+type CategoryDrilldown = {
+  categoryId: string
+  categoryName: string
+  categoryIconKey: string | null
+  totalAbs: number
+  percentage: number
+  type: 'Expense' | 'Income'
+}
 
 const TAB_DEFS: Array<{ id: TabId; label: string; icon: string }> = [
   { id: 'list', label: 'Lista', icon: 'ri-file-list-3-line' },
@@ -47,6 +57,9 @@ const INDICATOR_OPTIONS: Array<{ id: IndicatorId; label: string; icon: string; s
 
 const INDICATOR_CYCLE: IndicatorId[] = ['Balance', 'BalanceToday', 'TotalExpenses', 'TotalIncome']
 
+const DAILY_REMINDER_NOTE_PREFIX = 'domus:budget-daily-reminder:'
+const DAILY_REMINDER_TIME_STORAGE_KEY_PREFIX = 'domus:budget-daily-reminder-time:'
+
 export function BudgetPage({ token }: Props) {
   const { budgetId } = useParams()
   const navigate = useNavigate()
@@ -62,13 +75,18 @@ export function BudgetPage({ token }: Props) {
   const [createBudgetOpen, setCreateBudgetOpen] = useState(false)
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<FinanceTransactionResponse | null>(null)
+  const [categoryDrilldown, setCategoryDrilldown] = useState<CategoryDrilldown | null>(null)
+  const [dailyReminderTime, setDailyReminderTime] = useState('20:00')
+  const [dailyReminderTimeOpen, setDailyReminderTimeOpen] = useState(false)
+  const [dailyReminderTimeDraft, setDailyReminderTimeDraft] = useState('20:00')
+  const [deletingTransactionIds, setDeletingTransactionIds] = useState<Set<string>>(() => new Set())
 
-  const referenceDate = useMemo(() => utcDateKey(cursor.year, cursor.monthIndex0, 15), [cursor.monthIndex0, cursor.year])
   const todayUtc = useMemo(() => new Date().toISOString().slice(0, 10), [])
   const yesterdayUtc = useMemo(() => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10), [])
+  const period = useMemo(() => utcMonthRange(cursor.year, cursor.monthIndex0), [cursor.monthIndex0, cursor.year])
 
   const detailQuery = useQuery({
     queryKey: budgetId ? queryKeys.budgetById(budgetId) : ['budgetById', null],
@@ -76,21 +94,21 @@ export function BudgetPage({ token }: Props) {
     enabled: Boolean(budgetId),
   })
 
-  const totalsQuery = useQuery({
-    queryKey: budgetId ? queryKeys.budgetTotals({ budgetId, referenceDate }) : ['budgetTotals', null, referenceDate],
-    queryFn: () => domusApi.getBudgetTotals(token, budgetId!, referenceDate),
+  const todayTotalsQuery = useQuery({
+    queryKey: budgetId ? queryKeys.budgetTotals({ budgetId, referenceDate: todayUtc }) : ['budgetTotals', null, todayUtc],
+    queryFn: () => domusApi.getBudgetTotals(token, budgetId!, todayUtc),
     enabled: Boolean(budgetId),
   })
 
   const currencyCode = (detailQuery.data?.currencyCode ?? 'EUR') || 'EUR'
 
-  const periodFrom = totalsQuery.data?.periodStart ?? referenceDate
-  const periodTo = totalsQuery.data?.periodEnd ?? referenceDate
+  const periodFrom = period.from
+  const periodTo = period.to
 
   const transactionsQuery = useQuery({
     queryKey: budgetId ? queryKeys.budgetTransactions({ budgetId, from: periodFrom, to: periodTo }) : ['budgetTransactions', null],
     queryFn: () => domusApi.getBudgetTransactions(token, budgetId!, { from: periodFrom, to: periodTo }),
-    enabled: Boolean(budgetId) && tab === 'list',
+    enabled: Boolean(budgetId),
   })
 
   const categoriesExpensesQuery = useQuery({
@@ -99,6 +117,15 @@ export function BudgetPage({ token }: Props) {
       : ['budgetSummaryCategories', null],
     queryFn: () =>
       domusApi.getBudgetSummaryByCategories(token, budgetId!, { type: 'Expense', from: periodFrom, to: periodTo }),
+    enabled: Boolean(budgetId) && tab === 'categories',
+  })
+
+  const categoriesIncomeQuery = useQuery({
+    queryKey: budgetId
+      ? queryKeys.budgetSummaryCategories({ budgetId, type: 'Income', from: periodFrom, to: periodTo })
+      : ['budgetSummaryCategoriesIncome', null],
+    queryFn: () =>
+      domusApi.getBudgetSummaryByCategories(token, budgetId!, { type: 'Income', from: periodFrom, to: periodTo }),
     enabled: Boolean(budgetId) && tab === 'categories',
   })
 
@@ -142,10 +169,160 @@ export function BudgetPage({ token }: Props) {
     enabled: tab === 'accounts',
   })
 
+  const dailyReminderQueryKey = budgetId ? (['budgetDailyReminder', budgetId] as const) : (['budgetDailyReminder', null] as const)
+
+  const dailyReminderQuery = useQuery<{ eventId: string; startUtc: string | null } | null>({
+    queryKey: dailyReminderQueryKey,
+    queryFn: async () => {
+      const now = Date.now()
+      const fromUtc = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const toUtc = new Date(now + 45 * 24 * 60 * 60 * 1000).toISOString()
+
+      const tag = `${DAILY_REMINDER_NOTE_PREFIX}${budgetId}`
+      const events = await domusApi.getCalendarEvents(token, fromUtc, toUtc, undefined, undefined, undefined, 2000)
+      const match = events.find((e) => (e.note ?? '').includes(tag))
+      if (!match?.id) return null
+      return { eventId: match.id, startUtc: match.startUtc ?? null }
+    },
+    enabled: Boolean(budgetId) && optionsOpen,
+    staleTime: 30_000,
+  })
+
+  const dailyReminderEventId = dailyReminderQuery.data?.eventId ?? null
+  const dailyReminderEnabled = Boolean(dailyReminderEventId)
+
+  const dailyReminderMutation = useMutation({
+    mutationFn: async (vars: { nextEnabled: boolean; time: string }): Promise<{ eventId: string; startUtc: string | null } | null> => {
+      if (!budgetId) return null
+
+      if (vars.nextEnabled) {
+        const budgetName = (detailQuery.data?.name ?? 'Orçamento').trim() || 'Orçamento'
+        const note = `${DAILY_REMINDER_NOTE_PREFIX}${budgetId}`
+
+        const parsed = parseHm(vars.time)
+        if (!parsed) throw new Error('Hora inválida.')
+
+        const now = new Date()
+        const start = new Date(now)
+        start.setHours(parsed.hours, parsed.minutes, 0, 0)
+        if (start.getTime() <= now.getTime()) start.setDate(start.getDate() + 1)
+        const end = new Date(start.getTime() + 15 * 60 * 1000)
+
+        const timezoneId = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+        const created = await domusApi.createCalendarEvent(token, {
+          title: `Lembrete diário — ${budgetName}`,
+          isAllDay: false,
+          startUtc: start.toISOString(),
+          endUtc: end.toISOString(),
+          participantsAllMembers: true,
+          visibleToAllMembers: true,
+          reminderOffsetsMinutes: [0],
+          note,
+          recurrenceRule: 'FREQ=DAILY',
+          timezoneId,
+        })
+
+        if (!created.id) return null
+        return { eventId: created.id, startUtc: created.startUtc ?? start.toISOString() }
+      }
+
+      if (dailyReminderEventId) {
+        await domusApi.deleteCalendarEvent(token, dailyReminderEventId)
+      }
+
+      return null
+    },
+    onSuccess: async (nextId) => {
+      queryClient.setQueryData(dailyReminderQueryKey, nextId)
+      await queryClient.invalidateQueries({ queryKey: ['calendarEvents'] })
+    },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Erro ao atualizar lembrete diário.')
+    },
+  })
+
+  const dailyReminderTimeMutation = useMutation({
+    mutationFn: async (vars: { eventId: string; time: string }): Promise<{ eventId: string; startUtc: string | null }> => {
+      const parsed = parseHm(vars.time)
+      if (!parsed) throw new Error('Hora inválida.')
+
+      const now = new Date()
+      const start = new Date(now)
+      start.setHours(parsed.hours, parsed.minutes, 0, 0)
+      if (start.getTime() <= now.getTime()) start.setDate(start.getDate() + 1)
+      const end = new Date(start.getTime() + 15 * 60 * 1000)
+
+      const timezoneId = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+      await domusApi.updateCalendarEvent(token, vars.eventId, {
+        startUtc: start.toISOString(),
+        endUtc: end.toISOString(),
+        timezoneId,
+      })
+
+      return { eventId: vars.eventId, startUtc: start.toISOString() }
+    },
+    onSuccess: async (next) => {
+      queryClient.setQueryData(dailyReminderQueryKey, next)
+      await queryClient.invalidateQueries({ queryKey: ['calendarEvents'] })
+    },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Erro ao atualizar hora do lembrete.')
+    },
+  })
+
+  const dailyReminderBusy = dailyReminderQuery.isLoading || dailyReminderMutation.isPending || dailyReminderTimeMutation.isPending
+
   const clearMutation = useMutation({
     mutationFn: () => domusApi.clearBudgetTransactions(token, budgetId!),
     onSuccess: async () => {
-      await invalidateBudgetQueries(queryClient, budgetId!, periodFrom, periodTo, referenceDate)
+      await invalidateBudgetQueries(queryClient, budgetId!, periodFrom, periodTo)
+    },
+  })
+
+  const deleteTransactionMutation = useMutation({
+    mutationFn: async (vars: { transactionId: string }) => domusApi.deleteBudgetTransaction(token, budgetId!, vars.transactionId),
+    onMutate: async (vars) => {
+      setDeletingTransactionIds((prev) => {
+        const next = new Set(prev)
+        next.add(vars.transactionId)
+        return next
+      })
+
+      if (!budgetId) return undefined
+
+      const key = queryKeys.budgetTransactions({ budgetId, from: periodFrom, to: periodTo })
+      await queryClient.cancelQueries({ queryKey: key })
+
+      const previous = queryClient.getQueryData<FinanceTransactionResponse[]>(key)
+      queryClient.setQueryData<FinanceTransactionResponse[]>(key, (current) => {
+        const rows = current ?? []
+        return rows.filter((t) => t.id !== vars.transactionId)
+      })
+
+      return { previous, key }
+    },
+    onError: (err, vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(ctx.key, ctx.previous)
+      window.alert(err instanceof Error ? err.message : 'Erro ao eliminar transação.')
+
+      setDeletingTransactionIds((prev) => {
+        const next = new Set(prev)
+        next.delete(vars.transactionId)
+        return next
+      })
+    },
+    onSettled: async (_data, _err, vars) => {
+      setDeletingTransactionIds((prev) => {
+        const next = new Set(prev)
+        next.delete(vars.transactionId)
+        return next
+      })
+
+      if (budgetId) {
+        await invalidateBudgetQueries(queryClient, budgetId, periodFrom, periodTo)
+      }
     },
   })
 
@@ -162,21 +339,42 @@ export function BudgetPage({ token }: Props) {
 
   const indicatorDef = INDICATOR_OPTIONS.find((x) => x.id === indicator) ?? INDICATOR_OPTIONS[0]!
 
+  const periodTotals = useMemo(() => {
+    const rows = transactionsQuery.data ?? []
+    const onlyPaid = Boolean(detailQuery.data?.onlyPaidInTotals)
+
+    let income = 0
+    let expenses = 0
+
+    for (const t of rows) {
+      if (onlyPaid && !t.isPaid) continue
+      const raw = Number.isFinite(t.amount) ? (t.amount as number) : 0
+      const abs = Math.abs(raw)
+      const kind = (t.type ?? '').toLowerCase()
+      if (kind === 'income') income += abs
+      else if (kind === 'expense') expenses += abs
+    }
+
+    return {
+      incomeThisPeriod: income,
+      expensesThisPeriod: expenses,
+      balanceThisPeriod: income - expenses,
+    }
+  }, [detailQuery.data?.onlyPaidInTotals, transactionsQuery.data])
+
   const indicatorValue = useMemo(() => {
-    const t = totalsQuery.data
-    if (!t) return 0
     switch (indicator) {
       case 'TotalExpenses':
-        return Math.abs(t.expensesThisPeriod ?? 0)
+        return periodTotals.expensesThisPeriod
       case 'TotalIncome':
-        return Math.abs(t.incomeThisPeriod ?? 0)
+        return periodTotals.incomeThisPeriod
       case 'BalanceToday':
-        return t.balanceToday ?? 0
+        return todayTotalsQuery.data?.balanceToday ?? 0
       case 'Balance':
       default:
-        return t.balanceThisPeriod ?? 0
+        return periodTotals.balanceThisPeriod
     }
-  }, [indicator, totalsQuery.data])
+  }, [indicator, periodTotals, todayTotalsQuery.data?.balanceToday])
 
   useEffect(() => {
     setTab('list')
@@ -185,10 +383,49 @@ export function BudgetPage({ token }: Props) {
     setCreateBudgetOpen(false)
     setOptionsOpen(false)
     setSettingsOpen(false)
-    setNotificationsOpen(false)
     setExportOpen(false)
     setAddOpen(false)
+    setEditingTransaction(null)
+    setCategoryDrilldown(null)
+    setDailyReminderTimeOpen(false)
   }, [budgetId])
+
+  useEffect(() => {
+    if (!budgetId) return
+
+    try {
+      const stored = window.localStorage.getItem(`${DAILY_REMINDER_TIME_STORAGE_KEY_PREFIX}${budgetId}`)
+      if (stored && parseHm(stored)) {
+        setDailyReminderTime(stored)
+        setDailyReminderTimeDraft(stored)
+        return
+      }
+    } catch {
+      // ignore
+    }
+
+    setDailyReminderTime('20:00')
+    setDailyReminderTimeDraft('20:00')
+  }, [budgetId])
+
+  useEffect(() => {
+    if (!budgetId) return
+    const startUtc = dailyReminderQuery.data?.startUtc
+    if (!startUtc) return
+
+    const dt = new Date(startUtc)
+    if (Number.isNaN(dt.getTime())) return
+
+    const localTime = dt.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', hour12: false })
+    if (!parseHm(localTime)) return
+
+    setDailyReminderTime(localTime)
+    try {
+      window.localStorage.setItem(`${DAILY_REMINDER_TIME_STORAGE_KEY_PREFIX}${budgetId}`, localTime)
+    } catch {
+      // ignore
+    }
+  }, [budgetId, dailyReminderQuery.data?.startUtc])
 
   useEffect(() => {
     const derived = pickIndicatorFromMainIndicator(detailQuery.data?.mainIndicator ?? null)
@@ -202,7 +439,7 @@ export function BudgetPage({ token }: Props) {
   }, [cursor.monthIndex0, cursor.year])
 
   const apiDetailError = detailQuery.error instanceof ApiError ? detailQuery.error : null
-  const apiTotalsError = totalsQuery.error instanceof ApiError ? totalsQuery.error : null
+  const apiTransactionsError = transactionsQuery.error instanceof ApiError ? transactionsQuery.error : null
 
   if (!budgetId) {
     return (
@@ -213,7 +450,7 @@ export function BudgetPage({ token }: Props) {
     )
   }
 
-  if (detailQuery.isLoading || totalsQuery.isLoading) {
+  if (detailQuery.isLoading || transactionsQuery.isLoading) {
     return (
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
         <div className="flex justify-center py-2">
@@ -234,13 +471,13 @@ export function BudgetPage({ token }: Props) {
     )
   }
 
-  if (totalsQuery.isError) {
+  if (transactionsQuery.isError) {
     return (
       <ErrorDisplay
-        apiError={apiTotalsError}
-        queryKey={queryKeys.budgetTotals({ budgetId, referenceDate })}
+        apiError={apiTransactionsError}
+        queryKey={queryKeys.budgetTransactions({ budgetId, from: periodFrom, to: periodTo })}
         queryClient={queryClient}
-        title="Erro ao obter totais do orçamento"
+        title="Erro ao obter transações"
       />
     )
   }
@@ -367,17 +604,7 @@ export function BudgetPage({ token }: Props) {
               <div>{formatCurrency(upcoming.total, currencyCode)}</div>
             </div>
 
-            {transactionsQuery.isLoading ? (
-              <div className="py-10 text-center">
-                <LoadingSpinner />
-              </div>
-            ) : transactionsQuery.isError ? (
-              <InlineQueryError
-                title="Erro ao obter transações"
-                error={transactionsQuery.error}
-                onRetry={() => queryClient.invalidateQueries({ queryKey: queryKeys.budgetTransactions({ budgetId, from: periodFrom, to: periodTo }) })}
-              />
-            ) : groups.length === 0 ? (
+            {groups.length === 0 ? (
               <div className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-sm text-charcoal/70">
                 Sem transações neste período.
               </div>
@@ -391,13 +618,35 @@ export function BudgetPage({ token }: Props) {
                     </div>
 
                     <div className="space-y-3">
-                      {g.rows.map((t, idx) => (
-                        <TransactionRow
-                          key={t.id ?? `${g.date}-${idx}`}
-                          row={t}
-                          currencyCode={currencyCode}
-                        />
-                      ))}
+                      {g.rows.map((t, idx) => {
+                        const key = t.id ?? `${g.date}-${idx}`
+                        const transactionId = t.id
+                        const canDelete = Boolean(transactionId) && !deletingTransactionIds.has(transactionId ?? '')
+
+                        return (
+                          <SwipeableRow
+                            key={key}
+                            className="rounded-2xl bg-red-50"
+                            disabled={!canDelete}
+                            threshold={108}
+                            rightAction={
+                              <div className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white">
+                                <i className="ri-delete-bin-6-line text-xl" aria-hidden="true" />
+                              </div>
+                            }
+                            onSwipedLeft={
+                              canDelete
+                                ? () => {
+                                    if (!transactionId) return
+                                    deleteTransactionMutation.mutate({ transactionId })
+                                  }
+                                : undefined
+                            }
+                          >
+                            <TransactionRow row={t} currencyCode={currencyCode} onPress={() => setEditingTransaction(t)} />
+                          </SwipeableRow>
+                        )
+                      })}
                     </div>
                   </div>
                 ))}
@@ -407,21 +656,40 @@ export function BudgetPage({ token }: Props) {
         ) : null}
 
         {tab === 'categories' ? (
-          <section>
-            <div className="mb-3 text-lg font-extrabold text-gray-400">Despesas por categoria</div>
-            <SummaryListSection
-              tone="expense"
-              currencyCode={currencyCode}
-              isLoading={categoriesExpensesQuery.isLoading}
-              isError={categoriesExpensesQuery.isError}
-              error={categoriesExpensesQuery.error}
-              onRetry={() =>
-                queryClient.invalidateQueries({
-                  queryKey: queryKeys.budgetSummaryCategories({ budgetId, type: 'Expense', from: periodFrom, to: periodTo }),
-                })
-              }
-              items={mapCategoryItems(categoriesExpensesQuery.data ?? [])}
-            />
+          <section className="space-y-8">
+            <div>
+              <div className="mb-3 text-lg font-extrabold text-gray-400">Despesas por categoria</div>
+              <SummaryListSection
+                tone="expense"
+                currencyCode={currencyCode}
+                isLoading={categoriesExpensesQuery.isLoading}
+                isError={categoriesExpensesQuery.isError}
+                error={categoriesExpensesQuery.error}
+                onRetry={() =>
+                  queryClient.invalidateQueries({
+                    queryKey: queryKeys.budgetSummaryCategories({ budgetId, type: 'Expense', from: periodFrom, to: periodTo }),
+                  })
+                }
+                items={mapCategoryItems(categoriesExpensesQuery.data ?? [], { type: 'Expense', onSelect: setCategoryDrilldown })}
+              />
+            </div>
+
+            <div>
+              <div className="mb-3 text-lg font-extrabold text-gray-400">Renda por categoria</div>
+              <SummaryListSection
+                tone="income"
+                currencyCode={currencyCode}
+                isLoading={categoriesIncomeQuery.isLoading}
+                isError={categoriesIncomeQuery.isError}
+                error={categoriesIncomeQuery.error}
+                onRetry={() =>
+                  queryClient.invalidateQueries({
+                    queryKey: queryKeys.budgetSummaryCategories({ budgetId, type: 'Income', from: periodFrom, to: periodTo }),
+                  })
+                }
+                items={mapCategoryItems(categoriesIncomeQuery.data ?? [], { type: 'Income', onSelect: setCategoryDrilldown })}
+              />
+            </div>
           </section>
         ) : null}
 
@@ -549,9 +817,17 @@ export function BudgetPage({ token }: Props) {
             setOptionsOpen(false)
             setSettingsOpen(true)
           }}
-          onOpenNotifications={() => {
-            setOptionsOpen(false)
-            setNotificationsOpen(true)
+          dailyReminderEnabled={dailyReminderEnabled}
+          dailyReminderDisabled={dailyReminderBusy}
+          onToggleDailyReminder={() => {
+            if (dailyReminderBusy) return
+            dailyReminderMutation.mutate({ nextEnabled: !dailyReminderEnabled, time: dailyReminderTime })
+          }}
+          dailyReminderTime={dailyReminderTime}
+          onEditDailyReminderTime={() => {
+            if (dailyReminderBusy) return
+            setDailyReminderTimeDraft(dailyReminderTime)
+            setDailyReminderTimeOpen(true)
           }}
           onManageCategories={() => {
             setOptionsOpen(false)
@@ -579,11 +855,36 @@ export function BudgetPage({ token }: Props) {
         />
       ) : null}
 
+      {dailyReminderTimeOpen ? (
+        <ReminderTimeSheet
+          time={dailyReminderTimeDraft}
+          isSaving={dailyReminderTimeMutation.isPending}
+          onChangeTime={setDailyReminderTimeDraft}
+          onClose={() => setDailyReminderTimeOpen(false)}
+          onSave={() => {
+            if (!budgetId) return
+            const trimmed = dailyReminderTimeDraft.trim()
+            if (!parseHm(trimmed)) {
+              window.alert('Hora inválida. Use o formato HH:MM.')
+              return
+            }
+
+            setDailyReminderTime(trimmed)
+            try {
+              window.localStorage.setItem(`${DAILY_REMINDER_TIME_STORAGE_KEY_PREFIX}${budgetId}`, trimmed)
+            } catch {
+              // ignore
+            }
+
+            setDailyReminderTimeOpen(false)
+            if (dailyReminderEventId) dailyReminderTimeMutation.mutate({ eventId: dailyReminderEventId, time: trimmed })
+          }}
+        />
+      ) : null}
+
       {settingsOpen ? (
         <BudgetSettingsSheet token={token} budget={detail} onClose={() => setSettingsOpen(false)} />
       ) : null}
-
-      {notificationsOpen ? <NotificationsSheet token={token} onClose={() => setNotificationsOpen(false)} /> : null}
 
       {exportOpen ? (
         <ExportDataSheet
@@ -602,9 +903,45 @@ export function BudgetPage({ token }: Props) {
           currencyCode={currencyCode}
           defaultDate={todayUtc}
           onClose={() => setAddOpen(false)}
-          onCreated={async () => {
+          onSaved={async () => {
             setAddOpen(false)
-            await invalidateBudgetQueries(queryClient, budgetId, periodFrom, periodTo, referenceDate)
+            await invalidateBudgetQueries(queryClient, budgetId, periodFrom, periodTo)
+          }}
+        />
+      ) : null}
+
+      {editingTransaction ? (
+        <AddTransactionSheet
+          token={token}
+          budgetId={budgetId}
+          currencyCode={currencyCode}
+          defaultDate={todayUtc}
+          transaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+          onSaved={async () => {
+            setEditingTransaction(null)
+            await invalidateBudgetQueries(queryClient, budgetId, periodFrom, periodTo)
+          }}
+        />
+      ) : null}
+
+      {categoryDrilldown ? (
+        <CategoryTransactionsSheet
+          token={token}
+          budgetId={budgetId}
+          category={categoryDrilldown}
+          monthLabel={monthLabel}
+          currencyCode={currencyCode}
+          periodFrom={periodFrom}
+          periodTo={periodTo}
+          todayUtc={todayUtc}
+          yesterdayUtc={yesterdayUtc}
+          deletingTransactionIds={deletingTransactionIds}
+          onClose={() => setCategoryDrilldown(null)}
+          onDeleteTransaction={(transactionId) => deleteTransactionMutation.mutate({ transactionId })}
+          onEditTransaction={(row) => {
+            setCategoryDrilldown(null)
+            setEditingTransaction(row)
           }}
         />
       ) : null}
@@ -612,16 +949,38 @@ export function BudgetPage({ token }: Props) {
   )
 }
 
-function TransactionRow({ row, currencyCode }: { row: FinanceTransactionResponse; currencyCode: string }) {
-  const emoji = iconKeyToEmoji(row.categoryIconKey ?? row.accountIconKey ?? null)
+function TransactionRow({
+  row,
+  currencyCode,
+  onPress,
+}: {
+  row: FinanceTransactionResponse
+  currencyCode: string
+  onPress?: () => void
+}) {
+  const emoji =
+    row.categoryId || row.categoryName || row.categoryIconKey
+      ? financeCategoryEmoji({
+          iconKey: row.categoryIconKey ?? null,
+          name: row.categoryName ?? null,
+          type: row.type ?? null,
+        })
+      : iconKeyToEmoji(row.accountIconKey ?? null) ?? '🏦'
   const title = (row.title ?? '').trim() || '—'
   const subtitle = (row.categoryName ?? row.accountName ?? '').trim()
 
   const value = signedAmount(row)
   const isIncome = value > 0
 
+  const isInteractive = Boolean(onPress)
+
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm">
+    <button
+      type="button"
+      className={`flex w-full items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 text-left shadow-sm transition ${isInteractive ? 'hover:bg-sand-light' : ''}`}
+      onClick={onPress}
+      disabled={!isInteractive}
+    >
       <div className="flex min-w-0 items-center gap-4">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sand-light text-2xl">
           {emoji ? <span aria-hidden="true">{emoji}</span> : <span className="text-lg font-bold text-charcoal">{safeInitial(title)}</span>}
@@ -642,7 +1001,7 @@ function TransactionRow({ row, currencyCode }: { row: FinanceTransactionResponse
       >
         {formatCurrency(value, currencyCode)}
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -654,6 +1013,7 @@ type SummaryListItem = {
   label: string
   subtitle: string
   amount: number
+  onPress?: () => void
 }
 
 const AVATAR_COLOR_CLASSES = [
@@ -725,8 +1085,8 @@ function SummaryRowCard({
       ? 'rounded-xl bg-green-100 px-3 py-1.5 text-lg font-extrabold text-green-700'
       : 'text-lg font-extrabold text-charcoal'
 
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm">
+  const content = (
+    <>
       <div className="flex min-w-0 items-center gap-4">
         {item.left}
 
@@ -737,28 +1097,293 @@ function SummaryRowCard({
       </div>
 
       <div className={amountClass}>{formatCurrency(item.amount, currencyCode)}</div>
+    </>
+  )
+
+  if (item.onPress) {
+    return (
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 text-left shadow-sm transition hover:bg-sand-light"
+        onClick={item.onPress}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm">
+      {content}
     </div>
   )
 }
 
-function mapCategoryItems(rows: CategorySummaryResponse[]): SummaryListItem[] {
+function mapCategoryItems(
+  rows: CategorySummaryResponse[],
+  options: { type: 'Expense' | 'Income'; onSelect?: (next: CategoryDrilldown) => void } = { type: 'Expense' },
+): SummaryListItem[] {
+  const noun = options.type === 'Income' ? 'renda' : 'despesas'
+
   return rows
     .filter((r) => Boolean(r.categoryId))
     .map((r) => {
       const id = r.categoryId!
       const name = (r.categoryName ?? '').trim() || '—'
-      const emoji = iconKeyToEmoji(r.categoryIconKey ?? null) ?? '🏷️'
+      const emoji = financeCategoryEmoji({ iconKey: r.categoryIconKey ?? null, name: r.categoryName ?? null, type: options.type })
       const pct = clamp(r.percentage ?? 0, 0, 100)
+      const totalAbs = Math.abs(r.total ?? 0)
 
       return {
         id,
         left: emojiLeft(emoji),
         label: name,
-        subtitle: `${pct.toFixed(0)}% de despesas`,
-        amount: Math.abs(r.total ?? 0),
+        subtitle: `${pct.toFixed(0)}% de ${noun}`,
+        amount: totalAbs,
+        onPress: options.onSelect
+          ? () =>
+              options.onSelect?.({
+                categoryId: id,
+                categoryName: name,
+                categoryIconKey: r.categoryIconKey ?? null,
+                totalAbs,
+                percentage: pct,
+                type: options.type,
+              })
+          : undefined,
       }
     })
     .sort((a, b) => b.amount - a.amount)
+}
+
+function CategoryTransactionsSheet({
+  token,
+  budgetId,
+  category,
+  monthLabel,
+  currencyCode,
+  periodFrom,
+  periodTo,
+  todayUtc,
+  yesterdayUtc,
+  deletingTransactionIds,
+  onClose,
+  onDeleteTransaction,
+  onEditTransaction,
+}: {
+  token: string
+  budgetId: string
+  category: CategoryDrilldown
+  monthLabel: string
+  currencyCode: string
+  periodFrom: string
+  periodTo: string
+  todayUtc: string
+  yesterdayUtc: string
+  deletingTransactionIds: Set<string>
+  onClose: () => void
+  onDeleteTransaction: (transactionId: string) => void
+  onEditTransaction: (row: FinanceTransactionResponse) => void
+}) {
+  const transactionsQuery = useQuery({
+    queryKey: queryKeys.budgetTransactions({ budgetId, from: periodFrom, to: periodTo }),
+    queryFn: () => domusApi.getBudgetTransactions(token, budgetId, { from: periodFrom, to: periodTo }),
+    enabled: Boolean(budgetId),
+  })
+
+  const rows = useMemo(() => {
+    const wantType = category.type.toLowerCase()
+    return (transactionsQuery.data ?? []).filter(
+      (t) => t.categoryId === category.categoryId && (t.type ?? '').toLowerCase() === wantType,
+    )
+  }, [category.categoryId, category.type, transactionsQuery.data])
+
+  const grouped = useMemo(() => groupTransactionsByDay(rows), [rows])
+
+  const summary = useMemo(() => {
+    const paid = rows.filter((t) => Boolean(t.isPaid))
+    const paidTotalAbs = paid.reduce((acc, t) => acc + Math.abs(Number.isFinite(t.amount) ? (t.amount as number) : 0), 0)
+
+    return { count: rows.length, paidCount: paid.length, paidTotalAbs }
+  }, [rows])
+
+  const noun = category.type === 'Income' ? 'renda' : 'despesas'
+  const emoji = financeCategoryEmoji({ iconKey: category.categoryIconKey, name: category.categoryName, type: category.type })
+
+  return (
+    <div className="fixed inset-0 z-[90]">
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+
+      <div className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl max-h-[92vh]">
+        <div className="p-4 pb-0">
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
+
+          <div className="flex items-center justify-between">
+            <button type="button" className="rounded-full p-2 hover:bg-sand-light" onClick={onClose} aria-label="Fechar">
+              <i className="ri-close-line text-2xl text-gray-600" aria-hidden="true" />
+            </button>
+
+            <div className="text-base font-semibold text-charcoal">Categoria</div>
+
+            <button
+              type="button"
+              className="rounded-full p-2 hover:bg-sand-light"
+              aria-label="Informações"
+              onClick={() => window.alert('Em breve.')}
+            >
+              <i className="ri-information-line text-2xl text-gray-600" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+          <div className="mb-6 rounded-3xl bg-sand-light p-5">
+            <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-white text-4xl">
+              <span aria-hidden="true">{emoji}</span>
+            </div>
+
+            <div className="text-center">
+              <div className="text-2xl font-extrabold text-charcoal">{category.categoryName}</div>
+              <div className="mt-2 text-5xl font-extrabold text-charcoal">{formatCurrency(category.totalAbs, currencyCode)}</div>
+
+              <div className="mt-3 text-sm font-semibold text-gray-500">
+                {summary.count} transação{summary.count === 1 ? '' : 's'} em {monthLabel}
+              </div>
+              <div className="text-sm font-semibold text-gray-400">
+                Incl. {summary.paidCount} marcadas como pagas ({formatCurrency(summary.paidTotalAbs, currencyCode)})
+              </div>
+              <div className="text-sm font-semibold text-gray-400">
+                {clamp(category.percentage, 0, 100).toFixed(0)}% de {noun}
+              </div>
+            </div>
+          </div>
+
+          {transactionsQuery.isLoading ? (
+            <div className="py-10 text-center">
+              <LoadingSpinner />
+            </div>
+          ) : transactionsQuery.isError ? (
+            <InlineQueryError title="Erro ao obter transações" error={transactionsQuery.error} onRetry={() => transactionsQuery.refetch()} />
+          ) : rows.length === 0 ? (
+            <div className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-sm text-charcoal/70 shadow-sm">
+              Sem transações nesta categoria.
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {grouped.map((g) => (
+                <div key={g.date}>
+                  <div className="mb-3 flex items-center justify-between text-sm font-extrabold text-gray-400">
+                    <div>{formatDayLabel(g.date, todayUtc, yesterdayUtc)}</div>
+                    <div className={g.total >= 0 ? 'text-green-600' : 'text-red-600'}>{formatCurrency(g.total, currencyCode)}</div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {g.rows.map((t, idx) => {
+                      const key = t.id ?? `${g.date}-${idx}`
+                      const transactionId = t.id
+                      const canDelete = Boolean(transactionId) && !deletingTransactionIds.has(transactionId ?? '')
+
+                      return (
+                        <SwipeableRow
+                          key={key}
+                          className="rounded-2xl bg-red-50"
+                          disabled={!canDelete}
+                          threshold={108}
+                          rightAction={
+                            <div className="grid h-10 w-10 place-items-center rounded-full bg-red-600 text-white">
+                              <i className="ri-delete-bin-6-line text-xl" aria-hidden="true" />
+                            </div>
+                          }
+                          onSwipedLeft={
+                            canDelete
+                              ? () => {
+                                  if (!transactionId) return
+                                  onDeleteTransaction(transactionId)
+                                }
+                              : undefined
+                          }
+                        >
+                          <TransactionRow row={t} currencyCode={currencyCode} onPress={() => onEditTransaction(t)} />
+                        </SwipeableRow>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ReminderTimeSheet({
+  time,
+  isSaving,
+  onChangeTime,
+  onClose,
+  onSave,
+}: {
+  time: string
+  isSaving?: boolean
+  onChangeTime: (value: string) => void
+  onClose: () => void
+  onSave: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-[90]">
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+
+      <div className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl max-h-[92vh]">
+        <div className="p-4 pb-0">
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
+
+          <div className="mb-3 flex items-center justify-between">
+            <button
+              type="button"
+              className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light disabled:opacity-50"
+              onClick={onClose}
+              disabled={isSaving}
+              aria-label="Cancelar"
+              title="Cancelar"
+            >
+              <i className="ri-close-line text-2xl leading-none text-gray-600" aria-hidden="true" />
+            </button>
+
+            <div className="text-base font-semibold text-charcoal">Hora do lembrete</div>
+
+            <button
+              type="button"
+              className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light disabled:opacity-50"
+              onClick={onSave}
+              disabled={isSaving}
+              aria-label="Guardar"
+              title="Guardar"
+            >
+              <i className={isSaving ? 'ri-loader-4-line animate-spin text-2xl text-gray-600' : 'ri-check-line text-2xl text-gray-600'} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-1">
+          <div className="rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-charcoal/60">Hora</div>
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => onChangeTime(e.target.value)}
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base font-semibold text-charcoal outline-none focus:ring-2 focus:ring-blue-500/25"
+              disabled={isSaving}
+            />
+            <div className="mt-3 text-xs font-medium text-charcoal/60">
+              O lembrete será criado como um evento diário no Calendário.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function mapMemberItems(rows: MemberSummaryResponse[], options: { tone: SummaryTone }): SummaryListItem[] {
@@ -946,6 +1571,12 @@ function utcDateKey(year: number, monthIndex0: number, day: number): string {
   return d.toISOString().slice(0, 10)
 }
 
+function utcMonthRange(year: number, monthIndex0: number): { from: string; to: string } {
+  const from = utcDateKey(year, monthIndex0, 1)
+  const end = new Date(Date.UTC(year, monthIndex0 + 1, 0, 12, 0, 0, 0))
+  return { from, to: end.toISOString().slice(0, 10) }
+}
+
 function addMonths(cursor: { year: number; monthIndex0: number }, delta: number): { year: number; monthIndex0: number } {
   const base = cursor.year * 12 + cursor.monthIndex0
   const next = base + delta
@@ -959,15 +1590,25 @@ function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n))
 }
 
+function parseHm(raw: string): { hours: number; minutes: number } | null {
+  const m = /^(\d{2}):(\d{2})$/.exec((raw ?? '').trim())
+  if (!m) return null
+  const hours = Number(m[1])
+  const minutes = Number(m[2])
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null
+  if (hours < 0 || hours > 23) return null
+  if (minutes < 0 || minutes > 59) return null
+  return { hours, minutes }
+}
+
 async function invalidateBudgetQueries(
   queryClient: QueryClient,
   budgetId: string,
   from: string,
   to: string,
-  referenceDate: string,
 ) {
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: queryKeys.budgetTotals({ budgetId, referenceDate }) }),
+    queryClient.invalidateQueries({ queryKey: ['budgetTotals', budgetId] }),
     queryClient.invalidateQueries({ queryKey: queryKeys.budgetTransactions({ budgetId, from, to }) }),
     queryClient.invalidateQueries({ queryKey: ['budgetSummaryCategories', budgetId] }),
     queryClient.invalidateQueries({ queryKey: ['budgetSummaryMembers', budgetId] }),

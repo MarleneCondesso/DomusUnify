@@ -45,6 +45,17 @@
     --color-primary: var(--color-forest);
     --color-secondary: var(--color-amber);
   }
+
+  /* Dark mode (tokens) */
+  [data-theme='dark'] {
+    --color-offwhite: #0b0f0d;
+    --color-sand: #121a16;
+    --color-sand-light: #0e1411;
+    --color-sand-dark: #1b251f;
+    --color-sage-light: #16231d;
+    --color-sage-dark: #9bb7a8;
+    --color-charcoal: #f3f4f6;
+  }
 }
 /**
  * Estilos base do projeto (Tailwind + pequenos ajustes globais).
@@ -62,7 +73,7 @@
 
   body {
     @apply min-w-[320px] text-white/90 antialiased;
-    background: rgb(250 250 248 / var(--tw-bg-opacity, 1));
+    background: var(--color-offwhite);
   }
 
   a {

@@ -22,6 +22,9 @@ export type CreateFamilyRequest = components['schemas']['CreateFamilyRequest']
 export type SetCurrentFamilyRequest = components['schemas']['SetCurrentFamilyRequest']
 export type FamilyResponse = components['schemas']['FamilyResponse']
 export type FamilyMembers = components['schemas']['FamilyMemberResponse']
+export type CreateInviteResult = components['schemas']['CreateInviteResult']
+export type InvitePreviewModel = components['schemas']['InvitePreviewModel']
+export type JoinInviteRequest = components['schemas']['JoinInviteRequest']
 
 export type CreateListRequest = components['schemas']['CreateListRequest']
 export type ListResponse = components['schemas']['ListResponse']
@@ -46,6 +49,7 @@ export type UpdateListRequest = components['schemas']['UpdateListRequest']
 export type CalendarResponse = components['schemas']['CalendarEventResponse']
 export type CalendarEventDetailResponse = components['schemas']['CalendarEventDetailResponse']
 export type CreateCalendarEventRequest = components['schemas']['CreateCalendarEventRequest']
+export type UpdateCalendarEventRequest = components['schemas']['UpdateCalendarEventRequest']
 
 export type ActivityEntryResponse = components['schemas']['ActivityEntryResponse']
 export type ActivityTypeFilter = 'lists' | 'budget' | 'calendar'
@@ -72,6 +76,7 @@ export type FinanceAccountResponse = components['schemas']['FinanceAccountRespon
 export type CreateFinanceAccountRequest = components['schemas']['CreateFinanceAccountRequest']
 export type FinanceCategoryResponse = components['schemas']['FinanceCategoryResponse']
 export type CreateFinanceCategoryRequest = components['schemas']['CreateFinanceCategoryRequest']
+export type UpdateFinanceCategoryRequest = components['schemas']['UpdateFinanceCategoryRequest']
 export type CategorySummaryResponse = components['schemas']['CategorySummaryResponse']
 export type MemberSummaryResponse = components['schemas']['MemberSummaryResponse']
 export type AccountSummaryResponse = components['schemas']['AccountSummaryResponse']
@@ -106,6 +111,27 @@ export const domusApi = {
   
   getFamilyMembers: async (token: string): Promise<FamilyMembers[]> =>
     apiRequest<FamilyMembers[]>('/api/v1/families/members', { token }),
+
+  createFamilyInvite: async (
+    token: string,
+    familyId: string,
+    params: { daysValid?: number; maxUses?: number } = {},
+  ): Promise<CreateInviteResult> => {
+    const searchParams = new URLSearchParams()
+    if (typeof params.daysValid === 'number') searchParams.set('daysValid', String(params.daysValid))
+    if (typeof params.maxUses === 'number') searchParams.set('maxUses', String(params.maxUses))
+    const qs = searchParams.toString()
+
+    return apiRequest<CreateInviteResult>(`/api/v1/families/${familyId}/invites${qs ? `?${qs}` : ''}`, { method: 'POST', token })
+  },
+
+  previewFamilyInvite: async (token: string, inviteToken: string): Promise<InvitePreviewModel> => {
+    const qs = new URLSearchParams({ token: inviteToken }).toString()
+    return apiRequest<InvitePreviewModel>(`/api/v1/families/invites/preview?${qs}`, { token })
+  },
+
+  joinFamilyInvite: async (token: string, inviteToken: string): Promise<void> =>
+    apiRequest<void>('/api/v1/families/invites/join', { method: 'POST', token, json: { token: inviteToken } satisfies JoinInviteRequest }),
   // Listas
   getLists: async (token: string): Promise<ListResponse[]> =>
     apiRequest<ListResponse[]>('/api/v1/lists', { token }),
@@ -146,6 +172,9 @@ export const domusApi = {
   updateListItem: async (token: string, itemId: string, request: UpdateListItemRequest): Promise<void> =>
     apiRequest<void>(`/api/v1/lists/items/${itemId}`, { method: 'PATCH', token, json: request }),
 
+  deleteListItem: async (token: string, itemId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/lists/items/${itemId}`, { method: 'DELETE', token }),
+
   //Calendar
   getCalendarEvents: async (token: string, fromUtc?: string, toUtc?: string, dateUtc?: string, search?: string, participantUserId?: string, take?: number): Promise<CalendarResponse[]> => {
     const searchParams = new URLSearchParams()
@@ -161,6 +190,9 @@ export const domusApi = {
 
   createCalendarEvent: async (token: string, request: CreateCalendarEventRequest): Promise<CalendarResponse> =>
     apiRequest<CalendarResponse>('/api/v1/calendar/events', { method: 'POST', token, json: request }),
+
+  updateCalendarEvent: async (token: string, eventId: string, request: UpdateCalendarEventRequest): Promise<CalendarResponse> =>
+    apiRequest<CalendarResponse>(`/api/v1/calendar/events/${eventId}`, { method: 'PATCH', token, json: request }),
 
   deleteCalendarEvent: async (token: string, eventId: string): Promise<void> =>
     apiRequest<void>(`/api/v1/calendar/events/${eventId}`, { method: 'DELETE', token }),
@@ -321,6 +353,16 @@ export const domusApi = {
 
   createFinanceCategory: async (token: string, request: CreateFinanceCategoryRequest): Promise<FinanceCategoryResponse> =>
     apiRequest<FinanceCategoryResponse>('/api/v1/finance-categories', { method: 'POST', token, json: request }),
+
+  updateFinanceCategory: async (
+    token: string,
+    categoryId: string,
+    request: UpdateFinanceCategoryRequest,
+  ): Promise<FinanceCategoryResponse> =>
+    apiRequest<FinanceCategoryResponse>(`/api/v1/finance-categories/${categoryId}`, { method: 'PATCH', token, json: request }),
+
+  deleteFinanceCategory: async (token: string, categoryId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/finance-categories/${categoryId}`, { method: 'DELETE', token }),
 
 
   // Activity (Recent Updates / All Activity)
