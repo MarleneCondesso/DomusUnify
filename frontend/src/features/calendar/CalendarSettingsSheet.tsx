@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { domusApi, type CreateCalendarEventRequest } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
+import { useI18n } from '../../i18n/i18n'
 import type { CalendarPreferences, FirstDayOfWeek } from './calendarPreferences'
 import { parseIcs } from './ics'
 
@@ -14,15 +15,8 @@ type Props = {
   onSave: (prefs: CalendarPreferences) => void
 }
 
-const REMINDER_CHOICES: Array<{ label: string; value: number | null }> = [
-  { label: 'Nenhum', value: null },
-  { label: '10 min antes', value: 10 },
-  { label: '30 min antes', value: 30 },
-  { label: '1 hora antes', value: 60 },
-  { label: '1 dia antes', value: 1440 },
-]
-
 export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, onSave }: Props) {
+  const { t } = useI18n()
   const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement | null>(null)
 
@@ -45,6 +39,17 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
 
   const canClose = !busy
 
+  const reminderChoices = useMemo<Array<{ label: string; value: number | null }>>(
+    () => [
+      { label: t('calendar.settings.reminder.none'), value: null },
+      { label: t('calendar.settings.reminder.10min'), value: 10 },
+      { label: t('calendar.settings.reminder.30min'), value: 30 },
+      { label: t('calendar.settings.reminder.1hour'), value: 60 },
+      { label: t('calendar.settings.reminder.1day'), value: 1440 },
+    ],
+    [t],
+  )
+
   const saveAndClose = () => {
     onSave(draft)
     onClose()
@@ -56,22 +61,21 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
       .filter((e) => e.end.getTime() > e.start.getTime())
 
     if (events.length === 0) {
-      setStatus('Não encontrei eventos nesse ficheiro.')
+      setStatus(t('calendar.settings.import.empty'))
       return
     }
 
     const max = 250
     const total = Math.min(events.length, max)
-    const ok = window.confirm(
-      `Importar ${total}${events.length > max ? ` (de ${events.length})` : ''} eventos de ${sourceLabel}?`,
-    )
+    const ofTotal = events.length > max ? t('calendar.settings.import.confirm.ofTotal', { total: events.length }) : ''
+    const ok = window.confirm(t('calendar.settings.import.confirm', { total, ofTotal, source: sourceLabel }))
     if (!ok) return
 
     const reminder = draft.defaultReminderMinutes
     const reminderOffsetsMinutes = reminder === null ? null : [reminder]
 
     setBusy(true)
-    setStatus(`A importar 0/${total}...`)
+    setStatus(t('calendar.settings.import.progress', { done: 0, total }))
 
     let created = 0
     let failed = 0
@@ -99,12 +103,14 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
         failed++
       }
 
-      setStatus(`A importar ${created + failed}/${total}...`)
+      setStatus(t('calendar.settings.import.progress', { done: created + failed, total }))
     }
 
     await queryClient.invalidateQueries({ queryKey: ['calendarEvents'] })
     setBusy(false)
-    setStatus(`Importação concluída: ${created} criados${failed ? `, ${failed} falharam` : ''}.`)
+
+    const failedPart = failed ? t('calendar.settings.import.done.failedPart', { failed }) : ''
+    setStatus(t('calendar.settings.import.done', { created, failedPart }))
   }
 
   const importFromFile = () => {
@@ -114,7 +120,7 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
 
   const importFromUrl = async () => {
     setStatus(null)
-    const url = window.prompt('URL do calendário (.ics):')
+    const url = window.prompt(t('calendar.settings.importUrl.prompt'))
     if (!url) return
 
     setBusy(true)
@@ -123,7 +129,7 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
       const text = await res.text()
       await importIcsText(text, 'URL')
     } catch (err) {
-      setStatus(formatError(err, 'Não foi possível importar do URL.'))
+      setStatus(formatError(err, t('calendar.settings.importUrl.error')))
     } finally {
       setBusy(false)
     }
@@ -132,15 +138,15 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
   const cleanupVisibleEvents = async () => {
     setStatus(null)
     if (uniqueEventIds.length === 0) {
-      setStatus('Não há eventos para apagar na janela atual.')
+      setStatus(t('calendar.settings.cleanup.none'))
       return
     }
 
-    const ok = window.confirm(`Apagar ${uniqueEventIds.length} eventos (únicos) da janela atual?`)
+    const ok = window.confirm(t('calendar.settings.cleanup.confirm', { count: uniqueEventIds.length }))
     if (!ok) return
 
     setBusy(true)
-    setStatus(`A apagar 0/${uniqueEventIds.length}...`)
+    setStatus(t('calendar.settings.cleanup.progress', { done: 0, total: uniqueEventIds.length }))
 
     let deleted = 0
     let failed = 0
@@ -153,33 +159,36 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
       } catch {
         failed++
       }
-      setStatus(`A apagar ${deleted + failed}/${uniqueEventIds.length}...`)
+      setStatus(t('calendar.settings.cleanup.progress', { done: deleted + failed, total: uniqueEventIds.length }))
     }
 
     await queryClient.invalidateQueries({ queryKey: ['calendarEvents'] })
     setBusy(false)
-    setStatus(`Limpeza concluída: ${deleted} apagados${failed ? `, ${failed} falharam` : ''}.`)
+
+    const failedPart = failed ? t('calendar.settings.cleanup.done.failedPart', { failed }) : ''
+    setStatus(t('calendar.settings.cleanup.done', { deleted, failedPart }))
   }
 
   return (
-    <div className="fixed inset-0 z-[80]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={canClose ? onClose : undefined} aria-label="Fechar" />
+    <div className="fixed inset-0 z-80">
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={canClose ? onClose : undefined} aria-label={t('common.close')} />
 
-      <div className="absolute inset-x-0 bottom-0 top-0 mx-auto w-full max-w-3xl bg-white shadow-2xl">
-        <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button type="button" className="rounded-full px-3 py-2 text-sm font-semibold text-gray-400" disabled>
-              {' '}
-            </button>
-            <div className="text-lg font-semibold text-charcoal">Configurações</div>
+      <div className="absolute inset-x-0 bottom-0 top-0 mx-auto w-full max-w-3xl bg-offwhite shadow-2xl">
+        <header className="sticky top-0 z-10 bg-linear-to-b from-sage-light to-offwhite backdrop-blur px-4 py-3">
+          <div className="flex items-center justify-between px-4 py-3">
             <button
               type="button"
-              className="rounded-full px-3 py-2 text-base font-semibold text-sage-dark hover:bg-sand-light disabled:opacity-50"
+              className="grid h-12 w-12 items-center justify-center rounded-full bg-white/60 hover:bg-white py-3.5 text-sage-dark shadow-lg"
+              aria-label={t('common.back')}
               onClick={saveAndClose}
               disabled={!canClose}
             >
-              Ok
+              <i className="ri-arrow-left-line text-2xl leading-none text-sage-dark" />
             </button>
+
+            <div className="text-lg font-bold text-forest">{t('settings.title')}</div>
+
+            <div className="h-12 w-12" aria-hidden="true" />
           </div>
         </header>
 
@@ -190,29 +199,29 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
             </div>
           ) : null}
 
-          <SectionTitle>OUTROS CALENDÁRIOS</SectionTitle>
+          <SectionTitle>{t('calendar.settings.section.otherCalendars')}</SectionTitle>
 
           <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
             <RowButton
               icon="ri-calendar-download-line"
-              title="Importar eventos do ICS"
+              title={t('calendar.settings.importIcs.title')}
               onClick={importFromFile}
               disabled={busy}
             />
             <RowButton
               icon="ri-link"
-              title="Adicionar calendário do URL"
+              title={t('calendar.settings.importUrl.title')}
               onClick={importFromUrl}
               disabled={busy}
             />
           </div>
 
-          <SectionTitle className="mt-8">CONFIGURAÇÕES</SectionTitle>
+          <SectionTitle className="mt-8">{t('calendar.settings.section.settings')}</SectionTitle>
 
           <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
             <RowToggle
               icon="ri-hashtag"
-              title="Número da semana"
+              title={t('calendar.settings.weekNumber.title')}
               checked={draft.showWeekNumbers}
               onToggle={() => setDraft((p) => ({ ...p, showWeekNumbers: !p.showWeekNumbers }))}
               disabled={busy}
@@ -220,11 +229,11 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
 
             <RowSelect
               icon="ri-calendar-2-line"
-              title="1º dia da semana"
+              title={t('calendar.settings.firstDay.title')}
               value={draft.firstDayOfWeek}
               options={[
-                { label: 'Domingo', value: 'sunday' as FirstDayOfWeek },
-                { label: 'Segunda-feira', value: 'monday' as FirstDayOfWeek },
+                { label: t('calendar.settings.firstDay.sunday'), value: 'sunday' as FirstDayOfWeek },
+                { label: t('calendar.settings.firstDay.monday'), value: 'monday' as FirstDayOfWeek },
               ]}
               onChange={(v) => setDraft((p) => ({ ...p, firstDayOfWeek: v }))}
               disabled={busy}
@@ -232,17 +241,17 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
 
             <RowSelect
               icon="ri-notification-3-line"
-              title="Lembrete padrão"
+              title={t('calendar.settings.reminder.title')}
               value={draft.defaultReminderMinutes}
-              options={REMINDER_CHOICES}
+              options={reminderChoices}
               onChange={(v) => setDraft((p) => ({ ...p, defaultReminderMinutes: v }))}
               disabled={busy}
             />
 
             <RowButton
               icon="ri-delete-bin-6-line"
-              title="Limpeza do Calendário"
-              subtitle="Apagar eventos da janela atual"
+              title={t('calendar.settings.cleanup.title')}
+              subtitle={t('calendar.settings.cleanup.subtitle')}
               onClick={cleanupVisibleEvents}
               disabled={busy}
               tone="danger"
@@ -271,7 +280,7 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
                 const text = await f.text()
                 await importIcsText(text, f.name)
               } catch (err) {
-                setStatus(formatError(err, 'Não foi possível ler o ficheiro.'))
+                setStatus(formatError(err, t('calendar.settings.importFile.error')))
               } finally {
                 setBusy(false)
               }
@@ -285,7 +294,7 @@ export function CalendarSettingsSheet({ token, prefs, visibleEventIds, onClose, 
 
 function SectionTitle({ children, className }: { children: string; className?: string }) {
   return (
-    <div className={['mb-2 text-xs font-semibold tracking-wider text-charcoal/35', className].filter(Boolean).join(' ')}>
+    <div className={['mb-2 text-xs font-semibold tracking-wider text-forest', className].filter(Boolean).join(' ')}>
       {children}
     </div>
   )
@@ -406,4 +415,3 @@ function formatError(err: unknown, fallback: string): string {
   if (err instanceof Error && err.message) return err.message
   return fallback
 }
-

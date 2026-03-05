@@ -1198,6 +1198,324 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/families/{familyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ObtÃ©m uma famÃ­lia especÃ­fica (apenas se o utilizador autenticado for membro). */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador da famÃ­lia. */
+                    familyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["FamilyResponse"];
+                        "application/json": components["schemas"]["FamilyResponse"];
+                        "text/json": components["schemas"]["FamilyResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Elimina uma famÃ­lia (grupo) e todos os seus dados (apenas admins da famÃ­lia). */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador da famÃ­lia. */
+                    familyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/families/{familyId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista os membros de uma famÃ­lia especÃ­fica (apenas se o utilizador autenticado for membro). */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador da famÃ­lia. */
+                    familyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["FamilyMemberResponse"][];
+                        "application/json": components["schemas"]["FamilyMemberResponse"][];
+                        "text/json": components["schemas"]["FamilyMemberResponse"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/families/{familyId}/members/{userId}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ObtÃ©m o perfil de um membro dentro de uma famÃ­lia especÃ­fica.
+         * @description O utilizador autenticado tem de ser membro da famÃ­lia indicada.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador da famÃ­lia. */
+                    familyId: string;
+                    /** @description Identificador do membro. */
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["FamilyMemberProfileResponse"];
+                        "application/json": components["schemas"]["FamilyMemberProfileResponse"];
+                        "text/json": components["schemas"]["FamilyMemberProfileResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/families/{familyId}/members/{userId}/make-admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promove um membro a administrador (apenas admins da famÃ­lia). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador da famÃ­lia. */
+                    familyId: string;
+                    /** @description Identificador do utilizador a promover. */
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/families/{familyId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove um membro de uma famÃ­lia (apenas admins da famÃ­lia). */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador da famÃ­lia. */
+                    familyId: string;
+                    /** @description Identificador do utilizador a remover. */
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/families/{familyId}/activity/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ObtÃ©m as entradas mais recentes do feed de atividade. */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description NÃºmero de entradas a devolver (por defeito 4). */
+                    take?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Identificador da famÃ­lia. */
+                    familyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ActivityEntryResponse"][];
+                        "application/json": components["schemas"]["ActivityEntryResponse"][];
+                        "text/json": components["schemas"]["ActivityEntryResponse"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/families/{familyId}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ObtÃ©m entradas do feed de atividade (paginado). */
+        get: {
+            parameters: {
+                query?: {
+                    skip?: number;
+                    take?: number;
+                    type?: string;
+                    fromUtc?: string;
+                    toUtc?: string;
+                    dateUtc?: string;
+                };
+                header?: never;
+                path: {
+                    familyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ActivityEntryResponse"][];
+                        "application/json": components["schemas"]["ActivityEntryResponse"][];
+                        "text/json": components["schemas"]["ActivityEntryResponse"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/families/invites/preview": {
         parameters: {
             query?: never;
@@ -1371,7 +1689,7 @@ export interface paths {
         post?: never;
         /**
          * Elimina uma conta financeira.
-         * @description A operação falha com conflito se a conta estiver a ser usada por transações.
+         * @description Ao eliminar a conta, são também eliminadas as transações associadas a essa conta.
          */
         delete: {
             parameters: {
@@ -2682,6 +3000,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtém o perfil do utilizador autenticado. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserProfileResponse"];
+                        "application/json": components["schemas"]["UserProfileResponse"];
+                        "text/json": components["schemas"]["UserProfileResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Atualiza o perfil do utilizador autenticado.
+         * @description Define os campos recebidos; valores vazios são normalizados para `null`.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateUserProfileRequest"];
+                    "text/json": components["schemas"]["UpdateUserProfileRequest"];
+                    "application/*+json": components["schemas"]["UpdateUserProfileRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["UserProfileResponse"];
+                        "application/json": components["schemas"]["UserProfileResponse"];
+                        "text/json": components["schemas"]["UserProfileResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3078,6 +3465,8 @@ export interface components {
             id?: string;
             /** @description Nome da categoria. */
             name?: string | null;
+            /** @description Tipo de lista ao qual esta categoria pertence (`Shopping`, `Tasks` ou `Custom`). */
+            type?: string | null;
             /** @description Chave do ícone da categoria. */
             iconKey?: string | null;
             /**
@@ -3210,6 +3599,8 @@ export interface components {
         CreateCategoryRequest: {
             /** @description Nome da categoria. */
             name?: string | null;
+            /** @description Tipo de lista ao qual esta categoria pertence (`Shopping`, `Tasks` ou `Custom`). */
+            type?: string | null;
             /** @description Chave do ícone da categoria. */
             iconKey?: string | null;
             /**
@@ -3365,6 +3756,30 @@ export interface components {
         ExternalLoginRequest: {
             /** @description ID token (JWT) devolvido pelo provider. */
             idToken?: string | null;
+        };
+        /** @description Resposta com informaÃ§Ã£o de perfil de um membro dentro de uma famÃ­lia. */
+        FamilyMemberProfileResponse: {
+            /**
+             * Format: uuid
+             * @description Identificador do utilizador.
+             */
+            userId?: string;
+            /** @description Nome (registo). */
+            name?: string | null;
+            /** @description EndereÃ§o de email. */
+            email?: string | null;
+            /** @description Nome de exibiÃ§Ã£o (opcional). */
+            displayName?: string | null;
+            /** @description Cor do perfil (hex), ex.: `#8b5cf6` (opcional). */
+            profileColorHex?: string | null;
+            /**
+             * Format: date
+             * @description Data de aniversÃ¡rio (opcional).
+             * @example 2026-02-04
+             */
+            birthday?: string | null;
+            /** @description Papel do utilizador na famÃ­lia. */
+            role?: string | null;
         };
         /** @description Resposta com informação de um membro de uma família. */
         FamilyMemberResponse: {
@@ -3773,6 +4188,8 @@ export interface components {
         UpdateCategoryRequest: {
             /** @description Novo nome da categoria (opcional). */
             name?: string | null;
+            /** @description Novo tipo de lista associado (opcional). */
+            type?: string | null;
             /** @description Nova chave do ícone (opcional). */
             iconKey?: string | null;
             /**
@@ -3932,6 +4349,53 @@ export interface components {
             colorHex?: string | null;
             /** @description Identificador do fuso horário (IANA), opcional. */
             timezoneId?: string | null;
+        };
+        /** @description Pedido para atualizar o perfil do utilizador autenticado. */
+        UpdateUserProfileRequest: {
+            /** @description Nome de exibição (opcional). Envia `null` para remover. */
+            displayName?: string | null;
+            /** @description Cor do perfil (hex), ex.: `#8b5cf6` (opcional). Envia `null` para remover. */
+            profileColorHex?: string | null;
+            /**
+             * Format: date
+             * @description Data de aniversário (opcional). Envia `null` para remover.
+             * @example 2026-02-04
+             */
+            birthday?: string | null;
+            /** @description Género (opcional): `female`, `male`, `other`. Envia `null` para remover. */
+            gender?: string | null;
+            /** @description Telefone (opcional). Envia `null` para remover. */
+            phone?: string | null;
+            /** @description Morada/endereço (opcional). Envia `null` para remover. */
+            address?: string | null;
+        };
+        /** @description Resposta com informação do perfil do utilizador autenticado. */
+        UserProfileResponse: {
+            /**
+             * Format: uuid
+             * @description Identificador do utilizador.
+             */
+            userId?: string;
+            /** @description Nome (registo). */
+            name?: string | null;
+            /** @description Endereço de email. */
+            email?: string | null;
+            /** @description Nome de exibição (opcional). */
+            displayName?: string | null;
+            /** @description Cor do perfil (hex), ex.: `#8b5cf6` (opcional). */
+            profileColorHex?: string | null;
+            /**
+             * Format: date
+             * @description Data de aniversário (opcional).
+             * @example 2026-02-04
+             */
+            birthday?: string | null;
+            /** @description Género (opcional): `female`, `male`, `other`. */
+            gender?: string | null;
+            /** @description Telefone (opcional). */
+            phone?: string | null;
+            /** @description Morada/endereço (opcional). */
+            address?: string | null;
         };
     };
     responses: never;

@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { domusApi } from '../../api/domusApi'
 import { ApiError, type ApiDownloadResult } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 import { BottomSheetPicker } from '../../ui/BottomSheetPicker'
+import { DatePickerSheet } from '../../ui/DatePickerSheet'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { iconKeyToEmoji } from '../../utils/emojiIconKey'
 
@@ -36,11 +38,13 @@ function safeFileName(name: string): string {
 
 export function ExportDataSheet({ token, initialBudgetId, initialFrom, initialTo, onClose }: Props) {
   const queryClient = useQueryClient()
+  const { t, locale } = useI18n()
 
   const [budgetId, setBudgetId] = useState(initialBudgetId)
   const [from, setFrom] = useState(initialFrom)
   const [to, setTo] = useState(initialTo)
   const [budgetPickerOpen, setBudgetPickerOpen] = useState(false)
+  const [datePickerTarget, setDatePickerTarget] = useState<'from' | 'to' | null>(null)
 
   const budgetsQuery = useQuery({
     queryKey: queryKeys.budgets,
@@ -64,7 +68,7 @@ export function ExportDataSheet({ token, initialBudgetId, initialFrom, initialTo
     onSuccess: async (file) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.activityRecent(4) })
 
-      const name = selectedBudget?.name ?? 'Orçamento'
+      const name = selectedBudget?.name ?? t('budget.export.budgetFallbackName')
       const fallback = `${safeFileName(name)}-${from}-${to}.csv`
       downloadBlob(file, fallback)
       onClose()
@@ -86,13 +90,19 @@ export function ExportDataSheet({ token, initialBudgetId, initialFrom, initialTo
 
   return (
     <div className="fixed inset-0 z-[90]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl">
         <div className="px-4 py-3">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
           <div className="flex items-center justify-between">
-            <button type="button" className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light" onClick={onClose} aria-label="Fechar">
+            <button
+              type="button"
+              className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
+              onClick={onClose}
+              aria-label={t('common.close')}
+              title={t('common.close')}
+            >
               <i className="ri-close-line text-2xl text-gray-600" />
             </button>
             <div className="h-10 w-10" />
@@ -102,16 +112,16 @@ export function ExportDataSheet({ token, initialBudgetId, initialFrom, initialTo
         <div className="max-h-[calc(92vh-64px)] overflow-y-auto px-6 pb-[calc(env(safe-area-inset-bottom)+24px)]">
           <div className="text-center">
             <div className="text-4xl font-black text-charcoal">
-              Exportar Dados <span aria-hidden="true">📊</span>
+              {t('budget.export.title')} <span aria-hidden="true">📊</span>
             </div>
             <div className="mt-3 text-base font-semibold text-charcoal/80">
-              Você pode exportar suas transações e usá-las em Excel, Numbers, Planilhas Google etc.
+              {t('budget.export.subtitle')}
             </div>
           </div>
 
           {exportError ? (
             <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
-              <div className="font-semibold">Erro ao exportar</div>
+              <div className="font-semibold">{t('budget.export.errorTitle')}</div>
               <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl border border-red-500/20 bg-white/40 p-3 text-xs text-red-800">
                 {JSON.stringify(exportError.body, null, 2)}
               </pre>
@@ -125,38 +135,50 @@ export function ExportDataSheet({ token, initialBudgetId, initialFrom, initialTo
               onClick={() => setBudgetPickerOpen(true)}
               disabled={budgetsQuery.isLoading || budgetsQuery.isError}
             >
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-2xl bg-sand-light text-xl">
-                  <span aria-hidden="true">{selectedBudget ? iconKeyToEmoji(selectedBudget.iconKey ?? null) ?? '💰' : '💰'}</span>
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-2xl bg-sand-light text-xl">
+                    <span aria-hidden="true">{selectedBudget ? iconKeyToEmoji(selectedBudget.iconKey ?? null) ?? '💰' : '💰'}</span>
+                  </div>
+                  <div className="truncate text-base font-extrabold text-charcoal">
+                    {selectedBudget?.name ?? t('budget.export.budgetFallbackName')}
+                  </div>
                 </div>
-                <div className="truncate text-base font-extrabold text-charcoal">{selectedBudget?.name ?? 'Balanço Geral'}</div>
-              </div>
               <i className="ri-arrow-down-s-line text-2xl text-gray-500" aria-hidden="true" />
             </button>
 
             <div className="flex items-center gap-3 px-4 py-4">
               <i className="ri-calendar-event-line text-2xl text-gray-500" aria-hidden="true" />
               <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                <div className="text-base font-extrabold text-charcoal">Início:</div>
-                <input
-                  type="date"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-charcoal outline-none focus:ring-2 focus:ring-blue-500/25"
-                />
+                <div className="text-base font-extrabold text-charcoal">{t('budget.export.fromLabel')}</div>
+                <button
+                  type="button"
+                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm font-semibold text-charcoal outline-none focus:ring-2 focus:ring-blue-500/25 hover:bg-sand-light"
+                  onClick={() => setDatePickerTarget('from')}
+                  aria-label={t('budget.export.selectFromDate')}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="tabular-nums">{formatDateLabel(from, locale)}</span>
+                    <i className="ri-calendar-line text-lg text-gray-400" aria-hidden="true" />
+                  </span>
+                </button>
               </div>
             </div>
 
             <div className="flex items-center gap-3 px-4 py-4">
               <i className="ri-calendar-check-line text-2xl text-gray-500" aria-hidden="true" />
               <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                <div className="text-base font-extrabold text-charcoal">Termina:</div>
-                <input
-                  type="date"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-charcoal outline-none focus:ring-2 focus:ring-blue-500/25"
-                />
+                <div className="text-base font-extrabold text-charcoal">{t('budget.export.toLabel')}</div>
+                <button
+                  type="button"
+                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm font-semibold text-charcoal outline-none focus:ring-2 focus:ring-blue-500/25 hover:bg-sand-light"
+                  onClick={() => setDatePickerTarget('to')}
+                  aria-label={t('budget.export.selectToDate')}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="tabular-nums">{formatDateLabel(to, locale)}</span>
+                    <i className="ri-calendar-line text-lg text-gray-400" aria-hidden="true" />
+                  </span>
+                </button>
               </div>
             </div>
           </div>
@@ -165,13 +187,13 @@ export function ExportDataSheet({ token, initialBudgetId, initialFrom, initialTo
             {transactionsQuery.isLoading ? (
               <span className="inline-flex items-center gap-2 text-base font-semibold text-charcoal/70">
                 <LoadingSpinner />
-                A procurar transações...
+                {t('budget.export.count.loading')}
               </span>
             ) : transactionsQuery.isError ? (
-              <span className="text-base font-semibold text-red-700">Erro ao calcular transações.</span>
+              <span className="text-base font-semibold text-red-700">{t('budget.export.count.error')}</span>
             ) : (
               <>
-                {count} transação(ões) encontradas <span aria-hidden="true">🤔</span>
+                {t('budget.export.count.found', { count })} <span aria-hidden="true">🤔</span>
               </>
             )}
           </div>
@@ -182,14 +204,14 @@ export function ExportDataSheet({ token, initialBudgetId, initialFrom, initialTo
             onClick={() => exportMutation.mutate()}
             disabled={!isRangeValid || exportMutation.isPending || budgetsQuery.isLoading}
           >
-            {exportMutation.isPending ? 'A exportar...' : 'Exportação'}
+            {exportMutation.isPending ? t('budget.export.exporting') : t('budget.export.export')}
           </button>
         </div>
       </div>
 
       {budgetPickerOpen ? (
         <BottomSheetPicker
-          title="Orçamento"
+          title={t('budget.export.budgetPickerTitle')}
           options={budgetOptions}
           selectedId={budgetId}
           onSelect={(id) => id && setBudgetId(id)}
@@ -198,6 +220,41 @@ export function ExportDataSheet({ token, initialBudgetId, initialFrom, initialTo
           zIndexClass="z-[100]"
         />
       ) : null}
+
+      {datePickerTarget ? (
+        <DatePickerSheet
+          title={t('budget.export.selectDate')}
+          value={datePickerTarget === 'from' ? from : to}
+          min={datePickerTarget === 'to' ? from : null}
+          max={datePickerTarget === 'from' ? to : null}
+          onClose={() => setDatePickerTarget(null)}
+          onConfirm={(v) => {
+            if (typeof v !== 'string' || !v) {
+              setDatePickerTarget(null)
+              return
+            }
+
+            if (datePickerTarget === 'from') setFrom(v)
+            else setTo(v)
+
+            setDatePickerTarget(null)
+          }}
+          zIndexClass="z-[120]"
+        />
+      ) : null}
     </div>
   )
+}
+
+function formatDateLabel(isoDate: string, locale: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((isoDate ?? '').trim())
+  if (!m) return (isoDate ?? '').trim() || '—'
+
+  const y = Number(m[1])
+  const mo = Number(m[2]) - 1
+  const d = Number(m[3])
+
+  const dt = new Date(y, mo, d, 0, 0, 0, 0)
+  if (Number.isNaN(dt.getTime())) return isoDate
+  return dt.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
 }

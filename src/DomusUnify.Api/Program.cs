@@ -130,6 +130,33 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+// CORS (needed for Vercel/mobile apps calling the API from another origin)
+var corsAllowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+var corsAllowedOriginSuffixes = builder.Configuration.GetSection("Cors:AllowedOriginSuffixes").Get<string[]>() ?? Array.Empty<string>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("domus", policy =>
+    {
+        policy.AllowAnyHeader().AllowAnyMethod();
+
+        // Allow explicitly configured origins and/or suffixes (ex.: ".vercel.app").
+        // Note: we avoid AllowAnyOrigin because the app uses Authorization headers and SignalR.
+        policy.SetIsOriginAllowed(origin =>
+        {
+            if (string.IsNullOrWhiteSpace(origin)) return false;
+
+            if (corsAllowedOrigins.Any(o => string.Equals(o, origin, StringComparison.OrdinalIgnoreCase)))
+                return true;
+
+            if (corsAllowedOriginSuffixes.Any(s => origin.EndsWith(s, StringComparison.OrdinalIgnoreCase)))
+                return true;
+
+            return false;
+        });
+    });
+});
+
 // DB + Infra
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.Configure<ExternalAuthOptions>(
@@ -149,6 +176,7 @@ builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<ICalendarSettingsService, CalendarSettingsService>();
 builder.Services.AddScoped<IRecurrenceService, RecurrenceService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddScoped<IBudgetAccountsService, BudgetAccountsService>();
 builder.Services.AddScoped<IFinanceCategoryService, FinanceCategoryService>();
 builder.Services.AddScoped<IFinanceAccountService, FinanceAccountService>();
 builder.Services.AddScoped<IFinanceTransactionService, FinanceTransactionService>();
@@ -186,6 +214,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("domus");
+
 // Alguns endpoints usam `User.GetUserId()` que pode lançar `UnauthorizedAccessException` quando o token não contém o
 // claim esperado. Sem handler isto vira 500; mapeamos para 401 para o frontend conseguir reagir.
 app.Use(async (context, next) =>
@@ -209,7 +239,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapHub<FamilyHub>("/hubs/family");
+app.MapHub<FamilyHub>("/hubs/family").RequireCors("domus");
 
 app.Run();
 

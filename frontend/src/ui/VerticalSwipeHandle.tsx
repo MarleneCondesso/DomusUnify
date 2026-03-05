@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../i18n/i18n'
 
 type Props = {
   className?: string
@@ -19,6 +20,7 @@ export function VerticalSwipeHandle({
   onSwipedUp,
   onSwipedDown,
 }: Props) {
+  const { t } = useI18n()
   const startXRef = useRef(0)
   const startYRef = useRef(0)
   const pointerIdRef = useRef<number | null>(null)
@@ -114,8 +116,8 @@ export function VerticalSwipeHandle({
     <button
       type="button"
       className={className}
-      aria-label="Mudar categoria"
-      title="Deslize para cima/baixo para mudar a categoria"
+      aria-label={t('common.changeCategory')}
+      title={t('common.changeCategory.hint')}
       disabled={disabled}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -135,4 +137,3 @@ export function VerticalSwipeHandle({
     </button>
   )
 }
-

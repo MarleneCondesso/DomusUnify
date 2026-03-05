@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { AuthPage } from './features/auth/AuthPage'
 import { FamilyGatePage } from './features/family/FamilyGatePage'
 import { clearAuth, loadAuth, saveAuth } from './auth/tokenStorage'
@@ -9,6 +9,7 @@ import type { AuthResponse } from './api/domusApi'
 function App() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const location = useLocation()
 
   // Token do utilizador (JWT). É a base para chamar endpoints protegidos (Authorize).
   const [token, setToken] = useState<string | null>(() => loadAuth()?.accessToken ?? null)
@@ -24,7 +25,9 @@ function App() {
 
     saveAuth({ accessToken: auth.accessToken, expiresAtUtc: auth.expiresAtUtc })
     setToken(auth.accessToken)
-    navigate('/', { replace: true })
+
+    // MantÃ©m a rota atual (ex.: /invite/:token) para permitir aceitar convites logo apÃ³s login.
+    navigate(`${location.pathname}${location.search}`, { replace: true })
   }
 
   function onLogout() {

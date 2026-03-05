@@ -84,6 +84,14 @@ public sealed class FinanceTransaction : BaseEntity
     public TransactionRepeatType RepeatType { get; set; } = TransactionRepeatType.None;
 
     /// <summary>
+    /// Identificador da transação "origem" quando esta linha foi gerada por repetição.
+    /// <para>
+    /// Quando <c>null</c>, esta transação é a origem (ou uma transação normal sem repetição).
+    /// </para>
+    /// </summary>
+    public Guid? RepeatSourceTransactionId { get; set; }
+
+    /// <summary>
     /// Intervalo de repetição quando aplicável.
     /// </summary>
     public int? RepeatInterval { get; set; }

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { domusApi, type CreateFinanceCategoryRequest } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 import { encodeEmojiToIconKey } from '../../utils/emojiIconKey'
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
 export function CreateFinanceCategorySheet({ token, type, onClose, onCreated }: Props) {
   const queryClient = useQueryClient()
   const nameRef = useRef<HTMLInputElement | null>(null)
+  const { t } = useI18n()
 
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState(type === 'Income' ? '💰' : '🏷️')
@@ -56,7 +58,7 @@ export function CreateFinanceCategorySheet({ token, type, onClose, onCreated }: 
 
   return (
     <div className="fixed inset-0 z-[90]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl">
         <div className="bg-blue-500 px-4 py-3 text-white">
@@ -66,21 +68,21 @@ export function CreateFinanceCategorySheet({ token, type, onClose, onCreated }: 
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/15 disabled:opacity-50"
               onClick={onClose}
               disabled={createMutation.isPending}
-              aria-label="Cancelar"
-              title="Cancelar"
+              aria-label={t('common.cancel')}
+              title={t('common.cancel')}
             >
               <i className="ri-close-line text-2xl leading-none" />
             </button>
 
-            <div className="text-base font-semibold">Nova categoria</div>
+            <div className="text-base font-semibold">{t('budget.categories.create.title')}</div>
 
             <button
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/15 disabled:opacity-50"
               onClick={submit}
               disabled={!canSave}
-              aria-label="Guardar"
-              title="Guardar"
+              aria-label={t('common.save')}
+              title={t('common.save')}
             >
               <i className={createMutation.isPending ? 'ri-loader-4-line animate-spin text-2xl' : 'ri-check-line text-2xl'} />
             </button>
@@ -95,12 +97,16 @@ export function CreateFinanceCategorySheet({ token, type, onClose, onCreated }: 
           ) : null}
 
           <div className="mb-4">
-            <label className="mb-2 block text-xs font-semibold text-charcoal/60">Nome</label>
+            <label className="mb-2 block text-xs font-semibold text-charcoal/60">{t('common.name')}</label>
             <input
               ref={nameRef}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={type === 'Income' ? 'Ex.: Salário' : 'Ex.: Transporte'}
+              placeholder={
+                type === 'Income'
+                  ? t('budget.categories.create.placeholder.income')
+                  : t('budget.categories.create.placeholder.expense')
+              }
               className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base text-charcoal outline-none focus:ring-2 focus:ring-blue-500/25"
               disabled={createMutation.isPending}
               onKeyDown={(e) => {
@@ -115,7 +121,7 @@ export function CreateFinanceCategorySheet({ token, type, onClose, onCreated }: 
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="flex items-center gap-3">
                 <i className="ri-emotion-happy-line text-xl text-gray-500" />
-                <div className="text-sm font-medium text-charcoal">Ícone (emoji)</div>
+                <div className="text-sm font-medium text-charcoal">{t('budget.categories.iconLabel')}</div>
               </div>
               <input
                 value={emoji}
@@ -128,9 +134,11 @@ export function CreateFinanceCategorySheet({ token, type, onClose, onCreated }: 
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="flex items-center gap-3">
                 <i className="ri-price-tag-3-line text-xl text-gray-500" />
-                <div className="text-sm font-medium text-charcoal">Tipo</div>
+                <div className="text-sm font-medium text-charcoal">{t('common.type')}</div>
               </div>
-              <div className="text-sm font-semibold text-charcoal">{type === 'Income' ? 'Renda' : 'Despesas'}</div>
+              <div className="text-sm font-semibold text-charcoal">
+                {type === 'Income' ? t('budget.type.income') : t('budget.type.expense')}
+              </div>
             </div>
           </div>
         </div>
@@ -138,4 +146,3 @@ export function CreateFinanceCategorySheet({ token, type, onClose, onCreated }: 
     </div>
   )
 }
-

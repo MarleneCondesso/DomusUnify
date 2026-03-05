@@ -22,6 +22,7 @@ export type CreateFamilyRequest = components['schemas']['CreateFamilyRequest']
 export type SetCurrentFamilyRequest = components['schemas']['SetCurrentFamilyRequest']
 export type FamilyResponse = components['schemas']['FamilyResponse']
 export type FamilyMembers = components['schemas']['FamilyMemberResponse']
+export type FamilyMemberProfileResponse = components['schemas']['FamilyMemberProfileResponse']
 export type CreateInviteResult = components['schemas']['CreateInviteResult']
 export type InvitePreviewModel = components['schemas']['InvitePreviewModel']
 export type JoinInviteRequest = components['schemas']['JoinInviteRequest']
@@ -81,6 +82,9 @@ export type CategorySummaryResponse = components['schemas']['CategorySummaryResp
 export type MemberSummaryResponse = components['schemas']['MemberSummaryResponse']
 export type AccountSummaryResponse = components['schemas']['AccountSummaryResponse']
 
+export type UserProfileResponse = components['schemas']['UserProfileResponse']
+export type UpdateUserProfileRequest = components['schemas']['UpdateUserProfileRequest']
+
 /**
  * Nota: as rotas aqui seguem exatamente o que está no backend.
  * Ex.: `src/DomusUnify.Api/Controllers/AuthController.cs`
@@ -112,6 +116,42 @@ export const domusApi = {
   getFamilyMembers: async (token: string): Promise<FamilyMembers[]> =>
     apiRequest<FamilyMembers[]>('/api/v1/families/members', { token }),
 
+  getFamilyById: async (token: string, familyId: string): Promise<FamilyResponse> =>
+    apiRequest<FamilyResponse>(`/api/v1/families/${familyId}`, { token }),
+
+  getFamilyMembersByFamilyId: async (token: string, familyId: string): Promise<FamilyMembers[]> =>
+    apiRequest<FamilyMembers[]>(`/api/v1/families/${familyId}/members`, { token }),
+
+  getFamilyMemberProfile: async (token: string, familyId: string, userId: string): Promise<FamilyMemberProfileResponse> =>
+    apiRequest<FamilyMemberProfileResponse>(`/api/v1/families/${familyId}/members/${userId}/profile`, { token }),
+
+  getFamilyActivityRecent: async (token: string, familyId: string, take = 4): Promise<ActivityEntryResponse[]> =>
+    apiRequest<ActivityEntryResponse[]>(`/api/v1/families/${familyId}/activity/recent?take=${take}`, { token }),
+
+  getFamilyActivity: async (token: string, familyId: string, query: ActivityQuery = {}): Promise<ActivityEntryResponse[]> => {
+    const skip = query.skip ?? 0
+    const take = query.take ?? 50
+
+    const search = new URLSearchParams()
+    search.set('skip', String(skip))
+    search.set('take', String(take))
+    if (query.type) search.set('type', query.type)
+    if (query.fromUtc) search.set('fromUtc', query.fromUtc)
+    if (query.toUtc) search.set('toUtc', query.toUtc)
+    if (query.dateUtc) search.set('dateUtc', query.dateUtc)
+
+    return apiRequest<ActivityEntryResponse[]>(`/api/v1/families/${familyId}/activity?${search.toString()}`, { token })
+  },
+
+  makeFamilyMemberAdmin: async (token: string, familyId: string, userId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/families/${familyId}/members/${userId}/make-admin`, { method: 'POST', token }),
+
+  removeFamilyMember: async (token: string, familyId: string, userId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/families/${familyId}/members/${userId}`, { method: 'DELETE', token }),
+
+  deleteFamily: async (token: string, familyId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/families/${familyId}`, { method: 'DELETE', token }),
+
   createFamilyInvite: async (
     token: string,
     familyId: string,
@@ -132,6 +172,14 @@ export const domusApi = {
 
   joinFamilyInvite: async (token: string, inviteToken: string): Promise<void> =>
     apiRequest<void>('/api/v1/families/invites/join', { method: 'POST', token, json: { token: inviteToken } satisfies JoinInviteRequest }),
+
+  // Utilizador
+  getMyProfile: async (token: string): Promise<UserProfileResponse> =>
+    apiRequest<UserProfileResponse>('/api/v1/users/me/profile', { token }),
+
+  updateMyProfile: async (token: string, request: UpdateUserProfileRequest): Promise<UserProfileResponse> =>
+    apiRequest<UserProfileResponse>('/api/v1/users/me/profile', { method: 'PUT', token, json: request }),
+
   // Listas
   getLists: async (token: string): Promise<ListResponse[]> =>
     apiRequest<ListResponse[]>('/api/v1/lists', { token }),
@@ -336,12 +384,28 @@ export const domusApi = {
   clearBudgetTransactions: async (token: string, budgetId: string): Promise<void> =>
     apiRequest<void>(`/api/v1/budgets/${budgetId}/transactions/clear`, { method: 'POST', token }),
 
+  // Budget (Accounts visibility)
+  getBudgetVisibleAccounts: async (token: string, budgetId: string): Promise<FinanceAccountResponse[]> =>
+    apiRequest<FinanceAccountResponse[]>(`/api/v1/budgets/${budgetId}/accounts`, { token }),
+
+  getBudgetHiddenAccounts: async (token: string, budgetId: string): Promise<FinanceAccountResponse[]> =>
+    apiRequest<FinanceAccountResponse[]>(`/api/v1/budgets/${budgetId}/accounts/hidden`, { token }),
+
+  hideBudgetAccount: async (token: string, budgetId: string, accountId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/budgets/${budgetId}/accounts/hidden/${accountId}`, { method: 'PUT', token }),
+
+  unhideBudgetAccount: async (token: string, budgetId: string, accountId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/budgets/${budgetId}/accounts/hidden/${accountId}`, { method: 'DELETE', token }),
+
   // Finance (Categories, Accounts)
   getFinanceAccounts: async (token: string): Promise<FinanceAccountResponse[]> =>
     apiRequest<FinanceAccountResponse[]>('/api/v1/finance-accounts', { token }),
 
   createFinanceAccount: async (token: string, request: CreateFinanceAccountRequest): Promise<FinanceAccountResponse> =>
     apiRequest<FinanceAccountResponse>('/api/v1/finance-accounts', { method: 'POST', token, json: request }),
+
+  deleteFinanceAccount: async (token: string, accountId: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/finance-accounts/${accountId}`, { method: 'DELETE', token }),
 
   getFinanceCategories: async (token: string, type?: string): Promise<FinanceCategoryResponse[]> => {
     const searchParams = new URLSearchParams()

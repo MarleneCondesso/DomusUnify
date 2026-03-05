@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { domusApi, type FamilyResponse } from '../../api/domusApi'
 import { queryKeys } from '../../api/queryKeys'
 import { useFamilyHub } from '../../realtime/useFamilyHub'
 import { ActionSheet, type ActionSheetItem } from '../../ui/ActionSheet'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
+import { useI18n } from '../../i18n/i18n'
 
 type Props = {
   token: string
@@ -22,7 +23,9 @@ type Props = {
  * - O hook `useFamilyHub` liga ao hub `/hubs/family` e invalida automaticamente estas queries quando houver eventos.
  */
 export function ListsPage({ token, family }: Props) {
+  const { t } = useI18n()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -53,7 +56,7 @@ export function ListsPage({ token, family }: Props) {
     const items: ActionSheetItem[] = [
       {
         id: 'refresh',
-        label: 'Atualizar',
+        label: t('common.refresh'),
         icon: 'ri-refresh-line',
         onPress: () => {
           setMenuOpen(false)
@@ -65,12 +68,12 @@ export function ListsPage({ token, family }: Props) {
     if (hasPexelsCovers) {
       items.push({
         id: 'regenerate-covers',
-        label: 'Regenerar capas',
+        label: t('lists.menu.regenerateCovers'),
         icon: 'ri-image-line',
         disabled: regenerateCoversMutation.isPending,
         onPress: () => {
           setMenuOpen(false)
-          const ok = window.confirm('Regenerar imagens de capa das listas?')
+          const ok = window.confirm(t('lists.menu.regenerateCovers.confirm'))
           if (!ok) return
           regenerateCoversMutation.mutate()
         },
@@ -78,7 +81,7 @@ export function ListsPage({ token, family }: Props) {
     }
 
     return items
-  }, [hasPexelsCovers, queryClient, regenerateCoversMutation, setMenuOpen])
+  }, [hasPexelsCovers, queryClient, regenerateCoversMutation, setMenuOpen, t])
 
   //#endregion
 
@@ -97,20 +100,20 @@ export function ListsPage({ token, family }: Props) {
   if (!family.id) {
     return (
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
-        <h2 className="text-xl font-semibold text-charcoal">Resposta inválida da API</h2>
-        <p className="mt-2 text-sm text-charcoal">A família atual veio sem `id`.</p>
+        <h2 className="text-xl font-semibold text-charcoal">{t('lists.invalidApi.title')}</h2>
+        <p className="mt-2 text-sm text-charcoal">{t('lists.invalidApi.body')}</p>
       </div>
     )
   }
 
   return (
     <div className="w-full">
-      <header className="flex items-start justify-between gap-4 bg-linear-to-b from-sage-light to-offwhite py-10 flex-col px-4">
-        <nav className="flex w-full items-center justify-between px-3">
+      <header className="flex items-start justify-between gap-4 bg-linear-to-b from-sage-light to-offwhite flex-col">
+        <nav className="flex w-full items-center justify-between p-6">
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-            aria-label="Home"
+            className="grid h-12 w-12 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
+            aria-label={t('common.home')}
             onClick={() => navigate('/')}
           >
             <i className="ri-home-7-line text-2xl leading-none" />
@@ -118,8 +121,8 @@ export function ListsPage({ token, family }: Props) {
 
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-            aria-label="Menu"
+            className="grid h-12 w-12 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
+            aria-label={t('common.menu')}
             disabled={regenerateCoversMutation.isPending}
             onClick={() => {
               setMenuOpen(true)
@@ -128,11 +131,11 @@ export function ListsPage({ token, family }: Props) {
             <i className={`${regenerateCoversMutation.isPending ? 'ri-loader-4-line animate-spin' : 'ri-more-2-fill'} text-2xl leading-none`} />
           </button>
         </nav>
-        <section className='py-16 px-2'>
+        <section className='py-16 px-6'>
           <div className='flex items-center justify-between'>
             <div>
-              <h1 className="text-6xl font-bold text-charcoal mb-6 flex items-center gap-3">Family Lists <span className='text-5xl'>📝</span></h1>
-              <p className='text-md text-gray-600 mb-2'>Manage your shared shopping lists, tasks, and more</p>
+              <h1 className="text-6xl font-bold text-charcoal mb-6 flex items-center gap-3">{t('lists.title')} <span className='text-5xl'>📝</span></h1>
+              <p className='text-md text-gray-600 mb-2'>{t('lists.subtitle')}</p>
             </div>
           </div>
         </section>
@@ -140,10 +143,10 @@ export function ListsPage({ token, family }: Props) {
 
 
 
-      {listsQuery.data?.length === 0 && <p className="mt-2 text-sm text-charcoal">Ainda não possui nenhuma lista.</p>}
+      {listsQuery.data?.length === 0 && <p className="mt-2 text-sm text-charcoal">{t('lists.empty')}</p>}
       {listsQuery.data && listsQuery.data.length > 0 && (
 
-        <section className='max-w-7xl mx-auto px-2 pb-16'>
+        <section className='max-w-7xl mx-auto px-6 pb-16'>
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
             {listsQuery.data?.map((l) => {
               const itemsCount = l.itemsCount ?? 0
@@ -169,18 +172,18 @@ export function ListsPage({ token, family }: Props) {
 
                   <div className="absolute left-4 top-4 flex items-center gap-2">
                     <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                      {l.type ?? 'Custom'}
+                      {l.type ?? t('lists.type.custom')}
                     </span>
                   </div>
 
                   <div className="absolute right-4 top-4">
                     <span
                       className="grid h-8 w-8 place-items-center rounded-full bg-bg-offwhite text-white backdrop-blur"
-                      title={isPrivate ? 'Privada' : 'Partilhada'}
+                      title={isPrivate ? t('lists.visibility.private') : t('lists.visibility.shared')}
                     >
                       <span
                         role="img"
-                        aria-label={isPrivate ? 'Lista privada' : 'Lista partilhada'}
+                        aria-label={isPrivate ? t('lists.visibility.private.aria') : t('lists.visibility.shared.aria')}
                         className="text-base leading-none"
                       >
                         {isPrivate ? <i className="ri-lock-fill text-offwhite"></i> : <i className="ri-group-fill text-offwhite"></i>}
@@ -191,7 +194,7 @@ export function ListsPage({ token, family }: Props) {
                   <div className="absolute inset-0 flex flex-col justify-end p-6">
                     <h3 className="text-2xl font-bold text-white drop-shadow">{l.name}</h3>
                     <p className="mt-1 text-sm text-white/90">
-                      {itemsCount} items • {completedCount} completed
+                      {t('lists.card.itemsCompleted', { items: itemsCount, completed: completedCount })}
                     </p>
 
                     <div className="mt-4 h-1.5 w-full rounded-full bg-white/30">
@@ -207,14 +210,14 @@ export function ListsPage({ token, family }: Props) {
           </div>
 
           <button
-            className='place-items-center h-12 w-12 rounded-full bg-amber fixed bottom-20 right-15'
-            onClick={() => navigate('/lists/new')}>
+            className='place-items-center h-12 w-12 rounded-full bg-amber/60 hover:bg-amber fixed bottom-20 right-15'
+            onClick={() => navigate('/lists/new', { state: { backgroundLocation: location } })}>
             <i className="ri-add-large-fill"></i>
           </button>
 
           {hasPexelsCovers && (
             <div className="mt-6 text-center text-xs text-charcoal/70">
-              Fotos fornecidas por{' '}
+              {t('lists.pexels.credit.prefix')}{' '}
               <a
                 className="underline hover:text-charcoal"
                 href="https://www.pexels.com"
@@ -223,13 +226,13 @@ export function ListsPage({ token, family }: Props) {
               >
                 Pexels
               </a>
-              .
+              {t('lists.pexels.credit.suffix')}
             </div>
           )}
         </section>
       )}
 
-      {menuOpen ? <ActionSheet title="Opções" items={menuItems} onClose={() => setMenuOpen(false)} /> : null}
+      {menuOpen ? <ActionSheet title={t('common.options')} items={menuItems} onClose={() => setMenuOpen(false)} /> : null}
 
     </div >
 

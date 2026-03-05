@@ -5,6 +5,7 @@ import { HashRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import { AppSettingsProvider } from './utils/appSettings'
+import { I18nProvider } from './i18n/i18n'
 
 /**
  * TanStack React Query:
@@ -26,9 +27,11 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AppSettingsProvider>
-        <HashRouter>
-          <App />
-        </HashRouter>
+        <I18nProvider>
+          <HashRouter>
+            <App />
+          </HashRouter>
+        </I18nProvider>
       </AppSettingsProvider>
     </QueryClientProvider>
   </StrictMode>,

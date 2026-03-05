@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useI18n } from '../../i18n/i18n'
 
 type FamilyMemberRow = {
   userId?: string
@@ -14,6 +15,7 @@ type Props = {
 }
 
 export function CalendarFilterSheet({ members, initialSelectedUserIds, onClose, onSave }: Props) {
+  const { t, locale } = useI18n()
   const memberIds = useMemo(
     () =>
       members
@@ -33,38 +35,38 @@ export function CalendarFilterSheet({ members, initialSelectedUserIds, onClose, 
     return members
       .filter((m) => Boolean(m.userId))
       .slice()
-      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'pt-PT', { sensitivity: 'base' }))
-  }, [members])
+      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', locale, { sensitivity: 'base' }))
+  }, [locale, members])
 
   const allSelected = selected.size === memberIds.length && memberIds.length > 0
   const canSave = selected.size > 0
 
   return (
     <div className="fixed inset-0 z-[75]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl rounded-t-3xl bg-white p-4 shadow-2xl">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
 
         <header className="mb-3 flex items-center justify-between">
-          <button type="button" className="rounded-full p-2 hover:bg-sand-light" onClick={onClose} aria-label="Fechar">
+          <button type="button" className="rounded-full p-2 hover:bg-sand-light" onClick={onClose} aria-label={t('common.close')}>
             <i className="ri-close-line text-2xl text-gray-600" />
           </button>
-          <div className="text-lg font-semibold text-charcoal">Filtrar</div>
+          <div className="text-lg font-semibold text-charcoal">{t('calendar.filter.title')}</div>
           <button
             type="button"
             className="rounded-full p-2 hover:bg-sand-light text-sage-dark"
-            onClick={() => window.alert('Selecione os membros para ver apenas eventos onde eles participam.')}
-            aria-label="Ajuda"
+            onClick={() => window.alert(t('calendar.filter.helpAlert'))}
+            aria-label={t('common.help')}
           >
             <i className="ri-information-line text-2xl" />
           </button>
         </header>
 
         <div className="mb-3">
-          <div className="text-base font-semibold text-charcoal">Membros</div>
+          <div className="text-base font-semibold text-charcoal">{t('common.members')}</div>
           <div className="mt-1 text-sm text-charcoal/60">
-            Selecione os membros para ver os eventos nos quais eles estão listados como participantes.
+            {t('calendar.filter.description')}
           </div>
         </div>
 
@@ -117,7 +119,7 @@ export function CalendarFilterSheet({ members, initialSelectedUserIds, onClose, 
             onClick={() => setSelected(new Set(memberIds))}
             disabled={allSelected}
           >
-            Mostrar todos
+            {t('common.showAll')}
           </button>
 
           <button
@@ -126,7 +128,7 @@ export function CalendarFilterSheet({ members, initialSelectedUserIds, onClose, 
             onClick={() => setSelected(new Set())}
             disabled={selected.size === 0}
           >
-            Limpar
+            {t('common.clear')}
           </button>
         </div>
 
@@ -137,7 +139,7 @@ export function CalendarFilterSheet({ members, initialSelectedUserIds, onClose, 
             onClick={() => onSave(Array.from(selected))}
             disabled={!canSave}
           >
-            Salvar
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -149,4 +151,3 @@ function safeInitial(name: string | null | undefined): string {
   const trimmed = (name ?? '').trim()
   return trimmed ? trimmed[0]!.toUpperCase() : '?'
 }
-

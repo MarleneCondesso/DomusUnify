@@ -48,13 +48,131 @@
 
   /* Dark mode (tokens) */
   [data-theme='dark'] {
-    --color-offwhite: #0b0f0d;
-    --color-sand: #121a16;
-    --color-sand-light: #0e1411;
-    --color-sand-dark: #1b251f;
-    --color-sage-light: #16231d;
-    --color-sage-dark: #9bb7a8;
-    --color-charcoal: #f3f4f6;
+    /* Base surfaces (purple night) */
+    --color-offwhite: #070510;
+    --color-sand: #0f0b1a;
+    --color-sand-light: #17102a;
+    --color-sand-dark: #2a1c45;
+
+    /* Accent (lavender) */
+    --color-sage-light: #24163c;
+    --color-sage-dark: #c4b5fd;
+
+    /* Primary actions (purple) */
+    --color-forest: #7c3aed;
+
+    /* Text */
+    --color-charcoal: #f8fafc;
+
+    /* Override common Tailwind grays used in the UI for dark mode readability */
+    --color-gray-100: #0f0b1a;
+    --color-gray-200: #2a1c45;
+    --color-gray-300: #3a275f;
+    --color-gray-400: #8a7aa8;
+    --color-gray-500: #b0a6c8;
+    --color-gray-600: #d7d0ea;
+  }
+}
+
+/* Dark-mode overrides for utility colors that are otherwise "white" in the UI.
+   We keep `--color-white` as real white so `text-white` stays readable. */
+@layer utilities {
+  [data-theme='dark'] .bg-white {
+    background-color: var(--color-sand-light);
+  }
+
+  [data-theme='dark'] .hover\:bg-white:hover {
+    background-color: var(--color-sand-dark);
+  }
+
+  [data-theme='dark'] .bg-white\/5 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 5%, transparent);
+  }
+
+  [data-theme='dark'] .hover\:bg-white\/5:hover {
+    background-color: color-mix(in oklab, var(--color-sand-light) 5%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/10 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 10%, transparent);
+  }
+
+  [data-theme='dark'] .hover\:bg-white\/10:hover {
+    background-color: color-mix(in oklab, var(--color-sand-light) 10%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/15 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 15%, transparent);
+  }
+
+  [data-theme='dark'] .hover\:bg-white\/15:hover {
+    background-color: color-mix(in oklab, var(--color-sand-light) 15%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/20 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 20%, transparent);
+  }
+
+  [data-theme='dark'] .hover\:bg-white\/20:hover {
+    background-color: color-mix(in oklab, var(--color-sand-light) 20%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/30 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 30%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/35 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 35%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/40 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 40%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/50 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 50%, transparent);
+  }
+
+  [data-theme='dark'] .hover\:bg-white\/50:hover {
+    background-color: color-mix(in oklab, var(--color-sand-light) 50%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/60 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 60%, transparent);
+  }
+
+  [data-theme='dark'] .hover\:bg-white\/60:hover {
+    background-color: color-mix(in oklab, var(--color-sand-light) 60%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/70 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 70%, transparent);
+  }
+
+  [data-theme='dark'] .bg-white\/80 {
+    background-color: color-mix(in oklab, var(--color-sand-light) 80%, transparent);
+  }
+
+  /* In dark mode, `text-sage-dark` is a light accent, but `bg-sage-dark` is often used with `text-white`.
+     Override the background utility to a deeper purple for contrast. */
+  [data-theme='dark'] .bg-sage-dark {
+    background-color: #6d28d9;
+  }
+
+  [data-theme='dark'] .hover\:bg-sage-dark:hover {
+    background-color: #6d28d9;
+  }
+
+  [data-theme='dark'] .bg-sage-dark\/10 {
+    background-color: color-mix(in oklab, #6d28d9 10%, transparent);
+  }
+
+  [data-theme='dark'] .bg-sage-dark\/25 {
+    background-color: color-mix(in oklab, #6d28d9 25%, transparent);
+  }
+
+  [data-theme='dark'] .bg-sage-dark\/60 {
+    background-color: color-mix(in oklab, #6d28d9 60%, transparent);
   }
 }
 /**
@@ -72,7 +190,7 @@
   }
 
   body {
-    @apply min-w-[320px] text-white/90 antialiased;
+    @apply min-w-[320px] text-charcoal antialiased;
     background: var(--color-offwhite);
   }
 

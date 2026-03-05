@@ -39,6 +39,9 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
     {
         var (budget, _) = await EnsureBudgetAccessAsync(userId, familyId, budgetId, requireEdit: false, ct);
 
+        if (from.HasValue && to.HasValue)
+            await EnsureRecurringOccurrencesAsync(budgetId, from.Value, to.Value, ct);
+
         var q = _db.FinanceTransactions
             .AsNoTracking()
             .Where(t => t.BudgetId == budgetId);
@@ -76,6 +79,317 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
                 t.ReminderUnit,
                 t.Note))
             .ToListAsync(ct);
+    }
+
+    private readonly record struct RepeatAdoptionKey(
+        DateOnly Date,
+        decimal Amount,
+        string Title,
+        FinanceTransactionType Type,
+        Guid CategoryId,
+        Guid AccountId,
+        Guid PaidByUserId);
+
+    private sealed record RepeatTemplateRow(
+        Guid Id,
+        decimal Amount,
+        string Title,
+        FinanceTransactionType Type,
+        Guid CategoryId,
+        Guid AccountId,
+        Guid PaidByUserId,
+        DateOnly Date,
+        TransactionRepeatType RepeatType,
+        int? RepeatInterval,
+        TransactionRepeatUnit? RepeatUnit,
+        TransactionReminderType ReminderType,
+        int? ReminderValue,
+        TransactionReminderUnit? ReminderUnit,
+        string? Note,
+        Guid CreatedByUserId);
+
+    private async Task EnsureRecurringOccurrencesAsync(Guid budgetId, DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        if (to < from) return;
+
+        const int maxRangeDays = 400;
+        var rangeDays = to.DayNumber - from.DayNumber + 1;
+        if (rangeDays > maxRangeDays) return;
+
+        var templates = await _db.FinanceTransactions
+            .AsNoTracking()
+            .Where(t =>
+                t.BudgetId == budgetId &&
+                t.RepeatSourceTransactionId == null &&
+                t.RepeatType != TransactionRepeatType.None &&
+                t.Date <= to)
+            .Select(t => new RepeatTemplateRow(
+                t.Id,
+                t.Amount,
+                t.Title,
+                t.Type,
+                t.CategoryId,
+                t.AccountId,
+                t.PaidByUserId,
+                t.Date,
+                t.RepeatType,
+                t.RepeatInterval,
+                t.RepeatUnit,
+                t.ReminderType,
+                t.ReminderValue,
+                t.ReminderUnit,
+                t.Note,
+                t.CreatedByUserId))
+            .ToListAsync(ct);
+
+        if (templates.Count == 0) return;
+
+        var templateIds = templates.Select(t => t.Id).ToList();
+
+        var existingOccurrences = await _db.FinanceTransactions
+            .AsNoTracking()
+            .Where(t =>
+                t.BudgetId == budgetId &&
+                t.RepeatSourceTransactionId != null &&
+                templateIds.Contains(t.RepeatSourceTransactionId.Value) &&
+                t.Date >= from &&
+                t.Date <= to)
+            .Select(t => new { SourceId = t.RepeatSourceTransactionId!.Value, t.Date })
+            .ToListAsync(ct);
+
+        var existingDatesBySource = existingOccurrences
+            .GroupBy(x => x.SourceId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Date).ToHashSet());
+
+        var adoptableTransactions = await _db.FinanceTransactions
+            .Where(t =>
+                t.BudgetId == budgetId &&
+                t.RepeatSourceTransactionId == null &&
+                t.RepeatType == TransactionRepeatType.None &&
+                t.Date >= from &&
+                t.Date <= to)
+            .ToListAsync(ct);
+
+        var adoptableByKey = new Dictionary<RepeatAdoptionKey, Queue<FinanceTransaction>>();
+        foreach (var t in adoptableTransactions)
+        {
+            var key = new RepeatAdoptionKey(t.Date, t.Amount, t.Title, t.Type, t.CategoryId, t.AccountId, t.PaidByUserId);
+            if (!adoptableByKey.TryGetValue(key, out var q))
+            {
+                q = new Queue<FinanceTransaction>();
+                adoptableByKey.Add(key, q);
+            }
+
+            q.Enqueue(t);
+        }
+
+        var now = DateTime.UtcNow;
+        var toAdd = new List<FinanceTransaction>();
+        var hasChanges = false;
+
+        foreach (var tpl in templates)
+        {
+            if (!existingDatesBySource.TryGetValue(tpl.Id, out var existingDates))
+            {
+                existingDates = new HashSet<DateOnly>();
+                existingDatesBySource.Add(tpl.Id, existingDates);
+            }
+
+            foreach (var d in EnumerateRepeatOccurrenceDates(tpl.Date, tpl.RepeatType, tpl.RepeatInterval, tpl.RepeatUnit, from, to))
+            {
+                if (existingDates.Contains(d)) continue;
+
+                var adoptionKey = new RepeatAdoptionKey(d, tpl.Amount, tpl.Title, tpl.Type, tpl.CategoryId, tpl.AccountId, tpl.PaidByUserId);
+                if (adoptableByKey.TryGetValue(adoptionKey, out var queue) && queue.Count > 0)
+                {
+                    var entity = queue.Dequeue();
+                    entity.RepeatSourceTransactionId = tpl.Id;
+                    entity.RepeatType = tpl.RepeatType;
+                    entity.RepeatInterval = tpl.RepeatType == TransactionRepeatType.Custom ? tpl.RepeatInterval : null;
+                    entity.RepeatUnit = tpl.RepeatType == TransactionRepeatType.Custom ? tpl.RepeatUnit : null;
+                    entity.ReminderType = tpl.ReminderType;
+                    entity.ReminderValue = tpl.ReminderType == TransactionReminderType.Custom ? tpl.ReminderValue : null;
+                    entity.ReminderUnit = tpl.ReminderType == TransactionReminderType.Custom ? tpl.ReminderUnit : null;
+                    entity.UpdatedAtUtc = now;
+                    hasChanges = true;
+                    existingDates.Add(d);
+                    continue;
+                }
+
+                toAdd.Add(new FinanceTransaction
+                {
+                    BudgetId = budgetId,
+                    Amount = tpl.Amount,
+                    Title = tpl.Title,
+                    Type = tpl.Type,
+                    CategoryId = tpl.CategoryId,
+                    AccountId = tpl.AccountId,
+                    PaidByUserId = tpl.PaidByUserId,
+                    Date = d,
+                    IsPaid = false,
+                    PaidAtUtc = null,
+                    RepeatType = tpl.RepeatType,
+                    RepeatInterval = tpl.RepeatType == TransactionRepeatType.Custom ? tpl.RepeatInterval : null,
+                    RepeatUnit = tpl.RepeatType == TransactionRepeatType.Custom ? tpl.RepeatUnit : null,
+                    ReminderType = tpl.ReminderType,
+                    ReminderValue = tpl.ReminderType == TransactionReminderType.Custom ? tpl.ReminderValue : null,
+                    ReminderUnit = tpl.ReminderType == TransactionReminderType.Custom ? tpl.ReminderUnit : null,
+                    Note = tpl.Note,
+                    CreatedByUserId = tpl.CreatedByUserId,
+                    CreatedAtUtc = now,
+                    RepeatSourceTransactionId = tpl.Id
+                });
+
+                existingDates.Add(d);
+                hasChanges = true;
+            }
+        }
+
+        if (toAdd.Count > 0)
+            _db.FinanceTransactions.AddRange(toAdd);
+
+        if (hasChanges)
+        {
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
+                // Another concurrent request may have generated the same occurrences.
+                // The unique index will reject duplicates; ignore and continue.
+            }
+        }
+    }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+    {
+        Exception? current = ex;
+        while (current is not null)
+        {
+            var fullName = current.GetType().FullName;
+
+            if (fullName is "Microsoft.Data.SqlClient.SqlException" or "System.Data.SqlClient.SqlException")
+            {
+                var numberProp = current.GetType().GetProperty("Number");
+                if (numberProp?.GetValue(current) is int number && number is 2601 or 2627)
+                    return true;
+            }
+
+            current = current.InnerException;
+        }
+
+        return false;
+    }
+
+    private static IEnumerable<DateOnly> EnumerateRepeatOccurrenceDates(
+        DateOnly baseDate,
+        TransactionRepeatType repeatType,
+        int? repeatInterval,
+        TransactionRepeatUnit? repeatUnit,
+        DateOnly from,
+        DateOnly to)
+    {
+        if (to < from) yield break;
+
+        var start = from > baseDate ? from : baseDate.AddDays(1);
+        if (start > to) yield break;
+
+        switch (repeatType)
+        {
+            case TransactionRepeatType.Daily:
+                for (var d = start; d <= to; d = d.AddDays(1))
+                    yield return d;
+                yield break;
+            case TransactionRepeatType.Weekdays:
+                for (var d = start; d <= to; d = d.AddDays(1))
+                {
+                    var dow = d.DayOfWeek;
+                    if (dow is DayOfWeek.Saturday or DayOfWeek.Sunday) continue;
+                    yield return d;
+                }
+                yield break;
+            case TransactionRepeatType.Weekly:
+                foreach (var d in EnumerateByDayStep(baseDate, 7, start, to)) yield return d;
+                yield break;
+            case TransactionRepeatType.BiWeekly:
+                foreach (var d in EnumerateByDayStep(baseDate, 14, start, to)) yield return d;
+                yield break;
+            case TransactionRepeatType.Monthly:
+                foreach (var d in EnumerateByMonthStep(baseDate, 1, start, to)) yield return d;
+                yield break;
+            case TransactionRepeatType.Yearly:
+                foreach (var d in EnumerateByMonthStep(baseDate, 12, start, to)) yield return d;
+                yield break;
+            case TransactionRepeatType.Custom:
+                if (!repeatInterval.HasValue || !repeatUnit.HasValue) yield break;
+                if (repeatInterval.Value is < 1 or > 99) yield break;
+
+                var interval = repeatInterval.Value;
+                switch (repeatUnit.Value)
+                {
+                    case TransactionRepeatUnit.Days:
+                        foreach (var d in EnumerateByDayStep(baseDate, interval, start, to)) yield return d;
+                        yield break;
+                    case TransactionRepeatUnit.Weeks:
+                        foreach (var d in EnumerateByDayStep(baseDate, interval * 7, start, to)) yield return d;
+                        yield break;
+                    case TransactionRepeatUnit.Months:
+                        foreach (var d in EnumerateByMonthStep(baseDate, interval, start, to)) yield return d;
+                        yield break;
+                    case TransactionRepeatUnit.Years:
+                        foreach (var d in EnumerateByMonthStep(baseDate, interval * 12, start, to)) yield return d;
+                        yield break;
+                    default:
+                        yield break;
+                }
+            case TransactionRepeatType.None:
+            default:
+                yield break;
+        }
+    }
+
+    private static IEnumerable<DateOnly> EnumerateByDayStep(DateOnly baseDate, int stepDays, DateOnly rangeStart, DateOnly rangeEnd)
+    {
+        if (stepDays <= 0) yield break;
+        if (rangeEnd < rangeStart) yield break;
+
+        var baseDay = baseDate.DayNumber;
+        var startDay = rangeStart.DayNumber;
+        var delta = startDay - baseDay;
+
+        var k = (int)Math.Ceiling(delta / (double)stepDays);
+        if (k < 1) k = 1;
+
+        var d = baseDate.AddDays(k * stepDays);
+        while (d < rangeStart)
+        {
+            k++;
+            d = baseDate.AddDays(k * stepDays);
+        }
+
+        for (; d <= rangeEnd; d = d.AddDays(stepDays))
+            yield return d;
+    }
+
+    private static IEnumerable<DateOnly> EnumerateByMonthStep(DateOnly baseDate, int stepMonths, DateOnly rangeStart, DateOnly rangeEnd)
+    {
+        if (stepMonths <= 0) yield break;
+        if (rangeEnd < rangeStart) yield break;
+
+        var monthsDiff = (rangeStart.Year - baseDate.Year) * 12 + (rangeStart.Month - baseDate.Month);
+        var n = (int)Math.Ceiling(monthsDiff / (double)stepMonths);
+        if (n < 1) n = 1;
+
+        var d = baseDate.AddMonths(n * stepMonths);
+        while (d < rangeStart)
+        {
+            n++;
+            d = baseDate.AddMonths(n * stepMonths);
+        }
+
+        for (; d <= rangeEnd; n++, d = baseDate.AddMonths(n * stepMonths))
+            yield return d;
     }
 
     /// <inheritdoc />
@@ -291,6 +605,8 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         var today = referenceDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
         var (start, end) = GetPeriodRange(budget, today);
 
+        await EnsureRecurringOccurrencesAsync(budgetId, start, end, ct);
+
         var q = _db.FinanceTransactions.AsNoTracking().Where(t => t.BudgetId == budgetId);
         if (budget.OnlyPaidInTotals) q = q.Where(t => t.IsPaid);
 
@@ -340,6 +656,9 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         if (!Enum.TryParse<FinanceTransactionType>(type, true, out var txType))
             throw new ArgumentException("Tipo inválido. Use: Expense, Income.");
 
+        if (from.HasValue && to.HasValue)
+            await EnsureRecurringOccurrencesAsync(budgetId, from.Value, to.Value, ct);
+
         var q = _db.FinanceTransactions.AsNoTracking()
             .Where(t => t.BudgetId == budgetId && t.Type == txType);
 
@@ -386,6 +705,9 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         if (!Enum.TryParse<FinanceTransactionType>(type, true, out var txType))
             throw new ArgumentException("Tipo inválido. Use: Expense, Income.");
 
+        if (from.HasValue && to.HasValue)
+            await EnsureRecurringOccurrencesAsync(budgetId, from.Value, to.Value, ct);
+
         var q = _db.FinanceTransactions.AsNoTracking()
             .Where(t => t.BudgetId == budgetId && t.Type == txType);
 
@@ -429,6 +751,9 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
 
         if (!Enum.TryParse<FinanceTransactionType>(type, true, out var txType))
             throw new ArgumentException("Tipo inválido. Use: Expense, Income.");
+
+        if (from.HasValue && to.HasValue)
+            await EnsureRecurringOccurrencesAsync(budgetId, from.Value, to.Value, ct);
 
         var q = _db.FinanceTransactions.AsNoTracking()
             .Where(t => t.BudgetId == budgetId && t.Type == txType);
@@ -474,6 +799,8 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
         var (budget, _) = await EnsureBudgetAccessAsync(userId, familyId, budgetId, requireEdit: false, ct);
 
         var d = ParseDelimiter(delimiter);
+
+        await EnsureRecurringOccurrencesAsync(budgetId, from, to, ct);
 
         var rows = await _db.FinanceTransactions
             .AsNoTracking()

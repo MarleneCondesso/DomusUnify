@@ -13,6 +13,36 @@ public class User : BaseEntity
     public string Name { get; set; } = null!;
 
     /// <summary>
+    /// Nome de exibição (opcional). Se definido, pode sobrepor o <see cref="Name"/> no frontend.
+    /// </summary>
+    public string? DisplayName { get; set; }
+
+    /// <summary>
+    /// Cor do perfil (hex), ex.: <c>#8b5cf6</c> (opcional).
+    /// </summary>
+    public string? ProfileColorHex { get; set; }
+
+    /// <summary>
+    /// Data de aniversário (opcional).
+    /// </summary>
+    public DateOnly? Birthday { get; set; }
+
+    /// <summary>
+    /// Género (opcional): <c>female</c>, <c>male</c>, <c>other</c>.
+    /// </summary>
+    public string? Gender { get; set; }
+
+    /// <summary>
+    /// Telefone (opcional).
+    /// </summary>
+    public string? Phone { get; set; }
+
+    /// <summary>
+    /// Morada/endereço (opcional).
+    /// </summary>
+    public string? Address { get; set; }
+
+    /// <summary>
     /// Endereço de email (único).
     /// </summary>
     public string Email { get; set; } = null!;

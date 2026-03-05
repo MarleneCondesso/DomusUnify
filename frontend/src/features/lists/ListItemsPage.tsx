@@ -4,11 +4,13 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { domusApi, type CategoryResponse, type FamilyResponse, type ListItemResponse, type ListResponse } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 import { useFamilyHub } from '../../realtime/useFamilyHub'
 import { ActionSheet, type ActionSheetItem } from '../../ui/ActionSheet'
 import { BottomSheetPicker, type BottomSheetOption } from '../../ui/BottomSheetPicker'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { SwipeableRow } from '../../ui/SwipeableRow'
+import { getItemCategoryDisplayName } from '../../utils/categoryLocalization'
 import { iconKeyToEmoji } from '../../utils/emojiIconKey'
 import { fileToDataUrl } from '../../utils/fileToDataUrl'
 import { AddBottomSheet } from './AddBottomSheet'
@@ -80,6 +82,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { listId } = useParams<{ listId: string }>()
+  const { t, language } = useI18n()
 
   const addInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -268,11 +271,12 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     const map = new Map<string, string>()
     for (const c of listItemsCategories) {
       if (!c.id || !c.name) continue
+      const displayName = getItemCategoryDisplayName(c, language).trim() || c.name
       const emoji = iconKeyToEmoji(c.iconKey)
-      map.set(c.id, emoji ? `${emoji} ${c.name}` : c.name)
+      map.set(c.id, emoji ? `${emoji} ${displayName}` : displayName)
     }
     return map
-  }, [listItemsCategories])
+  }, [language, listItemsCategories])
 
   const categoryOptions: BottomSheetOption[] = useMemo(() => {
     return categoriesForActiveType
@@ -450,7 +454,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
         window.alert(msg)
         return
       }
-      window.alert(err instanceof Error ? err.message : 'Erro ao marcar item.')
+      window.alert(err instanceof Error ? err.message : t('lists.itemsPage.error.toggleItem'))
     },
     onSettled: async (_data, _err, vars) => {
       setTogglingItemIds((prev) => {
@@ -534,7 +538,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
         const msg = typeof err.body === 'string' ? err.body : JSON.stringify(err.body)
         window.alert(msg)
       } else {
-        window.alert(err instanceof Error ? err.message : 'Erro ao eliminar item.')
+        window.alert(err instanceof Error ? err.message : t('lists.itemsPage.error.deleteItem'))
       }
 
       setDeletingItemIds((prev) => {
@@ -588,7 +592,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
         window.alert(msg)
         return
       }
-      window.alert(err instanceof Error ? err.message : 'Erro ao atualizar a lista.')
+      window.alert(err instanceof Error ? err.message : t('lists.itemsPage.error.updateList'))
     },
   })
 
@@ -660,7 +664,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
       return { previous }
     },
     onError: (err, _vars, ctx) => {
-      window.alert(err instanceof Error ? err.message : 'Erro ao reordenar categorias.')
+      window.alert(err instanceof Error ? err.message : t('lists.itemsPage.error.reorderCategories'))
       if (ctx?.previous) queryClient.setQueryData(queryKeys.listItemsCategories, ctx.previous)
     },
     onSettled: async () => {
@@ -677,7 +681,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     if (!err) return null
 
     if (err instanceof ApiError) return typeof err.body === 'string' ? err.body : JSON.stringify(err.body)
-    return err instanceof Error ? err.message : 'Erro inesperado.'
+    return err instanceof Error ? err.message : t('common.unexpectedError')
   }, [
     createCategoryMutation.error,
     deleteCategoryMutation.error,
@@ -711,10 +715,10 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
   const duplicateListMutation = useMutation({
     mutationFn: async () => {
-      const base = (currentList?.name ?? 'Lista').trim() || 'Lista'
+      const base = (currentList?.name ?? t('lists.untitled')).trim() || t('lists.untitled')
 
       const created = await domusApi.createList(token, {
-        name: `${base} (cópia)`,
+        name: t('lists.itemsPage.duplicate.newName', { base }),
         type: currentList?.type ?? 'Custom',
         colorHex: currentList?.colorHex ?? '',
         visibilityMode: currentList?.visibilityMode ?? 'AllMembers',
@@ -757,19 +761,19 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
   })
 
   const filterCategoryLabel = useMemo(() => {
-    if (!filterCategoryId) return 'Todos'
-    if (filterCategoryId === UNCATEGORIZED_ID) return 'Não classificado'
-    return categoryNameById.get(filterCategoryId) ?? 'Categoria'
-  }, [categoryNameById, filterCategoryId])
+    if (!filterCategoryId) return t('lists.itemsPage.filter.allItems')
+    if (filterCategoryId === UNCATEGORIZED_ID) return t('common.uncategorized')
+    return categoryNameById.get(filterCategoryId) ?? t('common.category')
+  }, [categoryNameById, filterCategoryId, t])
 
   const sortModeLabel = useMemo(() => {
-    if (sortMode === 'name-asc') return 'Nome (A–Z)'
-    if (sortMode === 'name-desc') return 'Nome (Z–A)'
-    return 'Padrão'
-  }, [sortMode])
+    if (sortMode === 'name-asc') return t('lists.itemsPage.sort.nameAsc')
+    if (sortMode === 'name-desc') return t('lists.itemsPage.sort.nameDesc')
+    return t('lists.itemsPage.sort.default')
+  }, [sortMode, t])
 
   const shareList = async () => {
-    const title = currentList?.name ?? 'Lista'
+    const title = (currentList?.name ?? t('lists.untitled')).trim() || t('lists.untitled')
     const lines = listItems
       .filter((i) => (i.name ?? '').trim().length > 0)
       .map((i) => {
@@ -790,9 +794,9 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
     try {
       await navigator.clipboard.writeText(text)
-      window.alert('Lista copiada para o clipboard.')
+      window.alert(t('lists.itemsPage.share.copied'))
     } catch {
-      window.prompt('Copiar lista:', text)
+      window.prompt(t('lists.itemsPage.share.prompt'), text)
     }
   }
 
@@ -800,20 +804,20 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
   const completedCount = listItems.filter((i) => Boolean(i.id) && i.isCompleted).length
 
   const filterPickerOptions: BottomSheetOption[] = [
-    { id: UNCATEGORIZED_ID, label: 'Não classificado' },
+    { id: UNCATEGORIZED_ID, label: t('common.uncategorized') },
     ...categoryOptions,
   ]
 
   const sortPickerOptions: BottomSheetOption[] = [
-    { id: 'default', label: 'Padrão' },
-    { id: 'name-asc', label: 'Nome (A–Z)' },
-    { id: 'name-desc', label: 'Nome (Z–A)' },
+    { id: 'default', label: t('lists.itemsPage.sort.default') },
+    { id: 'name-asc', label: t('lists.itemsPage.sort.nameAsc') },
+    { id: 'name-desc', label: t('lists.itemsPage.sort.nameDesc') },
   ]
 
   const listOptionsItems: ActionSheetItem[] = [
     {
       id: 'refresh',
-      label: 'Atualizar',
+      label: t('common.refresh'),
       icon: 'ri-refresh-line',
       onPress: () => {
         setIsListOptionsOpen(false)
@@ -822,7 +826,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'edit',
-      label: 'Editar lista',
+      label: t('lists.edit.title'),
       icon: 'ri-pencil-line',
       disabled: !currentList?.id,
       onPress: () => {
@@ -832,7 +836,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'filter',
-      label: 'Filtrar',
+      label: t('common.filter'),
       icon: 'ri-filter-3-line',
       right: <span className="text-xs text-charcoal/70">{filterCategoryLabel}</span>,
       onPress: () => {
@@ -842,7 +846,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'showCategories',
-      label: 'Mostrar categorias',
+      label: t('lists.itemsPage.options.showCategories'),
       icon: 'ri-price-tag-3-line',
       right: showCategories ? <i className="ri-check-line text-lg text-forest" /> : null,
       onPress: () => {
@@ -852,7 +856,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'manageCategories',
-      label: 'Gerenciar categorias',
+      label: t('lists.manageCategories.title'),
       icon: 'ri-price-tag-3-fill',
       onPress: () => {
         setIsListOptionsOpen(false)
@@ -861,7 +865,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'sort',
-      label: 'Classificar',
+      label: t('lists.itemsPage.sort.title'),
       icon: 'ri-sort-desc',
       right: <span className="text-xs text-charcoal/70">{sortModeLabel}</span>,
       onPress: () => {
@@ -871,7 +875,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'hideCompleted',
-      label: 'Ocultar itens concluídos',
+      label: t('lists.itemsPage.options.hideCompleted'),
       icon: 'ri-eye-off-line',
       right: hideCompleted ? <i className="ri-check-line text-lg text-forest" /> : null,
       onPress: () => {
@@ -881,7 +885,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'markAll',
-      label: 'Marcar todos os itens',
+      label: t('lists.itemsPage.options.markAll'),
       icon: 'ri-checkbox-circle-line',
       disabled: incompleteCount === 0 || markAllItemsMutation.isPending,
       onPress: () => {
@@ -891,7 +895,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'unmarkAll',
-      label: 'Desmarcar todos os itens',
+      label: t('lists.itemsPage.options.unmarkAll'),
       icon: 'ri-checkbox-blank-circle-line',
       disabled: completedCount === 0 || unmarkAllItemsMutation.isPending,
       onPress: () => {
@@ -901,7 +905,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'duplicate',
-      label: 'Duplicar lista',
+      label: t('lists.itemsPage.options.duplicate'),
       icon: 'ri-file-copy-line',
       disabled: !currentList?.id || duplicateListMutation.isPending,
       onPress: () => {
@@ -911,7 +915,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'share',
-      label: 'Enviar esta lista',
+      label: t('lists.itemsPage.options.share'),
       icon: 'ri-send-plane-line',
       onPress: () => {
         setIsListOptionsOpen(false)
@@ -920,14 +924,14 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     },
     {
       id: 'delete',
-      label: 'Eliminar esta lista',
+      label: t('lists.itemsPage.options.delete'),
       icon: 'ri-delete-bin-line',
       tone: 'danger',
       disabled: deleteListMutation.isPending || !listId,
       onPress: () => {
         setIsListOptionsOpen(false)
         if (!listId) return
-        const ok = window.confirm('Eliminar esta lista?')
+        const ok = window.confirm(t('lists.itemsPage.delete.confirm'))
         if (!ok) return
         deleteListMutation.mutate()
       },
@@ -938,19 +942,19 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     ? [
       {
         key: UNCATEGORIZED_ID,
-        label: 'Não classificado',
+        label: t('common.uncategorized'),
         items: visibleItems.filter((i) => !i.categoryId),
       },
       ...categoriesForActiveType.map((c) => ({
         key: c.id ?? '',
-        label: c.id ? categoryNameById.get(c.id) ?? (c.name ?? 'Categoria') : c.name ?? 'Categoria',
+        label: c.id ? categoryNameById.get(c.id) ?? (c.name ?? t('common.category')) : c.name ?? t('common.category'),
         items: visibleItems.filter((i) => i.categoryId === c.id),
       })),
       ...(visibleItems.some((i) => i.categoryId && !categoriesForActiveType.some((c) => c.id === i.categoryId))
         ? [
           {
             key: '__other__',
-            label: 'Outras categorias',
+            label: t('lists.itemsPage.group.otherCategories'),
             items: visibleItems.filter(
               (i) => i.categoryId && !categoriesForActiveType.some((c) => c.id === i.categoryId),
             ),
@@ -1066,7 +1070,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
     options: { showCategoryChip: boolean; sectionKey?: string },
   ) => {
     const itemId = item.id ?? null
-    const categoryName = item.categoryId ? categoryNameById.get(item.categoryId) ?? 'Categoria' : 'Não classificado'
+    const categoryName = item.categoryId ? categoryNameById.get(item.categoryId) ?? t('common.category') : t('common.uncategorized')
     const isCompleted = Boolean(item.isCompleted)
     const isToggling = Boolean(itemId && togglingItemIds.has(itemId))
     const isMoving = Boolean(itemId && movingItemIds.has(itemId))
@@ -1095,7 +1099,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
       const startY = e.clientY
       const element = e.currentTarget
       const originCategoryId = item.categoryId ?? null
-      const itemName = item.name ?? 'Item'
+      const itemName = (item.name ?? '').trim() || t('lists.itemsPage.item.fallbackName')
       const pressedItemId = itemId
 
       const timerId = window.setTimeout(() => {
@@ -1235,7 +1239,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
           className={`grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full border-2 transition-all ${isCompleted ? 'border-amber bg-amber text-white' : 'border-gray-300 text-forest hover:border-amber'
             } ${isToggling ? 'opacity-60' : ''}`}
           type="button"
-          aria-label={isCompleted ? 'Desmarcar item' : 'Marcar item'}
+          aria-label={isCompleted ? t('lists.itemsPage.item.unmark') : t('lists.itemsPage.item.mark')}
           aria-pressed={isCompleted}
           disabled={isToggling || !itemId}
           onClick={(e) => {
@@ -1253,7 +1257,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
         <div className="min-w-0 flex-1">
           <h4 className={`truncate text-lg font-medium ${isCompleted ? 'text-charcoal/60 line-through' : 'text-charcoal'}`}>
-            {item.name ?? 'Item'}
+            {(item.name ?? '').trim() || t('lists.itemsPage.item.fallbackName')}
           </h4>
         </div>
 
@@ -1266,8 +1270,8 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
         <button
           className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full hover:bg-sand"
           type="button"
-          aria-label="Mais"
-          title="Opções"
+          aria-label={t('common.options')}
+          title={t('common.options')}
           onClick={(e) => {
             e.stopPropagation()
             openEditDetails(item)
@@ -1310,14 +1314,14 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
         <div className="flex flex-col gap-2 px-2 py-4">
           <button className="flex items-center gap-4" type="button" onClick={() => navigate('/lists')}>
             <i className="ri-arrow-left-line" />
-            <span className="text-sm">Back to Lists</span>
+            <span className="text-sm">{t('lists.itemsPage.sidebar.backToLists')}</span>
           </button>
 
           <div className="px-4">
-            <h2 className="mb-6 text-2xl font-bold">LIST</h2>
+            <h2 className="mb-6 text-2xl font-bold">{t('lists.itemsPage.sidebar.title')}</h2>
 
             <div className="mt-6">
-              <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-white/50">Filter by category</h3>
+              <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-white/50">{t('lists.itemsPage.sidebar.filterByCategory')}</h3>
               <div className="space-y-2">
                 <button
                   className={`w-full cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${filterCategoryId === null ? 'bg-white text-forest' : 'bg-white/10 text-white hover:bg-white/20'
@@ -1325,7 +1329,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
                   type="button"
                   onClick={() => setFilterCategoryId(null)}
                 >
-                  Todos os itens
+                  {t('lists.itemsPage.filter.allItems')}
                 </button>
 
                 <button
@@ -1336,7 +1340,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
                   type="button"
                   onClick={() => setFilterCategoryId(UNCATEGORIZED_ID)}
                 >
-                  Não classificado
+                  {t('common.uncategorized')}
                 </button>
 
                 {categoriesForActiveType.map((c) => {
@@ -1352,7 +1356,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
                       type="button"
                       onClick={() => setFilterCategoryId(id)}
                     >
-                      {categoryNameById.get(id) ?? c.name ?? 'Categoria'}
+                      {categoryNameById.get(id) ?? c.name ?? t('common.category')}
                     </button>
                   )
                 })}
@@ -1366,23 +1370,23 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
         ref={(node) => {
           scrollContainerRef.current = node
         }}
-        className="flex-1 overflow-y-auto pb-48"
+        className="flex-1 overflow-y-auto"
       >
-        <div className="p-6">
-          <nav className="sticky top-0 z-20 -mx-6 mb-4 bg-offwhite/90 px-6 py-3 backdrop-blur md:hidden">
+        <div className="px-6">
+          <nav className="sticky top-0 z-20 -mx-6 mb-4 p-6 bg-linear-to-b from-sage-light to-offwhite md:hidden">
             <div className="flex items-center justify-between gap-3">
               <button
                 type="button"
                 className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white"
                 onClick={() => navigate('/lists')}
-                aria-label="Voltar"
+                aria-label={t('common.back')}
               >
                 <i className="ri-arrow-left-line text-xl text-sage-dark" />
               </button>
 
               <div className="min-w-0 flex-1">
                 <div className="truncate text-lg font-semibold text-forest">
-                  {currentList?.name ?? 'Lista'}
+                  {currentList?.name ?? t('lists.untitled')}
                 </div>
                 <div className="text-xs text-charcoal/60">{itemCountLabel}</div>
               </div>
@@ -1390,7 +1394,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
               <button
                 type="button"
                 className="grid h-10 w-10 place-items-center rounded-full bg-white/60 text-sage-dark hover:bg-white"
-                aria-label="Opções"
+                aria-label={t('common.options')}
                 onClick={() => setIsListOptionsOpen(true)}
               >
                 <i className="ri-more-2-fill text-2xl leading-none" />
@@ -1400,14 +1404,14 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
           <div className="mb-6 hidden items-center justify-between md:flex">
             <div className="min-w-0">
-              <div className="truncate text-2xl font-bold text-charcoal">{currentList?.name ?? 'Lista'}</div>
+              <div className="truncate text-2xl font-bold text-charcoal">{currentList?.name ?? t('lists.untitled')}</div>
               <div className="text-sm text-charcoal/60">{itemCountLabel}</div>
             </div>
 
             <button
               type="button"
               className="grid h-11 w-11 place-items-center rounded-full bg-white text-forest shadow-sm hover:bg-sand-light"
-              aria-label="Opções"
+              aria-label={t('common.options')}
               onClick={() => setIsListOptionsOpen(true)}
             >
               <i className="ri-more-2-fill text-2xl leading-none" />
@@ -1454,7 +1458,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
               })}
 
               {groupedSections.length === 0 ? (
-                <div className="rounded-xl bg-white p-4 text-sm text-charcoal/70">Sem itens.</div>
+                <div className="rounded-xl bg-white p-4 text-sm text-charcoal/70">{t('lists.itemsPage.empty')}</div>
               ) : null}
             </div>
           ) : (
@@ -1462,7 +1466,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
               {visibleItems.map((item, idx) => renderItemRow(item, item.id ?? `${idx}`, { showCategoryChip: true }))}
 
               {visibleItems.length === 0 ? (
-                <div className="rounded-xl bg-white p-4 text-sm text-charcoal/70">Sem itens.</div>
+                <div className="rounded-xl bg-white p-4 text-sm text-charcoal/70">{t('lists.itemsPage.empty')}</div>
               ) : null}
             </div>
           )}
@@ -1489,9 +1493,9 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
       ) : null}
 
       <button
-        className='place-items-center h-12 w-12 rounded-full bg-amber fixed bottom-20 right-20'
+        className='place-items-center h-12 w-12 rounded-full bg-amber/60 hover:bg-amber fixed bottom-20 right-20'
         onClick={() => setIsAddBottomSheetOpen(true)}>
-        <i className="ri-add-large-fill"></i>
+        <i className="ri-add-large-fill text-offwhite"></i>
       </button>
 
       {isAddBottomSheetOpen ? (
@@ -1534,7 +1538,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
                 <textarea
                   className="w-full resize-none rounded-2xl border border-gray-200 bg-white/60 px-3 py-2 text-sm text-charcoal outline-none focus:ring-2 focus:ring-forest"
                   rows={3}
-                  placeholder="Adicionar uma nota..."
+                  placeholder={t('lists.itemsPage.note.placeholder')}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
@@ -1558,10 +1562,10 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
       {isCategoryPickerOpen ? (
         <BottomSheetPicker
-          title="Categoria"
+          title={t('common.category')}
           options={categoryOptions}
           selectedId={categoryPickerTarget === 'edit' ? editCategoryId : selectedCategoryId}
-          clearLabel="Não classificado"
+          clearLabel={t('common.uncategorized')}
           onSelect={(id) => {
             if (categoryPickerTarget === 'edit') setEditCategoryId(id)
             else setSelectedCategoryId(id)
@@ -1572,10 +1576,10 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
       {isAssigneePickerOpen ? (
         <BottomSheetPicker
-          title="Atribuir a"
+          title={t('common.assignTo')}
           options={memberOptions}
           selectedId={assigneePickerTarget === 'edit' ? editAssigneeUserId : assigneeUserId}
-          clearLabel="Não atribuir"
+          clearLabel={t('common.unassigned')}
           onSelect={(id) => {
             if (assigneePickerTarget === 'edit') setEditAssigneeUserId(id)
             else setAssigneeUserId(id)
@@ -1588,7 +1592,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
       {detailsState ? (
         <ItemDetails
           isCompleted={isCompleted}
-          title={detailsState.kind === 'edit' ? 'Editar' : 'Adicionar'}
+          title={detailsState.kind === 'edit' ? t('lists.itemDetails.editTitle') : undefined}
           name={detailsState.kind === 'edit' ? editItemName : newItemName}
           onNameChange={detailsState.kind === 'edit' ? setEditItemName : setNewItemName}
           canSave={detailsState.kind === 'edit' ? canSaveEdit : canSubmit}
@@ -1625,7 +1629,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
       ) : null}
 
       {isListOptionsOpen ? (
-        <ActionSheet title="Opções de lista" items={listOptionsItems} onClose={() => setIsListOptionsOpen(false)} />
+        <ActionSheet title={t('lists.itemsPage.options.title')} items={listOptionsItems} onClose={() => setIsListOptionsOpen(false)} />
       ) : null}
 
       {isEditListOpen ? (
@@ -1648,11 +1652,11 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
       {isEditListTypePickerOpen ? (
         <BottomSheetPicker
-          title="Tipo"
+          title={t('common.type')}
           options={[
-            { id: 'Shopping', label: 'Shopping' },
-            { id: 'Tasks', label: 'Tasks' },
-            { id: 'Custom', label: 'Custom' },
+            { id: 'Shopping', label: t('lists.create.type.shopping') },
+            { id: 'Tasks', label: t('lists.create.type.tasks') },
+            { id: 'Custom', label: t('lists.create.type.custom') },
           ]}
           selectedId={editListType}
           onSelect={(id) => setEditListType((id ?? 'Custom') as ListType)}
@@ -1681,10 +1685,10 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
       {isFilterPickerOpen ? (
         <BottomSheetPicker
-          title="Filtrar"
+          title={t('common.filter')}
           options={filterPickerOptions}
           selectedId={filterCategoryId}
-          clearLabel="Todos os itens"
+          clearLabel={t('lists.itemsPage.filter.allItems')}
           onSelect={setFilterCategoryId}
           onClose={() => setIsFilterPickerOpen(false)}
         />
@@ -1692,7 +1696,7 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
 
       {isSortPickerOpen ? (
         <BottomSheetPicker
-          title="Classificar"
+          title={t('lists.itemsPage.sort.title')}
           options={sortPickerOptions}
           selectedId={sortMode}
           onSelect={(id) => setSortMode((id ?? 'default') as SortMode)}

@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { FamilyResponse } from '../../api/domusApi'
+import { useI18n } from '../../i18n/i18n'
 import { useAppSettings } from '../../utils/appSettings'
 
 type Props = {
@@ -11,11 +12,12 @@ type Props = {
 
 export function SettingsPage({ onLogout }: Props) {
   const navigate = useNavigate()
+  const { t } = useI18n()
   const { settings, updateSettings } = useAppSettings()
 
   const shareApp = async () => {
     const url = `${window.location.origin}${window.location.pathname}#/`
-    const text = 'Experimenta o DomusUnify — um assistente familiar para organizar listas, calendário e orçamento.'
+    const text = t('settings.shareAppText')
 
     try {
       if (navigator.share) {
@@ -28,36 +30,36 @@ export function SettingsPage({ onLogout }: Props) {
 
     try {
       await navigator.clipboard.writeText(url)
-      window.alert('Link copiado.')
+      window.alert(t('common.linkCopied'))
     } catch {
       window.alert(url)
     }
   }
 
   const notificationsLabel = useMemo(
-    () => (settings.notificationsEnabled ? 'Ativado' : 'Desativado'),
-    [settings.notificationsEnabled],
+    () => (settings.notificationsEnabled ? t('settings.notifications.enabled') : t('settings.notifications.disabled')),
+    [settings.notificationsEnabled, t],
   )
 
   return (
     <div className="min-h-screen bg-offwhite w-full">
-      <header className="sticky top-0 z-20 bg-white/70 backdrop-blur">
-        <div className="flex items-center justify-between px-4 py-3">
+      <header className="sticky top-0 z-20 backdrop-blur bg-linear-to-b from-sage-light to-offwhite">
+        <div className="flex items-center justify-between px-6 py-6">
           <button
             type="button"
-            className="grid h-12 w-12 place-items-center rounded-full hover:bg-sand-light"
-            aria-label="Home"
+            className="grid h-12 w-12 place-items-center justify-center rounded-full bg-offwhite hover:bg-white text-sage-dark px-4 py-2 shadow-lg"
+            aria-label={t('common.home')}
             onClick={() => navigate('/')}
           >
             <i className="ri-home-7-line text-2xl leading-none text-sage-dark" />
           </button>
 
-          <div className="text-lg font-bold text-charcoal">Configurações</div>
+          <div className="text-lg font-bold text-forest">{t('settings.title')}</div>
 
           <button
             type="button"
-            className="grid h-12 w-12 place-items-center rounded-full hover:bg-sand-light"
-            aria-label="Sair"
+            className="grid h-12 w-12 place-items-center justify-center rounded-full bg-offwhite hover:bg-white text-sage-dark px-4 py-2 shadow-lg"
+            aria-label={t('common.logout')}
             onClick={onLogout}
           >
             <i className="ri-logout-box-r-line text-2xl leading-none text-red-500" />
@@ -69,23 +71,18 @@ export function SettingsPage({ onLogout }: Props) {
         <section className="rounded-2xl bg-white shadow-sm divide-y divide-gray-100">
           <SettingsRow
             icon="ri-group-line"
-            label="Gerenciar grupos"
+            label={t('settings.manageGroups')}
             onClick={() => navigate('/settings/groups')}
           />
 
           <SettingsRow
-            icon="ri-vip-crown-2-line"
-            label="Assinatura Premium"
-            onClick={() => window.alert('Em breve.')}
-          />
-
-          <SettingsRow
             icon="ri-notification-3-line"
-            label="Notificações"
+            label={t('settings.notifications')}
             right={
               <Toggle
                 checked={settings.notificationsEnabled}
                 onChange={(v) => updateSettings({ notificationsEnabled: v })}
+                ariaLabel={notificationsLabel}
               />
             }
             subtitle={notificationsLabel}
@@ -93,7 +90,7 @@ export function SettingsPage({ onLogout }: Props) {
 
           <SettingsRow
             icon="ri-settings-3-line"
-            label="Gerenciar notificações"
+            label={t('settings.manageNotifications')}
             onClick={() => navigate('/settings/notifications')}
           />
         </section>
@@ -101,35 +98,17 @@ export function SettingsPage({ onLogout }: Props) {
         <div className="h-6" />
 
         <section className="rounded-2xl bg-white shadow-sm divide-y divide-gray-100">
-          <SettingsRow icon="ri-moon-line" label="Modo Escuro" onClick={() => navigate('/settings/dark-mode')} />
-          <SettingsRow
-            icon="ri-smartphone-line"
-            label="Personalizar Tela Inicial"
-            onClick={() => navigate('/settings/home')}
-          />
-          <SettingsRow icon="ri-translate-2" label="Língua" onClick={() => window.alert('Em breve.')} />
+          <SettingsRow icon="ri-moon-line" label={t('settings.darkMode')} onClick={() => navigate('/settings/dark-mode')} />
+          <SettingsRow icon="ri-translate-2" label={t('settings.language.title')} onClick={() => navigate('/settings/language')} />
         </section>
 
         <div className="h-6" />
 
-        <section className="rounded-2xl bg-white shadow-sm divide-y divide-gray-100">
-          <SettingsRow icon="ri-question-line" label="Ajuda" onClick={() => window.alert('Em breve.')} />
-          <SettingsRow
-            icon="ri-mail-line"
-            label="Contate-nos"
-            onClick={() => {
-              window.location.href = 'mailto:support@domusunify.app?subject=DomusUnify%20-%20Suporte'
-            }}
-          />
-          <SettingsRow icon="ri-information-line" label="Ver o tutorial" onClick={() => window.alert('Em breve.')} />
-        </section>
-
         <div className="h-6" />
 
         <section className="rounded-2xl bg-white shadow-sm divide-y divide-gray-100">
-          <SettingsRow icon="ri-heart-line" label="Taxa na App Store" onClick={() => window.alert('Em breve.')} />
-          <SettingsRow icon="ri-share-line" label="Recomendar a um amigo" onClick={() => void shareApp()} />
-          <SettingsRow icon="ri-information-2-line" label="Sobre nós" onClick={() => window.alert('Em breve.')} />
+          <SettingsRow icon="ri-share-line" label={t('settings.recommendFriend')} onClick={() => void shareApp()} />
+          <SettingsRow icon="ri-information-2-line" label={t('settings.aboutUs')} onClick={() => window.alert(t('common.comingSoon'))} />
         </section>
 
         <button
@@ -137,7 +116,7 @@ export function SettingsPage({ onLogout }: Props) {
           className="mt-10 w-full rounded-2xl bg-white px-5 py-4 text-center text-red-600 font-semibold shadow-sm hover:bg-red-50"
           onClick={onLogout}
         >
-          Sair
+          {t('common.logout')}
         </button>
       </main>
     </div>
@@ -182,7 +161,7 @@ function SettingsRow({
   )
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+function Toggle({ checked, onChange, ariaLabel }: { checked: boolean; onChange: (value: boolean) => void; ariaLabel: string }) {
   return (
     <button
       type="button"
@@ -193,7 +172,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (value: boo
         e.stopPropagation()
         onChange(!checked)
       }}
-      aria-label={checked ? 'Ativado' : 'Desativado'}
+      aria-label={ariaLabel}
     >
       <span
         className={`inline-block h-7 w-7 transform rounded-full bg-white shadow transition-transform ${

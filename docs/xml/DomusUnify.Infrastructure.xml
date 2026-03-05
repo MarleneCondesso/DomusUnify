@@ -296,5 +296,41 @@
         <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddListItemDetails.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddItemCategoryType">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddItemCategoryType.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddItemCategoryType.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddItemCategoryType.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddFinanceTransactionRepeatSourceTransactionId">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddFinanceTransactionRepeatSourceTransactionId.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddFinanceTransactionRepeatSourceTransactionId.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddFinanceTransactionRepeatSourceTransactionId.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:DomusUnify.Infrastructure.Persistence.Migrations.AddUserProfileFields">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddUserProfileFields.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddUserProfileFields.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DomusUnify.Infrastructure.Persistence.Migrations.AddUserProfileFields.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
     </members>
 </doc>

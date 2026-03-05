@@ -391,6 +391,60 @@
             <param name="ct">Token de cancelamento.</param>
             <returns>Uma lista de membros da família atual.</returns>
         </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.GetFamilyById(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            ObtÃ©m uma famÃ­lia especÃ­fica (apenas se o utilizador autenticado for membro).
+            </summary>
+            <param name="familyId">Identificador da famÃ­lia.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Dados da famÃ­lia no contexto do utilizador.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.GetFamilyMembersByFamilyId(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Lista os membros de uma famÃ­lia especÃ­fica (apenas se o utilizador autenticado for membro).
+            </summary>
+            <param name="familyId">Identificador da famÃ­lia.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Lista de membros.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.GetFamilyMemberProfile(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            ObtÃ©m o perfil de um membro dentro de uma famÃ­lia especÃ­fica.
+            </summary>
+            <remarks>
+            O utilizador autenticado tem de ser membro da famÃ­lia indicada.
+            </remarks>
+            <param name="familyId">Identificador da famÃ­lia.</param>
+            <param name="userId">Identificador do membro.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Perfil do membro.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.MakeMemberAdmin(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Promove um membro a administrador (apenas admins da famÃ­lia).
+            </summary>
+            <param name="familyId">Identificador da famÃ­lia.</param>
+            <param name="userId">Identificador do utilizador a promover.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteÃºdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.RemoveMember(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Remove um membro de uma famÃ­lia (apenas admins da famÃ­lia).
+            </summary>
+            <param name="familyId">Identificador da famÃ­lia.</param>
+            <param name="userId">Identificador do utilizador a remover.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteÃºdo se bem-sucedido.</returns>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamiliesController.DeleteFamily(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Elimina uma famÃ­lia (grupo) e todos os seus dados (apenas admins da famÃ­lia).
+            </summary>
+            <param name="familyId">Identificador da famÃ­lia.</param>
+            <param name="ct">Token de cancelamento.</param>
+            <returns>Sem conteÃºdo se bem-sucedido.</returns>
+        </member>
         <member name="T:DomusUnify.Api.Controllers.FamilyInvitesController">
             <summary>
             Endpoints para convites de família (pré-visualização e adesão).
@@ -435,6 +489,24 @@
             <param name="req">Pedido com o token do convite.</param>
             <param name="ct">Token de cancelamento.</param>
             <returns>Sem conteúdo se a adesão for bem-sucedida.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.FamilyActivityController">
+            <summary>
+            Endpoints do feed de atividade para uma famÃ­lia especÃ­fica.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamilyActivityController.GetRecent(System.Guid,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            ObtÃ©m as entradas mais recentes do feed de atividade.
+            </summary>
+            <param name="familyId">Identificador da famÃ­lia.</param>
+            <param name="take">NÃºmero de entradas a devolver (por defeito 4).</param>
+            <param name="ct">Token de cancelamento.</param>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.FamilyActivityController.GetAll(System.Guid,System.Int32,System.Int32,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.DateOnly},System.Threading.CancellationToken)">
+            <summary>
+            ObtÃ©m entradas do feed de atividade (paginado).
+            </summary>
         </member>
         <member name="T:DomusUnify.Api.Controllers.FinanceAccountsController">
             <summary>
@@ -482,7 +554,7 @@
             Elimina uma conta financeira.
             </summary>
             <remarks>
-            A operação falha com conflito se a conta estiver a ser usada por transações.
+            Ao eliminar a conta, são também eliminadas as transações associadas a essa conta.
             </remarks>
             <param name="accountId">Identificador da conta.</param>
             <param name="ct">Token de cancelamento.</param>
@@ -896,6 +968,24 @@
             </remarks>
             <param name="ct">Token de cancelamento.</param>
             <returns>Sem conteúdo se bem-sucedido.</returns>
+        </member>
+        <member name="T:DomusUnify.Api.Controllers.UsersController">
+            <summary>
+            Endpoints relacionados com o utilizador autenticado.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.UsersController.GetMyProfile(System.Threading.CancellationToken)">
+            <summary>
+            Obtém o perfil do utilizador autenticado.
+            </summary>
+        </member>
+        <member name="M:DomusUnify.Api.Controllers.UsersController.UpdateMyProfile(DomusUnify.Api.DTOs.Users.UpdateUserProfileRequest,System.Threading.CancellationToken)">
+            <summary>
+            Atualiza o perfil do utilizador autenticado.
+            </summary>
+            <remarks>
+            Define os campos recebidos; valores vazios são normalizados para <c>null</c>.
+            </remarks>
         </member>
         <member name="T:DomusUnify.Api.DTOs.Activity.ActivityEntryResponse">
             <summary>
@@ -1827,6 +1917,11 @@
             Nome da categoria.
             </summary>
         </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.CategoryResponse.Type">
+            <summary>
+            Tipo de lista ao qual esta categoria pertence (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).
+            </summary>
+        </member>
         <member name="P:DomusUnify.Api.DTOs.Categories.CategoryResponse.IconKey">
             <summary>
             Chave do ícone da categoria.
@@ -1845,6 +1940,11 @@
         <member name="P:DomusUnify.Api.DTOs.Categories.CreateCategoryRequest.Name">
             <summary>
             Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.CreateCategoryRequest.Type">
+            <summary>
+            Tipo de lista ao qual esta categoria pertence (<c>Shopping</c>, <c>Tasks</c> ou <c>Custom</c>).
             </summary>
         </member>
         <member name="P:DomusUnify.Api.DTOs.Categories.CreateCategoryRequest.IconKey">
@@ -1867,6 +1967,11 @@
             Novo nome da categoria (opcional).
             </summary>
         </member>
+        <member name="P:DomusUnify.Api.DTOs.Categories.UpdateCategoryRequest.Type">
+            <summary>
+            Novo tipo de lista associado (opcional).
+            </summary>
+        </member>
         <member name="P:DomusUnify.Api.DTOs.Categories.UpdateCategoryRequest.IconKey">
             <summary>
             Nova chave do ícone (opcional).
@@ -1885,6 +1990,46 @@
         <member name="P:DomusUnify.Api.DTOs.Families.CreateFamilyRequest.Name">
             <summary>
             Nome da família.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Families.FamilyMemberProfileResponse">
+            <summary>
+            Resposta com informaÃ§Ã£o de perfil de um membro dentro de uma famÃ­lia.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberProfileResponse.UserId">
+            <summary>
+            Identificador do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberProfileResponse.Name">
+            <summary>
+            Nome (registo).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberProfileResponse.Email">
+            <summary>
+            EndereÃ§o de email.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberProfileResponse.DisplayName">
+            <summary>
+            Nome de exibiÃ§Ã£o (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberProfileResponse.ProfileColorHex">
+            <summary>
+            Cor do perfil (hex), ex.: <c>#8b5cf6</c> (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberProfileResponse.Birthday">
+            <summary>
+            Data de aniversÃ¡rio (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Families.FamilyMemberProfileResponse.Role">
+            <summary>
+            Papel do utilizador na famÃ­lia.
             </summary>
         </member>
         <member name="T:DomusUnify.Api.DTOs.Families.FamilyMemberResponse">
@@ -2777,6 +2922,91 @@
         <member name="P:DomusUnify.Api.DTOs.Lists.UpdateListRequest.AllowedUserIds">
             <summary>
             Lista de utilizadores com acesso, quando aplicável (opcional).
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Users.UpdateUserProfileRequest">
+            <summary>
+            Pedido para atualizar o perfil do utilizador autenticado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UpdateUserProfileRequest.DisplayName">
+            <summary>
+            Nome de exibição (opcional). Envia <c>null</c> para remover.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UpdateUserProfileRequest.ProfileColorHex">
+            <summary>
+            Cor do perfil (hex), ex.: <c>#8b5cf6</c> (opcional). Envia <c>null</c> para remover.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UpdateUserProfileRequest.Birthday">
+            <summary>
+            Data de aniversário (opcional). Envia <c>null</c> para remover.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UpdateUserProfileRequest.Gender">
+            <summary>
+            Género (opcional): <c>female</c>, <c>male</c>, <c>other</c>. Envia <c>null</c> para remover.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UpdateUserProfileRequest.Phone">
+            <summary>
+            Telefone (opcional). Envia <c>null</c> para remover.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UpdateUserProfileRequest.Address">
+            <summary>
+            Morada/endereço (opcional). Envia <c>null</c> para remover.
+            </summary>
+        </member>
+        <member name="T:DomusUnify.Api.DTOs.Users.UserProfileResponse">
+            <summary>
+            Resposta com informação do perfil do utilizador autenticado.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UserProfileResponse.UserId">
+            <summary>
+            Identificador do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UserProfileResponse.Name">
+            <summary>
+            Nome (registo).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UserProfileResponse.Email">
+            <summary>
+            Endereço de email.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UserProfileResponse.DisplayName">
+            <summary>
+            Nome de exibição (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UserProfileResponse.ProfileColorHex">
+            <summary>
+            Cor do perfil (hex), ex.: <c>#8b5cf6</c> (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UserProfileResponse.Birthday">
+            <summary>
+            Data de aniversário (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UserProfileResponse.Gender">
+            <summary>
+            Género (opcional): <c>female</c>, <c>male</c>, <c>other</c>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UserProfileResponse.Phone">
+            <summary>
+            Telefone (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Api.DTOs.Users.UserProfileResponse.Address">
+            <summary>
+            Morada/endereço (opcional).
             </summary>
         </member>
         <member name="T:DomusUnify.Api.Hubs.FamilyHub">

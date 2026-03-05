@@ -1,4 +1,5 @@
 import type { CalendarViewMode } from './calendarPreferences'
+import { useI18n } from '../../i18n/i18n'
 
 type Props = {
   value: CalendarViewMode
@@ -6,23 +7,24 @@ type Props = {
   onClose: () => void
 }
 
-const ITEMS: Array<{ id: CalendarViewMode; label: string; icon: string }> = [
-  { id: 'agenda', label: 'Diário', icon: 'ri-list-check-2' },
-  { id: 'family', label: 'Visão da Família', icon: 'ri-group-line' },
-  { id: 'day', label: 'Dia', icon: 'ri-calendar-event-line' },
-  { id: 'threeDays', label: '3 Dias', icon: 'ri-calendar-schedule-line' },
-  { id: 'week', label: 'Semana', icon: 'ri-calendar-2-line' },
-  { id: 'month', label: 'Mês', icon: 'ri-layout-grid-line' },
-]
-
 export function CalendarViewMenu({ value, onChange, onClose }: Props) {
+  const { t } = useI18n()
+  const items: Array<{ id: CalendarViewMode; label: string; icon: string }> = [
+    { id: 'agenda', label: t('calendar.viewMode.agenda'), icon: 'ri-list-check-2' },
+    { id: 'family', label: t('calendar.viewMode.family'), icon: 'ri-group-line' },
+    { id: 'day', label: t('calendar.viewMode.day'), icon: 'ri-calendar-event-line' },
+    { id: 'threeDays', label: t('calendar.viewMode.threeDays'), icon: 'ri-calendar-schedule-line' },
+    { id: 'week', label: t('calendar.viewMode.week'), icon: 'ri-calendar-2-line' },
+    { id: 'month', label: t('calendar.viewMode.month'), icon: 'ri-layout-grid-line' },
+  ]
+
   return (
     <div className="fixed inset-0 z-[75]">
-      <button className="absolute inset-0 bg-black/10" type="button" onClick={onClose} aria-label="Fechar" />
+      <button className="absolute inset-0 bg-black/10" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 top-[88px] mx-auto w-full max-w-5xl px-2">
         <div className="overflow-hidden rounded-2xl border border-sand-dark/60 bg-white shadow-2xl">
-          {ITEMS.map((item) => {
+          {items.map((item) => {
             const active = item.id === value
             return (
               <button
@@ -50,4 +52,3 @@ export function CalendarViewMenu({ value, onChange, onClose }: Props) {
     </div>
   )
 }
-

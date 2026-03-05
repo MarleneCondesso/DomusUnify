@@ -3,8 +3,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { domusApi, type BudgetDetailResponse, type UpdateBudgetRequest } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 import { BottomSheetPicker, type BottomSheetOption } from '../../ui/BottomSheetPicker'
 import { iconKeyToEmoji } from '../../utils/emojiIconKey'
+import { formatCurrency } from '../../utils/intl'
 
 type Props = {
   token: string
@@ -14,13 +16,13 @@ type Props = {
 
 type PickerId = null | 'period' | 'currency' | 'indicator' | 'order' | 'upcoming' | 'visibility'
 
-const PERIOD_OPTIONS: BottomSheetOption[] = [
-  { id: 'Monthly', label: 'Mensal' },
-  { id: 'Weekly', label: 'Semanal' },
-  { id: 'BiWeekly', label: 'Quinzenal' },
-  { id: 'SemiMonthly', label: 'Semi-mensal' },
-  { id: 'Yearly', label: 'Anual' },
-]
+const PERIOD_OPTION_KEYS = [
+  { id: 'Monthly', labelKey: 'budget.period.monthly' },
+  { id: 'Weekly', labelKey: 'budget.period.weekly' },
+  { id: 'BiWeekly', labelKey: 'budget.period.biWeekly' },
+  { id: 'SemiMonthly', labelKey: 'budget.period.semiMonthly' },
+  { id: 'Yearly', labelKey: 'budget.period.yearly' },
+] as const
 
 const CURRENCY_OPTIONS: BottomSheetOption[] = [
   { id: 'EUR', label: 'EUR' },
@@ -29,28 +31,28 @@ const CURRENCY_OPTIONS: BottomSheetOption[] = [
   { id: 'BRL', label: 'BRL' },
 ]
 
-const INDICATOR_OPTIONS: BottomSheetOption[] = [
-  { id: 'Balance', label: 'Saldo do mês' },
-  { id: 'BalanceToday', label: 'Saldo de hoje' },
-  { id: 'TotalExpenses', label: 'Despesas este mês' },
-  { id: 'TotalIncome', label: 'Renda este mês' },
-]
+const INDICATOR_OPTION_KEYS = [
+  { id: 'Balance', labelKey: 'budget.indicator.balanceMonth' },
+  { id: 'BalanceToday', labelKey: 'budget.indicator.balanceToday' },
+  { id: 'TotalExpenses', labelKey: 'budget.indicator.totalExpenses' },
+  { id: 'TotalIncome', labelKey: 'budget.indicator.totalIncome' },
+] as const
 
-const ORDER_OPTIONS: BottomSheetOption[] = [
-  { id: 'MostRecentFirst', label: 'Mais recente primeiro' },
-  { id: 'OldestFirst', label: 'Mais antigas primeiro' },
-]
+const ORDER_OPTION_KEYS = [
+  { id: 'MostRecentFirst', labelKey: 'budget.order.mostRecentFirst' },
+  { id: 'OldestFirst', labelKey: 'budget.order.oldestFirst' },
+] as const
 
-const UPCOMING_OPTIONS: BottomSheetOption[] = [
-  { id: 'Expanded', label: 'Expandido' },
-  { id: 'Collapsed', label: 'Caído' },
-]
+const UPCOMING_OPTION_KEYS = [
+  { id: 'Expanded', labelKey: 'budget.upcoming.expanded' },
+  { id: 'Collapsed', labelKey: 'budget.upcoming.collapsed' },
+] as const
 
-const VISIBILITY_OPTIONS: BottomSheetOption[] = [
-  { id: 'AllMembers', label: 'Todos os membros' },
-  { id: 'Private', label: 'Privado (só eu)' },
-  { id: 'SpecificMembers', label: 'Membros específicos' },
-]
+const VISIBILITY_OPTION_KEYS = [
+  { id: 'AllMembers', labelKey: 'budget.visibility.allMembers' },
+  { id: 'Private', labelKey: 'budget.visibility.private' },
+  { id: 'SpecificMembers', labelKey: 'budget.visibility.specificMembers' },
+] as const
 
 type RowProps = {
   icon: string
@@ -62,7 +64,7 @@ type RowProps = {
 
 function SettingsRow({ icon, label, value, valueTone = 'default', onPress }: RowProps) {
   const interactive = Boolean(onPress)
-  const valueClass = valueTone === 'accent' ? 'text-blue-600' : 'text-charcoal/60'
+  const valueClass = valueTone === 'accent' ? 'text-sage-dark/80' : 'text-charcoal/80'
 
   return (
     <button
@@ -74,35 +76,16 @@ function SettingsRow({ icon, label, value, valueTone = 'default', onPress }: Row
       disabled={!interactive}
     >
       <div className="flex min-w-0 items-center gap-4">
-        <i className={`${icon} text-2xl text-gray-400`} aria-hidden="true" />
-        <div className="truncate text-base font-semibold text-charcoal">{label}</div>
+        <i className={`${icon} text-lg text-sage-dark`} aria-hidden="true" />
+        <div className="truncate text-base text-charcoal">{label}</div>
       </div>
 
       <div className="flex items-center gap-2">
         <div className={`text-sm font-semibold ${valueClass}`}>{value}</div>
-        {interactive ? <i className="ri-arrow-right-s-line text-2xl text-gray-300" aria-hidden="true" /> : null}
+        {interactive ? <i className="ri-arrow-right-s-line text-2xl text-sage-dark" aria-hidden="true" /> : null}
       </div>
     </button>
   )
-}
-
-function formatCurrency(amount: number, currencyCode: string): string {
-  const safeAmount = Number.isFinite(amount) ? amount : 0
-  const code = (currencyCode || 'EUR').toUpperCase()
-
-  try {
-    return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: code }).format(safeAmount)
-  } catch {
-    return `${safeAmount.toFixed(2)} ${code}`
-  }
-}
-
-function periodValueLabel(periodType: string, startDate: string | null | undefined): string {
-  const typeLabel = PERIOD_OPTIONS.find((o) => o.id === periodType)?.label ?? '—'
-  const day = startDate ? new Date(`${startDate}T00:00:00Z`).getUTCDate() : 1
-
-  if (periodType === 'Monthly') return `${typeLabel} | Dia ${Number.isFinite(day) ? day : 1}`
-  return typeLabel
 }
 
 function SpendingLimitSheet({
@@ -116,6 +99,7 @@ function SpendingLimitSheet({
   onClose: () => void
   onSave: (value: number | null) => void
 }) {
+  const { t, locale } = useI18n()
   const [raw, setRaw] = useState(() => (value === null || value === undefined ? '' : String(value)))
 
   const parsed = useMemo(() => {
@@ -127,38 +111,50 @@ function SpendingLimitSheet({
 
   const canSave = parsed !== null
 
+  const currentValueLabel =
+    value === null || value === undefined ? t('budget.spendingLimit.noLimit') : formatCurrency(value, currencyCode, locale)
+
   return (
-    <div className="fixed inset-0 z-[90]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+    <div className="fixed inset-0 z-90">
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl overflow-hidden rounded-t-3xl bg-white shadow-2xl">
         <div className="px-4 py-3">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
           <div className="flex items-center justify-between">
-            <button type="button" className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light" onClick={onClose} aria-label="Cancelar">
+            <button
+              type="button"
+              className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
+              onClick={onClose}
+              aria-label={t('common.cancel')}
+              title={t('common.cancel')}
+            >
               <i className="ri-close-line text-2xl text-gray-600" />
             </button>
-            <div className="text-base font-semibold text-charcoal">Limite de orçamento</div>
+            <div className="text-base font-semibold text-charcoal">{t('budget.spendingLimit.title')}</div>
             <button
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light disabled:opacity-50"
               onClick={() => parsed !== null && onSave(parsed)}
               disabled={!canSave}
-              aria-label="Guardar"
+              aria-label={t('common.save')}
+              title={t('common.save')}
             >
-              <i className="ri-check-line text-2xl text-blue-600" />
+              <i className="ri-check-line text-2xl text-sage-dark" />
             </button>
           </div>
         </div>
 
         <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
-          <label className="mb-2 block text-xs font-semibold text-charcoal/60">Valor</label>
+          <label className="mb-2 block text-xs font-semibold text-charcoal/60">
+            {t('budget.spendingLimit.valueLabel', { currency: currencyCode.toUpperCase() })}
+          </label>
           <input
             inputMode="decimal"
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
-            placeholder={`Ex.: 250 (${currencyCode.toUpperCase()})`}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base text-charcoal outline-none focus:ring-2 focus:ring-blue-500/25"
+            placeholder={t('budget.spendingLimit.placeholderWithCurrency', { currency: currencyCode.toUpperCase() })}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base text-charcoal outline-none focus:ring-2 focus:ring-sage-dark/25"
           />
 
           {value !== null && value !== undefined ? (
@@ -167,12 +163,12 @@ function SpendingLimitSheet({
               className="mt-3 w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100"
               onClick={() => onSave(null)}
             >
-              Remover limite
+              {t('budget.spendingLimit.removeLimit')}
             </button>
           ) : null}
 
           <div className="mt-3 text-xs text-charcoal/60">
-            Valor atual: {value === null || value === undefined ? 'Sem limite' : formatCurrency(value, currencyCode)}
+            {t('budget.spendingLimit.currentValue', { value: currentValueLabel })}
           </div>
         </div>
       </div>
@@ -182,6 +178,7 @@ function SpendingLimitSheet({
 
 export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
   const queryClient = useQueryClient()
+  const { t, locale } = useI18n()
 
   const budgetId = budget.id ?? null
   const existingAllowedUserIds = useMemo(() => budget.allowedUserIds ?? null, [budget.allowedUserIds])
@@ -193,10 +190,11 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
       currencyCode: (budget.currencyCode ?? 'EUR').toUpperCase(),
       visibilityMode: (budget.visibilityMode ?? 'AllMembers') || 'AllMembers',
       mainIndicator: (budget.mainIndicator ?? 'Balance') || 'Balance',
+      onlyPaidInTotals: Boolean(budget.onlyPaidInTotals),
       transactionOrder: (budget.transactionOrder ?? 'MostRecentFirst') || 'MostRecentFirst',
       upcomingDisplayMode: (budget.upcomingDisplayMode ?? 'Expanded') || 'Expanded',
     }
-  }, [budget.currencyCode, budget.mainIndicator, budget.periodType, budget.spendingLimit, budget.startDate, budget.transactionOrder, budget.upcomingDisplayMode, budget.visibilityMode])
+  }, [budget.currencyCode, budget.mainIndicator, budget.onlyPaidInTotals, budget.periodType, budget.spendingLimit, budget.startDate, budget.transactionOrder, budget.upcomingDisplayMode, budget.visibilityMode])
 
   const [picker, setPicker] = useState<PickerId>(null)
   const [limitOpen, setLimitOpen] = useState(false)
@@ -206,6 +204,7 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
   const [visibilityMode, setVisibilityMode] = useState(initial.visibilityMode)
   const [allowedUserIds] = useState<string[] | null>(existingAllowedUserIds)
   const [mainIndicator, setMainIndicator] = useState(initial.mainIndicator)
+  const [onlyPaidInTotals, setOnlyPaidInTotals] = useState(initial.onlyPaidInTotals)
   const [transactionOrder, setTransactionOrder] = useState(initial.transactionOrder)
   const [upcomingDisplayMode, setUpcomingDisplayMode] = useState(initial.upcomingDisplayMode)
   const [spendingLimit, setSpendingLimit] = useState<number | null>(initial.spendingLimit)
@@ -213,7 +212,7 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
 
   const updateMutation = useMutation({
     mutationFn: (req: UpdateBudgetRequest) => {
-      if (!budgetId) throw new Error('BudgetId em falta')
+      if (!budgetId) throw new Error(t('budget.settings.missingBudgetId'))
       return domusApi.updateBudget(token, budgetId, req)
     },
     onSuccess: async () => {
@@ -222,6 +221,9 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.budgetById(budgetId) })
         await queryClient.invalidateQueries({ queryKey: ['budgetTotals', budgetId] })
         await queryClient.invalidateQueries({ queryKey: ['budgetTransactions', budgetId] })
+        await queryClient.invalidateQueries({ queryKey: ['budgetSummaryCategories', budgetId] })
+        await queryClient.invalidateQueries({ queryKey: ['budgetSummaryMembers', budgetId] })
+        await queryClient.invalidateQueries({ queryKey: ['budgetSummaryAccounts', budgetId] })
       }
       onClose()
     },
@@ -240,6 +242,7 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
     currencyCode !== initial.currencyCode ||
     visibilityMode !== initial.visibilityMode ||
     mainIndicator !== initial.mainIndicator ||
+    onlyPaidInTotals !== initial.onlyPaidInTotals ||
     transactionOrder !== initial.transactionOrder ||
     upcomingDisplayMode !== initial.upcomingDisplayMode
 
@@ -260,6 +263,7 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
     if (currencyCode !== initial.currencyCode) req.currencyCode = currencyCode
     if (visibilityMode !== initial.visibilityMode) req.visibilityMode = visibilityMode
     if (mainIndicator !== initial.mainIndicator) req.mainIndicator = mainIndicator
+    if (onlyPaidInTotals !== initial.onlyPaidInTotals) req.onlyPaidInTotals = onlyPaidInTotals
     if (transactionOrder !== initial.transactionOrder) req.transactionOrder = transactionOrder
     if (upcomingDisplayMode !== initial.upcomingDisplayMode) req.upcomingDisplayMode = upcomingDisplayMode
 
@@ -276,19 +280,60 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
 
   const emoji = iconKeyToEmoji(budget.iconKey ?? null) ?? '💰'
 
+  const periodOptions: BottomSheetOption[] = useMemo(
+    () => PERIOD_OPTION_KEYS.map((o) => ({ id: o.id, label: t(o.labelKey) })),
+    [t],
+  )
+
+  const indicatorOptions: BottomSheetOption[] = useMemo(
+    () => INDICATOR_OPTION_KEYS.map((o) => ({ id: o.id, label: t(o.labelKey) })),
+    [t],
+  )
+
+  const orderOptions: BottomSheetOption[] = useMemo(
+    () => ORDER_OPTION_KEYS.map((o) => ({ id: o.id, label: t(o.labelKey) })),
+    [t],
+  )
+
+  const upcomingOptions: BottomSheetOption[] = useMemo(
+    () => UPCOMING_OPTION_KEYS.map((o) => ({ id: o.id, label: t(o.labelKey) })),
+    [t],
+  )
+
+  const visibilityOptions: BottomSheetOption[] = useMemo(
+    () => VISIBILITY_OPTION_KEYS.map((o) => ({ id: o.id, label: t(o.labelKey) })),
+    [t],
+  )
+
+  const budgetStartDay = useMemo(() => {
+    const startDate = (initial.startDate ?? '').trim()
+    if (!startDate) return 1
+    const d = new Date(`${startDate}T00:00:00Z`)
+    const day = d.getUTCDate()
+    return Number.isFinite(day) ? day : 1
+  }, [initial.startDate])
+
   const spendingLimitLabel =
-    spendingLimit === null || spendingLimit === undefined ? '+ Configurar' : formatCurrency(Math.abs(spendingLimit), currencyCode)
+    spendingLimit === null || spendingLimit === undefined
+      ? t('budget.create.spendingLimit.configure')
+      : formatCurrency(Math.abs(spendingLimit), currencyCode, locale)
   const spendingLimitTone: RowProps['valueTone'] =
     spendingLimit === null || spendingLimit === undefined ? 'accent' : 'default'
 
-  const visibilityLabel = VISIBILITY_OPTIONS.find((x) => x.id === visibilityMode)?.label ?? '—'
-  const indicatorLabel = INDICATOR_OPTIONS.find((x) => x.id === mainIndicator)?.label ?? '—'
-  const orderLabel = ORDER_OPTIONS.find((x) => x.id === transactionOrder)?.label ?? '—'
-  const upcomingLabel = UPCOMING_OPTIONS.find((x) => x.id === upcomingDisplayMode)?.label ?? '—'
+  const visibilityLabel = visibilityOptions.find((x) => x.id === visibilityMode)?.label ?? '—'
+  const indicatorLabel = indicatorOptions.find((x) => x.id === mainIndicator)?.label ?? '—'
+  const orderLabel = orderOptions.find((x) => x.id === transactionOrder)?.label ?? '—'
+  const upcomingLabel = upcomingOptions.find((x) => x.id === upcomingDisplayMode)?.label ?? '—'
+
+  const periodLabel = periodOptions.find((o) => o.id === periodType)?.label ?? '—'
+  const periodValue =
+    periodType === 'Monthly'
+      ? `${periodLabel} | ${t('budget.create.dayValue', { day: budgetStartDay })}`
+      : periodLabel
 
   return (
-    <div className="fixed inset-0 z-[80]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+    <div className="fixed inset-0 z-80">
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl">
         <div className="px-4 py-3">
@@ -300,23 +345,23 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light disabled:opacity-50"
               onClick={onClose}
               disabled={updateMutation.isPending}
-              aria-label="Cancelar"
-              title="Cancelar"
+              aria-label={t('common.cancel')}
+              title={t('common.cancel')}
             >
-              <i className="ri-close-line text-2xl text-gray-600" />
+              <i className="ri-close-line text-2xl text-sage-dark" />
             </button>
 
-            <div className="text-base font-semibold text-charcoal">Configurações</div>
+            <div className="text-base font-semibold text-forest">{t('budget.settings.title')}</div>
 
             <button
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light disabled:opacity-50"
               onClick={submit}
               disabled={updateMutation.isPending || !hasChanges}
-              aria-label="Guardar"
-              title="Guardar"
+              aria-label={t('common.save')}
+              title={t('common.save')}
             >
-              <i className={updateMutation.isPending ? 'ri-loader-4-line animate-spin text-2xl text-blue-600' : 'ri-check-line text-2xl text-blue-600'} />
+              <i className={updateMutation.isPending ? 'ri-loader-4-line animate-spin text-2xl text-sage-dark' : 'ri-check-line text-2xl text-sage-dark'} />
             </button>
           </div>
         </div>
@@ -330,9 +375,9 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
 
           <div className="px-4 pb-4 pt-1">
             <div className="flex items-center gap-4">
-              <div className="grid h-14 w-14 place-items-center rounded-3xl bg-sand-light text-3xl">{emoji}</div>
+              <div className="grid h-10 w-10 place-items-center rounded-3xl text-xl">{emoji}</div>
               <div className="min-w-0">
-                <div className="truncate text-2xl font-extrabold text-charcoal">{budget.name ?? 'Orçamento'}</div>
+                <div className="truncate text-2xl font-extrabold text-charcoal">{budget.name ?? t('budget.fallbackName')}</div>
               </div>
             </div>
           </div>
@@ -340,14 +385,14 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
           <div className="mx-4 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm divide-y divide-gray-200">
             <SettingsRow
               icon="ri-calendar-2-line"
-              label="Período do orçamento"
-              value={periodValueLabel(periodType, initial.startDate)}
+              label={t('budget.create.period.label')}
+              value={periodValue}
               onPress={() => setPicker('period')}
             />
 
             <SettingsRow
               icon="ri-target-line"
-              label="Limite de orçamento"
+              label={t('budget.create.spendingLimit.label')}
               value={spendingLimitLabel}
               valueTone={spendingLimitTone}
               onPress={() => setLimitOpen(true)}
@@ -355,36 +400,54 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
 
             <SettingsRow
               icon="ri-user-settings-line"
-              label="Visível para:"
+              label={t('budget.create.visibility.label')}
               value={visibilityLabel}
               valueTone="accent"
               onPress={() => setPicker('visibility')}
             />
           </div>
 
-          <div className="mx-4 mt-3 text-xs font-extrabold tracking-widest text-gray-400">CONFIGURAÇÕES DE EXIBIÇÃO</div>
+          <div className="mx-5 mt-3 text-xs font-extrabold tracking-widest text-sage-dark uppercase">{t('budget.create.displaySettings')}</div>
 
           <div className="mx-4 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm divide-y divide-gray-200">
-            <SettingsRow icon="ri-money-euro-circle-line" label="Moeda" value={currencyCode} onPress={() => setPicker('currency')} />
-            <SettingsRow icon="ri-bar-chart-2-line" label="Indicadores" value={indicatorLabel} onPress={() => setPicker('indicator')} />
-            <SettingsRow icon="ri-sort-desc" label="Ordenação" value={orderLabel} onPress={() => setPicker('order')} />
-            <SettingsRow icon="ri-timer-2-line" label="Próximas transações" value={upcomingLabel} onPress={() => setPicker('upcoming')} />
+            <SettingsRow icon="ri-money-euro-circle-line" label={t('budget.create.currency.label')} value={currencyCode} onPress={() => setPicker('currency')} />
+            <SettingsRow icon="ri-bar-chart-2-line" label={t('budget.create.indicators.label')} value={indicatorLabel} onPress={() => setPicker('indicator')} />
+            <SettingsRow icon="ri-sort-desc" label={t('budget.create.order.label')} value={orderLabel} onPress={() => setPicker('order')} />
+            <SettingsRow icon="ri-timer-2-line" label={t('budget.create.upcoming.label')} value={upcomingLabel} onPress={() => setPicker('upcoming')} />
+
+            <div className="flex items-center justify-between gap-4 px-4 py-4">
+              <div className="flex min-w-0 items-center gap-4">
+                <i className="ri-checkbox-circle-line text-2xl text-gray-400" aria-hidden="true" />
+                <div className="truncate text-base font-semibold text-charcoal">{t('budget.create.onlyPaidInTotals')}</div>
+              </div>
+              <button
+                type="button"
+                className={`relative h-7 w-12 rounded-full transition ${onlyPaidInTotals ? 'bg-sage-dark' : 'bg-gray-200'}`}
+                onClick={() => setOnlyPaidInTotals((v) => !v)}
+                disabled={updateMutation.isPending}
+                aria-label={t('budget.create.onlyPaidInTotals')}
+              >
+                <span
+                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition ${onlyPaidInTotals ? 'left-6' : 'left-0.5'}`}
+                />
+              </button>
+            </div>
           </div>
 
           <div className="mx-4 mt-4 text-xs text-charcoal/60">
             {visibilityMode === 'AllMembers'
-              ? 'Este orçamento pode ser visualizado e editado por todos os membros deste Círculo.'
+              ? t('budget.visibility.hint.allMembers')
               : visibilityMode === 'Private'
-                ? 'Este orçamento é privado e só pode ser visualizado e editado por si.'
-                : 'Este orçamento é visível apenas para membros específicos.'}
+                ? t('budget.visibility.hint.private')
+                : t('budget.visibility.hint.specificMembers')}
           </div>
         </div>
       </div>
 
       {picker === 'period' ? (
         <BottomSheetPicker
-          title="Período do orçamento"
-          options={PERIOD_OPTIONS}
+          title={t('budget.create.period.label')}
+          options={periodOptions}
           selectedId={periodType}
           onSelect={(id) => id && setPeriodType(id)}
           onClose={() => setPicker(null)}
@@ -394,7 +457,7 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
 
       {picker === 'currency' ? (
         <BottomSheetPicker
-          title="Moeda"
+          title={t('budget.create.currency.label')}
           options={CURRENCY_OPTIONS}
           selectedId={currencyCode}
           onSelect={(id) => id && setCurrencyCode(id.toUpperCase())}
@@ -405,8 +468,8 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
 
       {picker === 'indicator' ? (
         <BottomSheetPicker
-          title="Indicadores"
-          options={INDICATOR_OPTIONS}
+          title={t('budget.create.indicators.label')}
+          options={indicatorOptions}
           selectedId={mainIndicator}
           onSelect={(id) => id && setMainIndicator(id)}
           onClose={() => setPicker(null)}
@@ -416,8 +479,8 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
 
       {picker === 'order' ? (
         <BottomSheetPicker
-          title="Ordenação"
-          options={ORDER_OPTIONS}
+          title={t('budget.create.order.label')}
+          options={orderOptions}
           selectedId={transactionOrder}
           onSelect={(id) => id && setTransactionOrder(id)}
           onClose={() => setPicker(null)}
@@ -427,8 +490,8 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
 
       {picker === 'upcoming' ? (
         <BottomSheetPicker
-          title="Próximas transações"
-          options={UPCOMING_OPTIONS}
+          title={t('budget.create.upcoming.label')}
+          options={upcomingOptions}
           selectedId={upcomingDisplayMode}
           onSelect={(id) => id && setUpcomingDisplayMode(id)}
           onClose={() => setPicker(null)}
@@ -438,17 +501,17 @@ export function BudgetSettingsSheet({ token, budget, onClose }: Props) {
 
       {picker === 'visibility' ? (
         <BottomSheetPicker
-          title="Visível para"
+          title={t('budget.create.visibility.label')}
           options={
             initial.visibilityMode === 'SpecificMembers' || (existingAllowedUserIds?.length ?? 0) > 0
-              ? VISIBILITY_OPTIONS
-              : VISIBILITY_OPTIONS.filter((o) => o.id !== 'SpecificMembers')
+              ? visibilityOptions
+              : visibilityOptions.filter((o) => o.id !== 'SpecificMembers')
           }
           selectedId={visibilityMode}
           onSelect={(id) => {
             if (!id) return
             if (id === 'SpecificMembers' && (existingAllowedUserIds?.length ?? 0) === 0) {
-              window.alert('Seleção de membros (visibilidade) em breve.')
+              window.alert(t('budget.visibility.specificMembers.comingSoon'))
               return
             }
             setVisibilityMode(id)

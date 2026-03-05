@@ -8,8 +8,11 @@ import {
 } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 import { BottomSheetPicker, type BottomSheetOption } from '../../ui/BottomSheetPicker'
+import { DatePickerSheet } from '../../ui/DatePickerSheet'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
+import { getFinanceCategoryDisplayName } from '../../utils/categoryLocalization'
 import { iconKeyToEmoji } from '../../utils/emojiIconKey'
 import { financeCategoryEmoji } from '../../utils/financeCategoryEmoji'
 
@@ -24,32 +27,32 @@ type Props = {
 }
 
 type TransactionType = 'Expense' | 'Income'
-type RepeatType = 'None' | 'Daily' | 'Weekdays' | 'Weekly' | 'BiWeekly' | 'Monthly' | 'Yearly'
-type ReminderType = 'None' | 'SameDayAt0900' | 'PreviousDayAt1800' | 'OneDayBeforeAt0900' | 'TwoDaysBeforeAt0900'
+type RepeatType = 'None' | 'Daily' | 'Weekdays' | 'Weekly' | 'BiWeekly' | 'Monthly' | 'Yearly' | 'Custom'
+type ReminderType = 'None' | 'SameDayAt0900' | 'PreviousDayAt1800' | 'OneDayBeforeAt0900' | 'TwoDaysBeforeAt0900' | 'Custom'
 type PickerId = null | 'type' | 'category' | 'account' | 'paidBy' | 'repeat' | 'reminder'
 
-const TYPE_OPTIONS: BottomSheetOption[] = [
-  { id: 'Expense', label: 'Despesa' },
-  { id: 'Income', label: 'Renda' },
-]
+const TYPE_OPTION_KEYS = [
+  { id: 'Expense', labelKey: 'budget.type.expense' },
+  { id: 'Income', labelKey: 'budget.type.income' },
+] as const
 
-const REPEAT_OPTIONS: BottomSheetOption[] = [
-  { id: 'None', label: 'Não se repete' },
-  { id: 'Daily', label: 'Todos os dias' },
-  { id: 'Weekdays', label: 'Dias úteis' },
-  { id: 'Weekly', label: 'Todas as semanas' },
-  { id: 'BiWeekly', label: 'A cada 2 semanas' },
-  { id: 'Monthly', label: 'Todos os meses' },
-  { id: 'Yearly', label: 'Todos os anos' },
-]
+const REPEAT_OPTION_KEYS = [
+  { id: 'None', labelKey: 'budget.repeat.none' },
+  { id: 'Daily', labelKey: 'budget.repeat.daily' },
+  { id: 'Weekdays', labelKey: 'budget.repeat.weekdays' },
+  { id: 'Weekly', labelKey: 'budget.repeat.weekly' },
+  { id: 'BiWeekly', labelKey: 'budget.repeat.biWeekly' },
+  { id: 'Monthly', labelKey: 'budget.repeat.monthly' },
+  { id: 'Yearly', labelKey: 'budget.repeat.yearly' },
+] as const
 
-const REMINDER_OPTIONS: BottomSheetOption[] = [
-  { id: 'None', label: 'Sem lembrete' },
-  { id: 'SameDayAt0900', label: 'No próprio dia às 09:00' },
-  { id: 'PreviousDayAt1800', label: 'No dia anterior às 18:00' },
-  { id: 'OneDayBeforeAt0900', label: '1 dia antes às 09:00' },
-  { id: 'TwoDaysBeforeAt0900', label: '2 dias antes às 09:00' },
-]
+const REMINDER_OPTION_KEYS = [
+  { id: 'None', labelKey: 'budget.reminder.none' },
+  { id: 'SameDayAt0900', labelKey: 'budget.reminder.sameDayAt0900' },
+  { id: 'PreviousDayAt1800', labelKey: 'budget.reminder.previousDayAt1800' },
+  { id: 'OneDayBeforeAt0900', labelKey: 'budget.reminder.oneDayBeforeAt0900' },
+  { id: 'TwoDaysBeforeAt0900', labelKey: 'budget.reminder.twoDaysBeforeAt0900' },
+] as const
 
 type RowButtonProps = {
   left: ReactNode
@@ -64,41 +67,49 @@ function RowButton({ left, label, onPress, right, disabled, labelClassName }: Ro
   return (
     <button
       type="button"
-      className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left hover:bg-sand-light disabled:opacity-60"
+      className="flex w-full items-center justify-between gap-4 px-5 py-3 text-left hover:bg-sand-light disabled:opacity-60"
       onClick={onPress}
       disabled={disabled}
     >
       <div className="flex min-w-0 items-center gap-4">
-        <div className="grid h-10 w-10 shrink-0 place-items-center">{left}</div>
-        <div className={`truncate text-xl font-extrabold ${labelClassName ?? 'text-charcoal'}`}>{label}</div>
+        <div className="grid h-7 w-7 shrink-0 place-items-center">{left}</div>
+        <div className={`truncate ${labelClassName ?? 'text-charcoal'}`}>{label}</div>
       </div>
-      {right ?? <i className="ri-arrow-right-s-line text-2xl text-gray-300" aria-hidden="true" />}
+      {right ?? <i className="ri-arrow-right-s-line text-2xl text-sage-dark" aria-hidden="true" />}
     </button>
   )
 }
 
 function NoteSheet({ value, onClose, onSave }: { value: string; onClose: () => void; onSave: (value: string) => void }) {
   const [draft, setDraft] = useState(value)
+  const { t } = useI18n()
 
   return (
-    <div className="fixed inset-0 z-[110]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+    <div className="fixed inset-0 z-110">
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl overflow-hidden rounded-t-3xl bg-white shadow-2xl">
         <div className="px-4 py-3">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
           <div className="flex items-center justify-between">
-            <button type="button" className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light" onClick={onClose} aria-label="Cancelar">
-              <i className="ri-close-line text-2xl text-gray-600" />
+            <button
+              type="button"
+              className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
+              onClick={onClose}
+              aria-label={t('common.cancel')}
+              title={t('common.cancel')}
+            >
+              <i className="ri-close-line text-2xl text-sage-dark" />
             </button>
-            <div className="text-base font-semibold text-charcoal">Nota</div>
+            <div className="text-base font-semibold text-forest">{t('common.note')}</div>
             <button
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
               onClick={() => onSave(draft)}
-              aria-label="Guardar"
+              aria-label={t('common.save')}
+              title={t('common.save')}
             >
-              <i className="ri-check-line text-2xl text-blue-600" />
+              <i className="ri-check-line text-2xl text-sage-dark" />
             </button>
           </div>
         </div>
@@ -107,8 +118,8 @@ function NoteSheet({ value, onClose, onSave }: { value: string; onClose: () => v
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Adicione uma nota"
-            className="min-h-[140px] w-full resize-none rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base text-charcoal outline-none focus:ring-2 focus:ring-blue-500/25 placeholder:text-gray-300"
+            placeholder={t('budget.transaction.note.placeholder')}
+            className="min-h-35 w-full resize-none rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base text-charcoal outline-none focus:ring-2 focus:ring-blue-500/25 placeholder:text-gray-300"
           />
         </div>
       </div>
@@ -116,19 +127,19 @@ function NoteSheet({ value, onClose, onSave }: { value: string; onClose: () => v
   )
 }
 
-function formatDateLabel(dateUtc: string, todayUtc: string): string {
+function formatDateLabel(dateUtc: string, todayUtc: string, locale: string, todayLabel: string): string {
   if (!dateUtc) return '—'
-  if (dateUtc === todayUtc) return 'Hoje'
+  if (dateUtc === todayUtc) return todayLabel
 
   const d = new Date(`${dateUtc}T00:00:00Z`)
   if (Number.isNaN(d.getTime())) return dateUtc
-  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate, transaction, onClose, onSaved }: Props) {
   const titleRef = useRef<HTMLInputElement | null>(null)
-  const dateRef = useRef<HTMLInputElement | null>(null)
   const prevTypeRef = useRef<TransactionType | null>(null)
+  const { t, locale, language } = useI18n()
 
   const isEditing = Boolean(transaction?.id)
   const transactionId = transaction?.id ?? null
@@ -144,20 +155,33 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
   const [paidByUserId, setPaidByUserId] = useState<string | null>(() => transaction?.paidByUserId ?? null)
   const [isPaid, setIsPaid] = useState(() => Boolean(transaction?.isPaid ?? true))
   const [repeatType, setRepeatType] = useState<RepeatType>(() => (transaction?.repeatType as RepeatType) ?? 'None')
+  const [repeatInterval, setRepeatInterval] = useState<number | null>(() => transaction?.repeatInterval ?? null)
+  const [repeatUnit, setRepeatUnit] = useState<string | null>(() => transaction?.repeatUnit ?? null)
   const [reminderType, setReminderType] = useState<ReminderType>(() => (transaction?.reminderType as ReminderType) ?? 'None')
+  const [reminderValue, setReminderValue] = useState<number | null>(() => transaction?.reminderValue ?? null)
+  const [reminderUnit, setReminderUnit] = useState<string | null>(() => transaction?.reminderUnit ?? null)
   const [note, setNote] = useState(() => transaction?.note ?? '')
 
   const [picker, setPicker] = useState<PickerId>(null)
   const [noteOpen, setNoteOpen] = useState(false)
+  const [datePickerOpen, setDatePickerOpen] = useState(false)
 
   const categoriesQuery = useQuery({
     queryKey: queryKeys.financeCategories(type),
     queryFn: () => domusApi.getFinanceCategories(token, type),
   })
 
-  const accountsQuery = useQuery({
-    queryKey: queryKeys.financeAccounts,
-    queryFn: () => domusApi.getFinanceAccounts(token),
+  const visibleAccountsQuery = useQuery({
+    queryKey: queryKeys.budgetAccountsVisible(budgetId),
+    queryFn: () => domusApi.getBudgetVisibleAccounts(token, budgetId),
+  })
+
+  const isAccountVisible = Boolean(accountId) && (visibleAccountsQuery.data ?? []).some((a) => a.id === accountId)
+
+  const hiddenAccountsQuery = useQuery({
+    queryKey: queryKeys.budgetAccountsHidden(budgetId),
+    queryFn: () => domusApi.getBudgetHiddenAccounts(token, budgetId),
+    enabled: Boolean(accountId) && !isAccountVisible,
   })
 
   const membersQuery = useQuery({
@@ -177,7 +201,11 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
     setPaidByUserId(transaction?.paidByUserId ?? null)
     setIsPaid(Boolean(transaction?.isPaid ?? true))
     setRepeatType(((transaction?.repeatType as RepeatType) ?? 'None'))
+    setRepeatInterval(transaction?.repeatInterval ?? null)
+    setRepeatUnit(transaction?.repeatUnit ?? null)
     setReminderType(((transaction?.reminderType as ReminderType) ?? 'None'))
+    setReminderValue(transaction?.reminderValue ?? null)
+    setReminderUnit(transaction?.reminderUnit ?? null)
     setNote(transaction?.note ?? '')
   }, [defaultDate, transaction, transactionId])
 
@@ -191,9 +219,9 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
   }, [categoriesQuery.data])
 
   useEffect(() => {
-    const first = accountsQuery.data?.find((a) => Boolean(a.id))?.id ?? null
+    const first = visibleAccountsQuery.data?.find((a) => Boolean(a.id))?.id ?? null
     setAccountId((prev) => (prev ? prev : first))
-  }, [accountsQuery.data])
+  }, [visibleAccountsQuery.data])
 
   useEffect(() => {
     const me = getUserIdFromAccessToken(token)
@@ -222,8 +250,12 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
 
   const selectedAccount = useMemo(() => {
     if (!accountId) return null
-    return (accountsQuery.data ?? []).find((a) => a.id === accountId) ?? null
-  }, [accountId, accountsQuery.data])
+    return (
+      (visibleAccountsQuery.data ?? []).find((a) => a.id === accountId) ??
+      (hiddenAccountsQuery.data ?? []).find((a) => a.id === accountId) ??
+      null
+    )
+  }, [accountId, hiddenAccountsQuery.data, visibleAccountsQuery.data])
 
   const selectedMember = useMemo(() => {
     if (!paidByUserId) return null
@@ -235,19 +267,35 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
       .filter((c) => Boolean(c.id))
       .map((c) => {
         const emoji = financeCategoryEmoji({ iconKey: c.iconKey ?? null, name: c.name ?? null, type })
-        const name = (c.name ?? '').trim() || '—'
+        const rawName = (c.name ?? '').trim()
+        const name = getFinanceCategoryDisplayName({ type, iconKey: c.iconKey ?? null, name: rawName, language }) || '—'
         return { id: c.id!, label: `${emoji} ${name}` }
       })
-  }, [categoriesQuery.data, type])
+  }, [categoriesQuery.data, language, type])
+
+  const selectedCategoryLabel = useMemo(() => {
+    const rawName = (selectedCategory?.name ?? '').trim()
+    const name = getFinanceCategoryDisplayName({ type, iconKey: selectedCategory?.iconKey ?? null, name: rawName, language })
+    return name.trim() ? name : null
+  }, [language, selectedCategory?.iconKey, selectedCategory?.name, type])
 
   const accountsOptions = useMemo<BottomSheetOption[]>(() => {
-    return (accountsQuery.data ?? [])
-      .filter((a) => Boolean(a.id))
-      .map((a) => {
-        const emoji = iconKeyToEmoji(a.iconKey ?? null) ?? '🏦'
-        return { id: a.id!, label: `${emoji} ${a.name ?? '—'}` }
-      })
-  }, [accountsQuery.data])
+    const visible = (visibleAccountsQuery.data ?? []).filter((a) => Boolean(a.id))
+    const options = visible.map((a) => {
+      const emoji = iconKeyToEmoji(a.iconKey ?? null) ?? '🏦'
+      return { id: a.id!, label: `${emoji} ${a.name ?? '—'}` }
+    })
+
+    const selectedId = accountId
+    const selected = selectedAccount
+    const selectedIsVisible = Boolean(selectedId) && visible.some((a) => a.id === selectedId)
+    if (selected && selected.id && !selectedIsVisible) {
+      const emoji = iconKeyToEmoji(selected.iconKey ?? null) ?? '🏦'
+      options.unshift({ id: selected.id, label: `${emoji} ${selected.name ?? '—'} · ${t('budget.accounts.hidden.badge')}` })
+    }
+
+    return options
+  }, [accountId, selectedAccount, t, visibleAccountsQuery.data])
 
   const membersOptions = useMemo<BottomSheetOption[]>(() => {
     return (membersQuery.data ?? [])
@@ -262,8 +310,10 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
     Boolean(categoryId) &&
     Boolean(accountId) &&
     Boolean(paidByUserId) &&
+    (repeatType !== 'Custom' || (repeatInterval !== null && repeatInterval > 0 && Boolean(repeatUnit))) &&
+    (reminderType !== 'Custom' || (reminderValue !== null && reminderValue > 0 && Boolean(reminderUnit))) &&
     !categoriesQuery.isLoading &&
-    !accountsQuery.isLoading &&
+    !visibleAccountsQuery.isLoading &&
     !membersQuery.isLoading
 
   const createMutation = useMutation({
@@ -310,7 +360,11 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
         date: date || null,
         isPaid,
         repeatType,
+        repeatInterval: repeatType === 'Custom' ? repeatInterval : null,
+        repeatUnit: repeatType === 'Custom' ? repeatUnit : null,
         reminderType,
+        reminderValue: reminderType === 'Custom' ? reminderValue : null,
+        reminderUnit: reminderType === 'Custom' ? reminderUnit : null,
         note: normalizedNote,
         noteChangeRequested: true,
       }
@@ -336,18 +390,32 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
     createMutation.mutate(request)
   }
 
-  const repeatLabel = REPEAT_OPTIONS.find((o) => o.id === repeatType)?.label ?? 'Não se repete'
+  const typeOptions = useMemo<BottomSheetOption[]>(() => {
+    return TYPE_OPTION_KEYS.map((o) => ({ id: o.id, label: t(o.labelKey) }))
+  }, [t])
+
+  const repeatOptions = useMemo<BottomSheetOption[]>(() => {
+    return REPEAT_OPTION_KEYS.map((o) => ({ id: o.id, label: t(o.labelKey) }))
+  }, [t])
+
+  const reminderOptions = useMemo<BottomSheetOption[]>(() => {
+    return REMINDER_OPTION_KEYS.map((o) => ({ id: o.id, label: t(o.labelKey) }))
+  }, [t])
+
+  const repeatLabel = repeatOptions.find((o) => o.id === repeatType)?.label ?? t('budget.repeat.none')
   const reminderLabel =
-    reminderType === 'None' ? 'Adicionar um lembrete' : REMINDER_OPTIONS.find((o) => o.id === reminderType)?.label ?? 'Adicionar um lembrete'
+    reminderType === 'None'
+      ? t('budget.transaction.reminder.add')
+      : reminderOptions.find((o) => o.id === reminderType)?.label ?? t('budget.transaction.reminder.add')
 
   const saveDisabled =
     activeMutation.isPending ||
     !canSave ||
     categoriesQuery.isLoading ||
-    accountsQuery.isLoading ||
+    visibleAccountsQuery.isLoading ||
     membersQuery.isLoading
 
-  const typeLabel = type === 'Income' ? 'Renda' : 'Despesa'
+  const typeLabel = type === 'Income' ? t('budget.type.income') : t('budget.type.expense')
   const typeIconBg = type === 'Income' ? 'bg-green-100 text-green-700' : 'bg-pink-100 text-pink-600'
   const typeIcon = type === 'Income' ? 'ri-arrow-left-up-line' : 'ri-arrow-right-down-line'
 
@@ -357,24 +425,16 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
   const meUserId = useMemo(() => getUserIdFromAccessToken(token), [token])
   const paidByLabel = useMemo(() => {
     const name = (selectedMember?.name ?? '').trim()
-    if (meUserId && paidByUserId === meUserId) return 'Pago por Você'
-    if (!name) return 'Pago por —'
-    return `Pago por ${name}`
-  }, [meUserId, paidByUserId, selectedMember?.name])
+    if (meUserId && paidByUserId === meUserId) return t('budget.transaction.paidBy.me')
+    if (!name) return t('budget.transaction.paidBy.unknown')
+    return t('budget.transaction.paidBy.someone', { name })
+  }, [meUserId, paidByUserId, selectedMember?.name, t])
 
-  const dateLabel = useMemo(() => formatDateLabel(date, defaultDate), [date, defaultDate])
-
-  const openDatePicker = () => {
-    const el = dateRef.current
-    if (!el) return
-    const showPicker = (el as unknown as { showPicker?: () => void }).showPicker
-    if (typeof showPicker === 'function') showPicker.call(el)
-    else el.click()
-  }
+  const dateLabel = useMemo(() => formatDateLabel(date, defaultDate, locale, t('common.today')), [date, defaultDate, locale, t])
 
   return (
-    <div className="fixed inset-0 z-[80]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+    <div className="fixed inset-0 z-80">
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl">
         <div className="px-4 py-3">
@@ -385,27 +445,29 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light disabled:opacity-50"
               onClick={onClose}
               disabled={activeMutation.isPending}
-              aria-label="Cancelar"
-              title="Cancelar"
+              aria-label={t('common.cancel')}
+              title={t('common.cancel')}
             >
-              <i className="ri-close-line text-2xl leading-none text-gray-600" />
+              <i className="ri-close-line text-2xl leading-none text-sage-dark" />
             </button>
 
-            <div className="text-lg font-extrabold text-charcoal">{isEditing ? 'Editar transação' : 'Nova transação'}</div>
+            <div className="text-lg font-extrabold text-forest">
+              {isEditing ? t('budget.transaction.editTitle') : t('budget.transaction.newTitle')}
+            </div>
 
             <button
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light disabled:opacity-50"
               onClick={submit}
               disabled={saveDisabled}
-              aria-label="Guardar"
-              title="Guardar"
+              aria-label={t('common.save')}
+              title={t('common.save')}
             >
               <i
                 className={
                   activeMutation.isPending
-                    ? 'ri-loader-4-line animate-spin text-2xl text-blue-600'
-                    : 'ri-check-line text-2xl text-blue-600'
+                    ? 'ri-loader-4-line animate-spin text-2xl text-sage-dark'
+                    : 'ri-check-line text-2xl text-sage-dark'
                 }
               />
             </button>
@@ -425,8 +487,8 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
                 ref={titleRef}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Título"
-                className="min-w-0 flex-1 bg-transparent text-3xl font-extrabold text-charcoal outline-none placeholder:text-gray-300"
+                placeholder={t('budget.transaction.titlePlaceholder')}
+                className="min-w-0 flex-1 bg-transparent text-3xl font-extrabold text-charcoal outline-none placeholder:text-sage-dark/25"
                 disabled={activeMutation.isPending}
               />
 
@@ -435,11 +497,11 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
                   value={amountText}
                   onChange={(e) => setAmountText(e.target.value)}
                   inputMode="decimal"
-                  placeholder="0,00"
-                  className="w-32 bg-transparent text-right text-3xl font-extrabold text-charcoal outline-none placeholder:text-gray-300"
+                  placeholder={t('budget.transaction.amountPlaceholder')}
+                  className="w-32 bg-transparent text-right text-3xl font-extrabold text-charcoal outline-none placeholder:text-sage-dark/25"
                   disabled={activeMutation.isPending}
                 />
-                <div className="pb-1 text-sm font-bold text-charcoal/50">{currencyCode.toUpperCase()}</div>
+                <div className="pb-1 text-sm font-bold text-forest">{currencyCode.toUpperCase()}</div>
               </div>
             </div>
           </div>
@@ -447,7 +509,7 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
           <div className="mx-4 mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm divide-y divide-gray-200">
             <RowButton
               left={
-                <div className={`grid h-10 w-10 place-items-center rounded-full ${typeIconBg}`}>
+                <div className={`grid h-7 w-7 place-items-center rounded-full ${typeIconBg}`}>
                   <i className={`${typeIcon} text-xl`} aria-hidden="true" />
                 </div>
               }
@@ -457,24 +519,24 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
             />
 
             <RowButton
-              left={<span className="text-2xl" aria-hidden="true">{categoryEmoji}</span>}
-              label={selectedCategory?.name ?? 'Categoria'}
+              left={<span className="text-xl" aria-hidden="true">{categoryEmoji}</span>}
+              label={selectedCategoryLabel ?? t('common.category')}
               onPress={() => setPicker('category')}
               disabled={activeMutation.isPending || categoriesQuery.isLoading || categoriesOptions.length === 0}
               right={categoriesQuery.isLoading ? <LoadingSpinner size="sm" /> : undefined}
             />
 
             <RowButton
-              left={<span className="text-2xl" aria-hidden="true">{accountEmoji}</span>}
-              label={selectedAccount?.name ?? 'Conta'}
+              left={<span className="text-xl" aria-hidden="true">{accountEmoji}</span>}
+              label={selectedAccount?.name ?? t('common.account')}
               onPress={() => setPicker('account')}
-              disabled={activeMutation.isPending || accountsQuery.isLoading || accountsOptions.length === 0}
-              right={accountsQuery.isLoading ? <LoadingSpinner size="sm" /> : undefined}
+              disabled={activeMutation.isPending || visibleAccountsQuery.isLoading || accountsOptions.length === 0}
+              right={visibleAccountsQuery.isLoading || hiddenAccountsQuery.isLoading ? <LoadingSpinner size="sm" /> : undefined}
             />
 
             <RowButton
               left={
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-gray-800 text-sm font-extrabold text-white" aria-hidden="true">
+                <div className="grid h-7 w-7 place-items-center rounded-full bg-sage-dark text-sm text-white" aria-hidden="true">
                   {safeAvatarText(selectedMember?.name)}
                 </div>
               }
@@ -485,38 +547,25 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
             />
 
             <RowButton
-              left={<i className="ri-time-line text-2xl text-gray-400" aria-hidden="true" />}
+              left={<i className="ri-time-line text-xl text-sage-dark" aria-hidden="true" />}
               label={dateLabel}
-              onPress={openDatePicker}
+              onPress={() => setDatePickerOpen(true)}
               disabled={activeMutation.isPending}
-              right={
-                <>
-                  <i className="ri-arrow-right-s-line text-2xl text-gray-300" aria-hidden="true" />
-                  <input
-                    ref={dateRef}
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="sr-only"
-                    disabled={activeMutation.isPending}
-                  />
-                </>
-              }
             />
 
             <div className="flex items-center justify-between gap-4 px-5 py-4">
               <div className="flex min-w-0 items-center gap-4">
-                <div className="grid h-10 w-10 shrink-0 place-items-center">
-                  <i className="ri-checkbox-circle-line text-2xl text-gray-400" aria-hidden="true" />
+                <div className="grid h-7 w-7 shrink-0 place-items-center">
+                  <i className="ri-checkbox-circle-line text-xl text-sage-dark" aria-hidden="true" />
                 </div>
-                <div className="truncate text-xl font-extrabold text-charcoal">Marcar como pago</div>
+                <div className="truncate text-charcoal">{t('budget.transaction.markAsPaid')}</div>
               </div>
               <button
                 type="button"
-                className={`relative h-7 w-12 rounded-full transition ${isPaid ? 'bg-blue-500' : 'bg-gray-200'}`}
+                className={`relative h-7 w-12 rounded-full transition ${isPaid ? 'bg-sage-dark' : 'bg-gray-200'}`}
                 onClick={() => setIsPaid((v) => !v)}
                 disabled={activeMutation.isPending}
-                aria-label="Marcar como pago"
+                aria-label={t('budget.transaction.markAsPaid')}
               >
                 <span
                   className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition ${isPaid ? 'left-6' : 'left-0.5'}`}
@@ -525,14 +574,14 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
             </div>
 
             <RowButton
-              left={<i className="ri-repeat-2-line text-2xl text-gray-400" aria-hidden="true" />}
+              left={<i className="ri-repeat-2-line text-xl text-sage-dark" aria-hidden="true" />}
               label={repeatLabel}
               onPress={() => setPicker('repeat')}
               disabled={activeMutation.isPending}
             />
 
             <RowButton
-              left={<i className="ri-notification-3-line text-2xl text-gray-300" aria-hidden="true" />}
+              left={<i className="ri-notification-3-line text-xl text-sage-dark" aria-hidden="true" />}
               label={reminderLabel}
               labelClassName={reminderType === 'None' ? 'text-gray-300' : 'text-charcoal'}
               onPress={() => setPicker('reminder')}
@@ -540,16 +589,16 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
             />
 
             <RowButton
-              left={<i className="ri-image-add-line text-2xl text-gray-300" aria-hidden="true" />}
-              label="Adicionar foto"
+              left={<i className="ri-image-add-line text-xl text-sage-dark" aria-hidden="true" />}
+              label={t('budget.transaction.photo.add')}
               labelClassName="text-gray-300"
-              onPress={() => window.alert('Em breve.')}
+              onPress={() => window.alert(t('common.comingSoon'))}
               disabled
             />
 
             <RowButton
-              left={<i className="ri-sticky-note-line text-2xl text-gray-300" aria-hidden="true" />}
-              label={note.trim() ? note.trim() : 'Adicione uma nota'}
+              left={<i className="ri-sticky-note-line text-xl text-sage-dark" aria-hidden="true" />}
+              label={note.trim() ? note.trim() : t('budget.transaction.note.add')}
               labelClassName={note.trim() ? 'text-charcoal' : 'text-gray-300'}
               onPress={() => setNoteOpen(true)}
               disabled={activeMutation.isPending}
@@ -560,8 +609,8 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
 
       {picker === 'type' ? (
         <BottomSheetPicker
-          title="Tipo"
-          options={TYPE_OPTIONS}
+          title={t('common.type')}
+          options={typeOptions}
           selectedId={type}
           onSelect={(id) => id && setType(id === 'Income' ? 'Income' : 'Expense')}
           onClose={() => setPicker(null)}
@@ -571,7 +620,7 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
 
       {picker === 'category' ? (
         <BottomSheetPicker
-          title="Categoria"
+          title={t('common.category')}
           options={categoriesOptions}
           selectedId={categoryId}
           onSelect={(id) => setCategoryId(id)}
@@ -583,19 +632,19 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
 
       {picker === 'account' ? (
         <BottomSheetPicker
-          title="Conta"
+          title={t('common.account')}
           options={accountsOptions}
           selectedId={accountId}
           onSelect={(id) => setAccountId(id)}
           onClose={() => setPicker(null)}
-          isLoading={accountsQuery.isLoading}
+          isLoading={visibleAccountsQuery.isLoading || hiddenAccountsQuery.isLoading}
           zIndexClass="z-[100]"
         />
       ) : null}
 
       {picker === 'paidBy' ? (
         <BottomSheetPicker
-          title="Pago por"
+          title={t('budget.transaction.paidBy.title')}
           options={membersOptions}
           selectedId={paidByUserId}
           onSelect={(id) => setPaidByUserId(id)}
@@ -607,8 +656,8 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
 
       {picker === 'repeat' ? (
         <BottomSheetPicker
-          title="Repetição"
-          options={REPEAT_OPTIONS}
+          title={t('budget.transaction.repeat.title')}
+          options={repeatOptions}
           selectedId={repeatType}
           onSelect={(id) => id && setRepeatType(id as RepeatType)}
           onClose={() => setPicker(null)}
@@ -618,12 +667,26 @@ export function AddTransactionSheet({ token, budgetId, currencyCode, defaultDate
 
       {picker === 'reminder' ? (
         <BottomSheetPicker
-          title="Lembrete"
-          options={REMINDER_OPTIONS}
+          title={t('budget.transaction.reminder.title')}
+          options={reminderOptions}
           selectedId={reminderType}
           onSelect={(id) => id && setReminderType(id as ReminderType)}
           onClose={() => setPicker(null)}
           zIndexClass="z-[100]"
+        />
+      ) : null}
+
+      {datePickerOpen ? (
+        <DatePickerSheet
+          title={t('common.date')}
+          value={date || null}
+          onClose={() => setDatePickerOpen(false)}
+          onConfirm={(v) => {
+            if (typeof v === 'string') setDate(v)
+            setDatePickerOpen(false)
+          }}
+          isBusy={activeMutation.isPending}
+          zIndexClass="z-[120]"
         />
       ) : null}
 

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { domusApi, type CreateFinanceAccountRequest } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 import { encodeEmojiToIconKey } from '../../utils/emojiIconKey'
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
 export function CreateFinanceAccountSheet({ token, onClose, onCreated }: Props) {
   const queryClient = useQueryClient()
   const nameRef = useRef<HTMLInputElement | null>(null)
+  const { t } = useI18n()
 
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🏦')
@@ -25,7 +27,10 @@ export function CreateFinanceAccountSheet({ token, onClose, onCreated }: Props) 
   const createMutation = useMutation({
     mutationFn: (req: CreateFinanceAccountRequest) => domusApi.createFinanceAccount(token, req),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.financeAccounts })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.financeAccounts }),
+        queryClient.invalidateQueries({ queryKey: ['budgetAccountsVisible'] }),
+      ])
       onCreated()
     },
   })
@@ -54,23 +59,30 @@ export function CreateFinanceAccountSheet({ token, onClose, onCreated }: Props) 
   }
 
   return (
-    <div className="fixed inset-0 z-[90]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+    <div className="fixed inset-0 z-90">
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl">
         <div className="px-4 py-3">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
           <div className="flex items-center justify-between">
-            <button type="button" className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light" onClick={onClose} aria-label="Cancelar">
+            <button
+              type="button"
+              className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
+              onClick={onClose}
+              aria-label={t('common.cancel')}
+              title={t('common.cancel')}
+            >
               <i className="ri-close-line text-2xl text-gray-600" />
             </button>
-            <div className="text-base font-semibold text-charcoal">Nova conta</div>
+            <div className="text-base font-semibold text-charcoal">{t('budget.accounts.create.title')}</div>
             <button
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light disabled:opacity-50"
               onClick={submit}
               disabled={!canSave}
-              aria-label="Guardar"
+              aria-label={t('common.save')}
+              title={t('common.save')}
             >
               <i className={createMutation.isPending ? 'ri-loader-4-line animate-spin text-2xl text-blue-600' : 'ri-check-line text-2xl text-blue-600'} />
             </button>
@@ -91,7 +103,7 @@ export function CreateFinanceAccountSheet({ token, onClose, onCreated }: Props) 
                   value={emoji}
                   onChange={(e) => setEmoji(e.target.value)}
                   className="w-10 bg-transparent text-center text-2xl outline-none"
-                  aria-label="Ícone"
+                  aria-label={t('budget.accounts.create.iconLabel')}
                   disabled={createMutation.isPending}
                 />
               </div>
@@ -99,7 +111,7 @@ export function CreateFinanceAccountSheet({ token, onClose, onCreated }: Props) 
                 ref={nameRef}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Nome da conta"
+                placeholder={t('budget.accounts.create.namePlaceholder')}
                 className="w-full border-0 bg-transparent text-lg font-semibold text-charcoal outline-none"
                 disabled={createMutation.isPending}
                 onKeyDown={(e) => {
@@ -115,4 +127,3 @@ export function CreateFinanceAccountSheet({ token, onClose, onCreated }: Props) 
     </div>
   )
 }
-

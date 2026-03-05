@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CategoryListType, CategoryResponse } from '../../api/domusApi'
+import { useI18n } from '../../i18n/i18n'
+import { getItemCategoryDisplayName } from '../../utils/categoryLocalization'
 import { encodeEmojiToIconKey, iconKeyToEmoji } from '../../utils/emojiIconKey'
 
 type CategoryCreateInput = { name: string; type: CategoryListType; iconKey: string }
@@ -34,12 +36,6 @@ function normalizeCategoryType(value: unknown): CategoryListType {
   return value === 'Shopping' || value === 'Tasks' || value === 'Custom' ? value : 'Shopping'
 }
 
-function typeLabel(type: CategoryListType): string {
-  if (type === 'Shopping') return 'Shopping'
-  if (type === 'Tasks') return 'Tasks'
-  return 'Custom'
-}
-
 function iconPreview(iconKey: string | null | undefined): string {
   return iconKeyToEmoji(iconKey) ?? '🏷️'
 }
@@ -64,6 +60,7 @@ export function ManageCategoriesSheet({
   onDelete,
   onClose,
 }: Props) {
+  const { t, language } = useI18n()
   const [selectedType, setSelectedType] = useState<CategoryListType>(normalizeCategoryType(initialType))
 
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -101,6 +98,12 @@ export function ManageCategoriesSheet({
         return aName.localeCompare(bName, undefined, { sensitivity: 'base' })
       })
   }, [categories, selectedType])
+
+  const typeLabel = (type: CategoryListType): string => {
+    if (type === 'Shopping') return t('lists.create.type.shopping')
+    if (type === 'Tasks') return t('lists.create.type.tasks')
+    return t('lists.create.type.custom')
+  }
 
   const busy = Boolean(isBusy) || Boolean(dragState)
 
@@ -212,7 +215,7 @@ export function ManageCategoriesSheet({
     const trimmed = iconDraft.trim()
     const iconKey = trimmed ? encodeEmojiToIconKey(trimmed) : 'tag'
     if (!iconKey) {
-      window.alert('Emoji inválido (ou demasiado longo).')
+      window.alert(t('lists.manageCategories.iconPicker.invalidEmoji'))
       return
     }
 
@@ -240,15 +243,15 @@ export function ManageCategoriesSheet({
 
   return (
     <div className="fixed inset-0 z-50">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 top-0 flex flex-col bg-white sm:inset-x-[10%] sm:bottom-8 sm:top-8 sm:rounded-3xl sm:shadow-2xl">
         <div className="flex items-center justify-between px-4 py-3">
-          <button type="button" className="rounded-full p-2 hover:bg-sand-light" onClick={onClose} title="Fechar">
+          <button type="button" className="rounded-full p-2 hover:bg-sand-light" onClick={onClose} title={t('common.close')}>
             <i className="ri-close-line text-2xl text-gray-600" />
           </button>
           <div className="flex items-center gap-2 text-base font-semibold text-charcoal">
-            Gerenciar categorias
+            {t('lists.manageCategories.title')}
             {isBusy ? <i className="ri-loader-4-line animate-spin text-lg text-charcoal/60" /> : null}
           </div>
           <span className="h-10 w-10" />
@@ -258,21 +261,21 @@ export function ManageCategoriesSheet({
           ref={scrollContainerRef}
           className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+24px)]"
         >
-          <div className="mb-4 flex items-center justify-center">
-            <div className="inline-flex rounded-full bg-sand-light p-1">
-              {CATEGORY_TYPES.map((t) => {
-                const active = selectedType === t
+            <div className="mb-4 flex items-center justify-center">
+              <div className="inline-flex rounded-full bg-sand-light p-1">
+              {CATEGORY_TYPES.map((type) => {
+                const active = selectedType === type
                 return (
                   <button
-                    key={t}
+                    key={type}
                     type="button"
                     className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                       active ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/70 hover:text-charcoal'
                     }`}
-                    onClick={() => setSelectedType(t)}
+                    onClick={() => setSelectedType(type)}
                     disabled={busy}
                   >
-                    {typeLabel(t)}
+                    {typeLabel(type)}
                   </button>
                 )
               })}
@@ -290,7 +293,7 @@ export function ManageCategoriesSheet({
               <button
                 type="button"
                 className="grid h-10 w-10 place-items-center rounded-full text-xl hover:bg-sand-light"
-                title="Selecionar ícone"
+                title={t('lists.manageCategories.iconPicker.title')}
                 onClick={() => openIconPicker({ kind: 'new' }, selectedType, newIconKey)}
                 disabled={busy}
               >
@@ -299,7 +302,7 @@ export function ManageCategoriesSheet({
 
               <input
                 className="w-full bg-transparent py-2 text-base text-charcoal outline-none placeholder:text-gray-400"
-                placeholder="Nova categoria"
+                placeholder={t('lists.manageCategories.new.placeholder')}
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 onKeyDown={(e) => {
@@ -315,8 +318,8 @@ export function ManageCategoriesSheet({
                 className="grid h-10 w-10 place-items-center rounded-full bg-forest text-white disabled:opacity-50"
                 onClick={submitCreate}
                 disabled={busy || newCategoryName.trim().length === 0}
-                aria-label="Adicionar categoria"
-                title="Adicionar"
+                aria-label={t('lists.manageCategories.addAria')}
+                title={t('common.add')}
               >
                 <i className="ri-check-line text-xl" />
               </button>
@@ -326,7 +329,7 @@ export function ManageCategoriesSheet({
           <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white">
             {orderedRows.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-charcoal/70">
-                Sem categorias para {typeLabel(selectedType)}.
+                {t('lists.manageCategories.empty', { type: typeLabel(selectedType) })}
               </div>
             ) : (
               <ul className="divide-y divide-gray-200">
@@ -335,7 +338,8 @@ export function ManageCategoriesSheet({
                   if (!id) return null
 
                   const isEditing = editingId === id
-                  const name = c.name ?? 'Categoria'
+                  const rawName = (c.name ?? '').trim()
+                  const displayName = getItemCategoryDisplayName(c, language).trim() || rawName || t('common.category')
                   const rowType = normalizeCategoryType(c.type)
                   const rowIconKey = (c.iconKey ?? 'tag').toString()
                   const emoji = iconPreview(rowIconKey)
@@ -355,7 +359,7 @@ export function ManageCategoriesSheet({
                             <button
                               type="button"
                               className="grid h-10 w-10 place-items-center rounded-full text-xl hover:bg-sand-light"
-                              title="Selecionar ícone"
+                              title={t('lists.manageCategories.iconPicker.title')}
                               onClick={() => openIconPicker({ kind: 'edit' }, editingType, editingIconKey)}
                               disabled={busy}
                             >
@@ -380,8 +384,8 @@ export function ManageCategoriesSheet({
                               className="grid h-10 w-10 place-items-center rounded-full text-forest hover:bg-sand-light disabled:opacity-50"
                               onClick={() => submitEdit(id)}
                               disabled={busy || editingName.trim().length === 0}
-                              aria-label="Guardar"
-                              title="Guardar"
+                              aria-label={t('common.save')}
+                              title={t('common.save')}
                             >
                               <i className="ri-check-line text-xl" />
                             </button>
@@ -390,24 +394,24 @@ export function ManageCategoriesSheet({
                               className="grid h-10 w-10 place-items-center rounded-full text-gray-600 hover:bg-sand-light disabled:opacity-50"
                               onClick={() => setEditingId(null)}
                               disabled={busy}
-                              aria-label="Cancelar"
-                              title="Cancelar"
+                              aria-label={t('common.cancel')}
+                              title={t('common.cancel')}
                             >
                               <i className="ri-close-line text-xl" />
                             </button>
                           </div>
 
                           <div className="flex items-center gap-2 pl-1 text-sm text-charcoal/70">
-                            <span className="text-xs uppercase tracking-wide">Tipo</span>
+                            <span className="text-xs uppercase tracking-wide">{t('common.type')}</span>
                             <select
                               className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-charcoal outline-none"
                               value={editingType}
                               onChange={(e) => setEditingType(normalizeCategoryType(e.target.value))}
                               disabled={busy}
                             >
-                              {CATEGORY_TYPES.map((t) => (
-                                <option key={t} value={t}>
-                                  {typeLabel(t)}
+                              {CATEGORY_TYPES.map((type) => (
+                                <option key={type} value={type}>
+                                  {typeLabel(type)}
                                 </option>
                               ))}
                             </select>
@@ -418,7 +422,7 @@ export function ManageCategoriesSheet({
                           <div className="flex min-w-0 items-center gap-3">
                             <span className="text-xl leading-none">{emoji}</span>
                             <div className="min-w-0">
-                              <div className="truncate text-sm font-medium text-charcoal">{name}</div>
+                              <div className="truncate text-sm font-medium text-charcoal">{displayName}</div>
                               <div className="text-xs text-charcoal/60">{typeLabel(rowType)}</div>
                             </div>
                           </div>
@@ -427,7 +431,7 @@ export function ManageCategoriesSheet({
                             <button
                               type="button"
                               className="grid h-10 w-10 place-items-center rounded-full text-gray-300 hover:bg-sand-light disabled:opacity-50 cursor-grab active:cursor-grabbing"
-                              aria-label="Reordenar"
+                              aria-label={t('common.reorder')}
                               disabled={busy || Boolean(editingId)}
                               onPointerDown={(e) => {
                                 if (busy) return
@@ -438,7 +442,7 @@ export function ManageCategoriesSheet({
                                 dragStartRowsRef.current = orderedRowsRef.current
                                 setDragState({
                                   categoryId: id,
-                                  name: name.trim() || '—',
+                                  name: displayName.trim() || '—',
                                   emoji,
                                   x: e.clientX,
                                   y: e.clientY,
@@ -457,13 +461,13 @@ export function ManageCategoriesSheet({
                               className="grid h-10 w-10 place-items-center rounded-full text-gray-600 hover:bg-sand-light disabled:opacity-50"
                               onClick={() => {
                                 setEditingId(id)
-                                setEditingName(name)
+                                setEditingName(rawName)
                                 setEditingType(rowType)
                                 setEditingIconKey(rowIconKey || 'tag')
                               }}
                               disabled={busy}
-                              aria-label="Editar"
-                              title="Editar"
+                              aria-label={t('common.edit')}
+                              title={t('common.edit')}
                             >
                               <i className="ri-pencil-line text-xl" />
                             </button>
@@ -471,13 +475,13 @@ export function ManageCategoriesSheet({
                               type="button"
                               className="grid h-10 w-10 place-items-center rounded-full text-red-600 hover:bg-red-50 disabled:opacity-50"
                               onClick={() => {
-                                const ok = window.confirm('Eliminar esta categoria?')
+                                const ok = window.confirm(t('lists.manageCategories.delete.confirm'))
                                 if (!ok) return
                                 onDelete(id)
                               }}
                               disabled={busy}
-                              aria-label="Eliminar"
-                              title="Eliminar"
+                              aria-label={t('common.delete')}
+                              title={t('common.delete')}
                             >
                               <i className="ri-delete-bin-line text-xl" />
                             </button>
@@ -499,17 +503,17 @@ export function ManageCategoriesSheet({
             type="button"
             className="absolute inset-0 bg-black/40"
             onClick={() => setIconPickerOpen(false)}
-            aria-label="Fechar seletor de ícones"
+            aria-label={t('common.close')}
           />
 
           <div className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white p-4 shadow-2xl sm:inset-x-[20%] sm:bottom-10 sm:rounded-3xl">
             <div className="mb-3 flex items-center justify-between">
-              <div className="text-base font-semibold text-charcoal">Selecionar ícone</div>
+              <div className="text-base font-semibold text-charcoal">{t('lists.manageCategories.iconPicker.title')}</div>
               <button
                 type="button"
                 className="rounded-full p-2 hover:bg-sand-light"
                 onClick={() => setIconPickerOpen(false)}
-                aria-label="Fechar"
+                aria-label={t('common.close')}
               >
                 <i className="ri-close-line text-2xl text-gray-600" />
               </button>
@@ -519,7 +523,7 @@ export function ManageCategoriesSheet({
               <span className="text-xl leading-none">{iconDraft.trim() ? iconDraft.trim() : '🏷️'}</span>
               <input
                 className="w-full bg-transparent py-2 text-base text-charcoal outline-none placeholder:text-gray-400"
-                placeholder="Cola/Escolhe um emoji"
+                placeholder={t('lists.manageCategories.iconPicker.placeholder')}
                 value={iconDraft}
                 onChange={(e) => setIconDraft(e.target.value)}
                 autoFocus
@@ -528,7 +532,8 @@ export function ManageCategoriesSheet({
                 type="button"
                 className="grid h-10 w-10 place-items-center rounded-full bg-forest text-white"
                 onClick={applyIconDraft}
-                title="Aplicar"
+                aria-label={t('common.apply')}
+                title={t('common.apply')}
               >
                 <i className="ri-check-line text-xl" />
               </button>
@@ -536,7 +541,7 @@ export function ManageCategoriesSheet({
 
             <div className="mt-4">
               <div className="mb-2 text-xs font-medium uppercase tracking-wider text-charcoal/60">
-                Sugestões ({typeLabel(iconPickerType)})
+                {t('lists.manageCategories.iconPicker.suggestions', { type: typeLabel(iconPickerType) })}
               </div>
               <div className="grid grid-cols-8 gap-2">
                 {suggestedEmojis(iconPickerType).map((emoji) => (
@@ -552,7 +557,7 @@ export function ManageCategoriesSheet({
                       if (iconPickerTarget.kind === 'edit') setEditingIconKey(iconKey)
                       setIconPickerOpen(false)
                     }}
-                    aria-label={`Selecionar ${emoji}`}
+                    aria-label={t('lists.manageCategories.iconPicker.selectEmoji', { emoji })}
                     title={emoji}
                   >
                     {emoji}
@@ -570,7 +575,7 @@ export function ManageCategoriesSheet({
                     setIconPickerOpen(false)
                   }}
                 >
-                  Usar etiqueta
+                  {t('lists.manageCategories.iconPicker.useTag')}
                 </button>
 
                 <button
@@ -578,7 +583,7 @@ export function ManageCategoriesSheet({
                   className="rounded-xl bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest/90"
                   onClick={applyIconDraft}
                 >
-                  Aplicar
+                  {t('common.apply')}
                 </button>
               </div>
             </div>

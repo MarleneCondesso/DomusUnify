@@ -1,3 +1,5 @@
+import { useI18n } from '../i18n/i18n'
+
 type Props = {
   /**
    * Tamanho do spinner.
@@ -26,7 +28,8 @@ type Props = {
 }
 
 export function LoadingSpinner({ size = 'md', label, className, spinnerClassName, labelClassName }: Props) {
-  const ariaLabel = label ?? 'A carregar'
+  const { t } = useI18n()
+  const ariaLabel = label ?? t('common.loading')
 
   const dotSize = size === 'sm' ? '6px' : size === 'lg' ? '18px' : '12px'
   const loaderStyle = { ['--domus-loader-dot' as never]: dotSize } as React.CSSProperties
@@ -35,7 +38,7 @@ export function LoadingSpinner({ size = 'md', label, className, spinnerClassName
     <div
       role="status"
       aria-label={ariaLabel}
-      className={['inline-flex items-center gap-3', className].filter(Boolean).join(' ')}
+      className={['inline-flex items-center gap-3 w-full', className].filter(Boolean).join(' ')}
     >
       <div
         className={['domus-loading-bubbles', spinnerClassName].filter(Boolean).join(' ')}

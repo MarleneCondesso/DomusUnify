@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import type { Location } from 'react-router-dom'
 import { ApiError } from '../../api/http'
 import { domusApi, type CreateListRequest, type FamilyResponse } from '../../api/domusApi'
 import { queryKeys } from '../../api/queryKeys'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
+import { useI18n } from '../../i18n/i18n'
 
 type CreateListPageProps = {
   token: string
@@ -12,21 +14,33 @@ type CreateListPageProps = {
   onLogout: () => void
 }
 
-export function CreateListPage({ token, family, onLogout }: CreateListPageProps) {
-
+export function CreateListPage({ token, family }: CreateListPageProps) {
+  const { t } = useI18n()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
 
   type ListType = 'Shopping' | 'Tasks' | 'Custom'
   type VisibilityMode = 'AllMembers' | 'SpecificMembers' | 'Private'
 
+  type NavState = {
+    backgroundLocation?: Location
+  }
+
+  const backgroundLocation = (location.state as NavState | null)?.backgroundLocation
+
   //#region ...[Form State]...
   const [name, setName] = useState('')
   const [type, setType] = useState<ListType>('Shopping')
-  const [colorHex, setColorHex] = useState('#4f46e5')
   const [visibilityMode, setVisibilityMode] = useState<VisibilityMode>('AllMembers')
   const [allowedUserIds, setAllowedUserIds] = useState<string[]>([])
   //#endregion
+
+  const nameInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    nameInputRef.current?.focus()
+  }, [])
 
   const membersQuery = useQuery({
     queryKey: queryKeys.familyMembers,
@@ -40,7 +54,6 @@ export function CreateListPage({ token, family, onLogout }: CreateListPageProps)
       const request: CreateListRequest = {
         name,
         type,
-        colorHex,
         visibilityMode,
         allowedUserIds: visibilityMode === 'SpecificMembers' ? allowedUserIds : null,
       }
@@ -50,96 +63,107 @@ export function CreateListPage({ token, family, onLogout }: CreateListPageProps)
     onSuccess: async () => {
       setName('')
       await queryClient.invalidateQueries({ queryKey: queryKeys.lists })
-      navigate('/lists', { replace: true })
+      if (backgroundLocation) {
+        navigate(-1)
+      } else {
+        navigate('/lists', { replace: true })
+      }
     },
   })
   //#endregion
+
+  const onClose = () => {
+    if (createListMutation.isPending) return
+
+    if (backgroundLocation) {
+      navigate(-1)
+    } else {
+      navigate('/lists', { replace: true })
+    }
+  }
 
   const errorMessage = useMemo(() => {
     const err = createListMutation.error ?? membersQuery.error
     if (!err) return null
     if (err instanceof ApiError) return typeof err.body === 'string' ? err.body : JSON.stringify(err.body)
-    return 'Erro inesperado.'
-  }, [createListMutation.error, membersQuery.error])
+    return t('common.unexpectedError')
+  }, [createListMutation.error, membersQuery.error, t])
 
   const canSubmit =
     Boolean(name.trim()) &&
     Boolean(type) &&
-    Boolean(colorHex.trim()) &&
     (visibilityMode !== 'SpecificMembers' || allowedUserIds.length > 0)
 
   return (
-    <div className="min-h-screen bg-offwhite w-full px-4 py-10">
-      <div className="mx-auto w-full max-w-2xl rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-charcoal">Create new list</h2>
-            <p className="mt-1 text-sm text-charcoal/70">Family: {family.name}</p>
-          </div>
+    <div className="fixed inset-0 z-[90]">
+      <button
+        className="absolute inset-0 bg-black/40 disabled:cursor-not-allowed"
+        type="button"
+        onClick={onClose}
+        aria-label={t('common.close')}
+        disabled={createListMutation.isPending}
+      />
 
-          <div className="flex items-center gap-2">
+      <div className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-3xl flex-col max-h-[92vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl">
+        <div className="p-4 pb-0">
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
+
+          <div className="mb-3 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-base font-semibold text-charcoal">{t('lists.create.title')}</div>
+              <div className="mt-1 truncate text-xs text-charcoal/60">{t('lists.create.familyLine', { familyName: family.name ?? '' })}</div>
+            </div>
+
             <button
-              className="rounded-xl border border-gray-300 bg-white/60 px-3 py-2 text-sm text-charcoal hover:bg-white"
               type="button"
-              onClick={() => navigate('/lists')}
+              className="rounded-full p-2 hover:bg-sand-light disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={onClose}
+              aria-label={t('common.close')}
+              disabled={createListMutation.isPending}
             >
-              Back
-            </button>
-            <button
-              className="rounded-xl border border-white/10 bg-amber px-3 py-2 text-sm hover:bg-amber/40"
-              type="button"
-              onClick={onLogout}
-            >
-              Logout
+              <i className="ri-close-line text-xl text-gray-600" />
             </button>
           </div>
-        </header>
+        </div>
 
         <form
-          className="mt-6 space-y-4"
+          className="flex-1 overflow-y-auto space-y-4 p-4 pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)]"
           onSubmit={(e) => {
             e.preventDefault()
             createListMutation.mutate()
           }}
         >
           <label className="block">
-            <span className="text-xs font-medium text-charcoal/70">List name</span>
+            <span className="text-xs font-medium text-charcoal/70">{t('lists.create.name.label')}</span>
             <input
               className="mt-1 w-full rounded-xl border border-gray-300 bg-white/20 px-3 py-2 outline-none focus:ring-2 focus:ring-forest text-charcoal"
+              ref={nameInputRef}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              disabled={createListMutation.isPending}
             />
           </label>
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-medium text-charcoal/70">Type</span>
+              <span className="text-xs font-medium text-charcoal/70">{t('lists.create.type.label')}</span>
               <select
                 className="mt-1 w-full rounded-xl border border-gray-300 bg-white/20 px-3 py-2 outline-none focus:ring-2 focus:ring-forest text-charcoal"
                 value={type}
                 onChange={(e) => setType(e.target.value as ListType)}
+                disabled={createListMutation.isPending}
               >
-                <option value="Shopping">Shopping</option>
-                <option value="Tasks">Tasks</option>
-                <option value="Custom">Custom</option>
+                <option value="Shopping">{t('lists.create.type.shopping')}</option>
+                <option value="Tasks">{t('lists.create.type.tasks')}</option>
+                <option value="Custom">{t('lists.create.type.custom')}</option>
               </select>
             </label>
 
-            <label className="block">
-              <span className="text-xs font-medium text-charcoal/70">Color</span>
-              <input
-                className="mt-1 h-11 w-full cursor-pointer rounded-xl border border-gray-300 bg-white/20 px-3 py-2 outline-none focus:ring-2 focus:ring-forest"
-                type="color"
-                value={colorHex}
-                onChange={(e) => setColorHex(e.target.value)}
-                aria-label="List color"
-              />
-            </label>
           </div>
 
           <label className="block">
-            <span className="text-xs font-medium text-charcoal/70">Visible to</span>
+            <span className="text-xs font-medium text-charcoal/70">{t('lists.create.visibility.label')}</span>
             <select
               className="mt-1 w-full rounded-xl border border-gray-300 bg-white/20 px-3 py-2 outline-none focus:ring-2 focus:ring-forest text-charcoal"
               value={visibilityMode}
@@ -148,20 +172,21 @@ export function CreateListPage({ token, family, onLogout }: CreateListPageProps)
                 setVisibilityMode(next)
                 if (next !== 'SpecificMembers') setAllowedUserIds([])
               }}
+              disabled={createListMutation.isPending}
             >
-              <option value="AllMembers">Everyone in the family</option>
-              <option value="SpecificMembers">Specific members</option>
-              <option value="Private">Only me (private)</option>
+              <option value="AllMembers">{t('lists.create.visibility.all')}</option>
+              <option value="SpecificMembers">{t('lists.create.visibility.specific')}</option>
+              <option value="Private">{t('lists.create.visibility.private')}</option>
             </select>
           </label>
 
           {visibilityMode === 'SpecificMembers' && (
             <div className="rounded-xl border border-gray-300 bg-white/20 px-3 py-3">
-              <div className="text-xs font-medium text-charcoal/70">Select members</div>
+              <div className="text-xs font-medium text-charcoal/70">{t('lists.create.members.title')}</div>
 
               {membersQuery.isLoading ? (
                 <div className="mt-3">
-                  <LoadingSpinner size="sm" label="Loading members..." />
+                  <LoadingSpinner size="sm" label={t('lists.create.members.loading')} />
                 </div>
               ) : (
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -177,6 +202,7 @@ export function CreateListPage({ token, family, onLogout }: CreateListPageProps)
                         <input
                           type="checkbox"
                           checked={checked}
+                          disabled={createListMutation.isPending}
                           onChange={(e) => {
                             const isChecked = e.target.checked
                             setAllowedUserIds((prev) =>
@@ -190,14 +216,14 @@ export function CreateListPage({ token, family, onLogout }: CreateListPageProps)
                   })}
 
                   {membersQuery.data?.length === 0 && (
-                    <div className="text-sm text-charcoal/70">No members found.</div>
+                    <div className="text-sm text-charcoal/70">{t('lists.create.members.none')}</div>
                   )}
                 </div>
               )}
 
               {allowedUserIds.length === 0 && (
                 <div className="mt-2 text-xs text-charcoal/70">
-                  Select at least 1 member (you will always have access).
+                  {t('lists.create.members.requireOne')}
                 </div>
               )}
             </div>
@@ -205,7 +231,7 @@ export function CreateListPage({ token, family, onLogout }: CreateListPageProps)
 
           {errorMessage && (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-charcoal">
-              Error: {errorMessage}
+              {t('common.error')}: {errorMessage}
             </div>
           )}
 
@@ -214,7 +240,7 @@ export function CreateListPage({ token, family, onLogout }: CreateListPageProps)
             type="submit"
             disabled={!canSubmit || createListMutation.isPending}
           >
-            {createListMutation.isPending ? <LoadingSpinner size="sm" label="Creating..." /> : 'Create list'}
+            {createListMutation.isPending ? <LoadingSpinner size="sm" label={t('common.creating')} /> : t('lists.create.submit')}
           </button>
         </form>
       </div>

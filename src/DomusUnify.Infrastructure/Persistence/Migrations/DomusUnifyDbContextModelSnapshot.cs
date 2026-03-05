@@ -176,6 +176,31 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.ToTable("BudgetCategoryLimits", (string)null);
                 });
 
+            modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetHiddenFinanceAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BudgetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("BudgetId", "AccountId")
+                        .IsUnique();
+
+                    b.ToTable("BudgetHiddenFinanceAccounts", (string)null);
+                });
+
             modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetUserAccess", b =>
                 {
                     b.Property<Guid>("Id")
@@ -659,6 +684,9 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Property<int?>("RepeatInterval")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("RepeatSourceTransactionId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("RepeatType")
                         .HasColumnType("int");
 
@@ -687,6 +715,10 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.HasIndex("PaidByUserId");
 
                     b.HasIndex("BudgetId", "Date");
+
+                    b.HasIndex("RepeatSourceTransactionId", "Date")
+                        .IsUnique()
+                        .HasFilter("[RepeatSourceTransactionId] IS NOT NULL");
 
                     b.HasIndex("BudgetId", "Type", "Date");
 
@@ -864,16 +896,31 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(240)
+                        .HasColumnType("nvarchar(240)");
+
+                    b.Property<DateOnly?>("Birthday")
+                        .HasColumnType("date");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid?>("CurrentFamilyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -883,6 +930,14 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("ProfileColorHex")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
@@ -1063,6 +1118,25 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Navigation("Budget");
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetHiddenFinanceAccount", b =>
+                {
+                    b.HasOne("DomusUnify.Domain.Entities.FinanceAccount", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("DomusUnify.Domain.Entities.Budget", "Budget")
+                        .WithMany("HiddenFinanceAccounts")
+                        .HasForeignKey("BudgetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Budget");
                 });
 
             modelBuilder.Entity("DomusUnify.Domain.Entities.BudgetUserAccess", b =>
@@ -1429,6 +1503,8 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.Navigation("AllowedUsers");
 
                     b.Navigation("CategoryLimits");
+
+                    b.Navigation("HiddenFinanceAccounts");
 
                     b.Navigation("Transactions");
 

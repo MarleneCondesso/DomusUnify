@@ -889,6 +889,14 @@
             Tipo de repetição da transação.
             </summary>
         </member>
+        <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.RepeatSourceTransactionId">
+            <summary>
+            Identificador da transação "origem" quando esta linha foi gerada por repetição.
+            <para>
+            Quando <c>null</c>, esta transação é a origem (ou uma transação normal sem repetição).
+            </para>
+            </summary>
+        </member>
         <member name="P:DomusUnify.Domain.Entities.FinanceTransaction.RepeatInterval">
             <summary>
             Intervalo de repetição quando aplicável.
@@ -947,6 +955,11 @@
         <member name="P:DomusUnify.Domain.Entities.ItemCategory.Name">
             <summary>
             Nome da categoria.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.ItemCategory.Type">
+            <summary>
+            Tipo de lista ao qual esta categoria pertence.
             </summary>
         </member>
         <member name="P:DomusUnify.Domain.Entities.ItemCategory.IconKey">
@@ -1207,6 +1220,36 @@
         <member name="P:DomusUnify.Domain.Entities.User.Name">
             <summary>
             Nome do utilizador.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.DisplayName">
+            <summary>
+            Nome de exibição (opcional). Se definido, pode sobrepor o <see cref="P:DomusUnify.Domain.Entities.User.Name"/> no frontend.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.ProfileColorHex">
+            <summary>
+            Cor do perfil (hex), ex.: <c>#8b5cf6</c> (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.Birthday">
+            <summary>
+            Data de aniversário (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.Gender">
+            <summary>
+            Género (opcional): <c>female</c>, <c>male</c>, <c>other</c>.
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.Phone">
+            <summary>
+            Telefone (opcional).
+            </summary>
+        </member>
+        <member name="P:DomusUnify.Domain.Entities.User.Address">
+            <summary>
+            Morada/endereço (opcional).
             </summary>
         </member>
         <member name="P:DomusUnify.Domain.Entities.User.Email">

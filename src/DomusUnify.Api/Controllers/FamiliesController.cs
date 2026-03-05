@@ -224,4 +224,223 @@ public class FamiliesController : ControllerBase
         return Ok(rows);
     }
 
+    /// <summary>
+    /// ObtÃ©m uma famÃ­lia especÃ­fica (apenas se o utilizador autenticado for membro).
+    /// </summary>
+    /// <param name="familyId">Identificador da famÃ­lia.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Dados da famÃ­lia no contexto do utilizador.</returns>
+    [HttpGet("{familyId:guid}")]
+    public async Task<ActionResult<FamilyResponse>> GetFamilyById(Guid familyId, CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+
+        var membership = await _db.FamilyMembers
+            .AsNoTracking()
+            .Include(m => m.Family)
+            .FirstOrDefaultAsync(m => m.FamilyId == familyId && m.UserId == userId, ct);
+
+        if (membership is null) return Forbid();
+
+        return Ok(new FamilyResponse
+        {
+            Id = membership.Family.Id,
+            Name = membership.Family.Name,
+            Role = membership.Role.ToString()
+        });
+    }
+
+    /// <summary>
+    /// Lista os membros de uma famÃ­lia especÃ­fica (apenas se o utilizador autenticado for membro).
+    /// </summary>
+    /// <param name="familyId">Identificador da famÃ­lia.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Lista de membros.</returns>
+    [HttpGet("{familyId:guid}/members")]
+    public async Task<ActionResult<List<FamilyMemberResponse>>> GetFamilyMembersByFamilyId(Guid familyId, CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+
+        var isMember = await _db.FamilyMembers
+            .AsNoTracking()
+            .AnyAsync(m => m.FamilyId == familyId && m.UserId == userId, ct);
+
+        if (!isMember) return Forbid();
+
+        var rows = await _db.FamilyMembers
+            .AsNoTracking()
+            .Include(m => m.User)
+            .Where(m => m.FamilyId == familyId)
+            .OrderBy(m => m.User.Name)
+            .Select(m => new FamilyMemberResponse
+            {
+                UserId = m.UserId,
+                Name = m.User.Name,
+                Email = m.User.Email,
+                Role = m.Role.ToString()
+            })
+            .ToListAsync(ct);
+
+        return Ok(rows);
+    }
+
+    /// <summary>
+    /// ObtÃ©m o perfil de um membro dentro de uma famÃ­lia especÃ­fica.
+    /// </summary>
+    /// <remarks>
+    /// O utilizador autenticado tem de ser membro da famÃ­lia indicada.
+    /// </remarks>
+    /// <param name="familyId">Identificador da famÃ­lia.</param>
+    /// <param name="userId">Identificador do membro.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Perfil do membro.</returns>
+    [HttpGet("{familyId:guid}/members/{userId:guid}/profile")]
+    public async Task<ActionResult<FamilyMemberProfileResponse>> GetFamilyMemberProfile(Guid familyId, Guid userId, CancellationToken ct)
+    {
+        var actorRole = await GetUserRoleInFamilyAsync(familyId, _ctx.UserId, ct);
+        if (actorRole is null) return Forbid();
+
+        var row = await _db.FamilyMembers
+            .AsNoTracking()
+            .Include(m => m.User)
+            .Where(m => m.FamilyId == familyId && m.UserId == userId)
+            .Select(m => new FamilyMemberProfileResponse
+            {
+                UserId = m.UserId,
+                Name = m.User.Name,
+                Email = m.User.Email,
+                DisplayName = m.User.DisplayName,
+                ProfileColorHex = m.User.ProfileColorHex,
+                Birthday = m.User.Birthday,
+                Role = m.Role.ToString()
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (row is null) return NotFound();
+        return Ok(row);
+    }
+
+    /// <summary>
+    /// Promove um membro a administrador (apenas admins da famÃ­lia).
+    /// </summary>
+    /// <param name="familyId">Identificador da famÃ­lia.</param>
+    /// <param name="userId">Identificador do utilizador a promover.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteÃºdo se bem-sucedido.</returns>
+    [HttpPost("{familyId:guid}/members/{userId:guid}/make-admin")]
+    public async Task<IActionResult> MakeMemberAdmin(Guid familyId, Guid userId, CancellationToken ct)
+    {
+        var actorUserId = User.GetUserId();
+
+        var actorRole = await GetUserRoleInFamilyAsync(familyId, actorUserId, ct);
+        if (actorRole != FamilyRole.Admin) return Forbid();
+
+        var membership = await _db.FamilyMembers
+            .FirstOrDefaultAsync(m => m.FamilyId == familyId && m.UserId == userId, ct);
+
+        if (membership is null) return NotFound();
+
+        if (membership.Role != FamilyRole.Admin)
+        {
+            membership.Role = FamilyRole.Admin;
+            membership.UpdatedAtUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Remove um membro de uma famÃ­lia (apenas admins da famÃ­lia).
+    /// </summary>
+    /// <param name="familyId">Identificador da famÃ­lia.</param>
+    /// <param name="userId">Identificador do utilizador a remover.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteÃºdo se bem-sucedido.</returns>
+    [HttpDelete("{familyId:guid}/members/{userId:guid}")]
+    public async Task<IActionResult> RemoveMember(Guid familyId, Guid userId, CancellationToken ct)
+    {
+        var actorUserId = User.GetUserId();
+
+        var actorRole = await GetUserRoleInFamilyAsync(familyId, actorUserId, ct);
+        if (actorRole != FamilyRole.Admin) return Forbid();
+
+        var membership = await _db.FamilyMembers
+            .FirstOrDefaultAsync(m => m.FamilyId == familyId && m.UserId == userId, ct);
+
+        if (membership is null) return NotFound();
+
+        if (membership.Role == FamilyRole.Admin)
+        {
+            var adminCount = await _db.FamilyMembers
+                .AsNoTracking()
+                .CountAsync(m => m.FamilyId == familyId && m.Role == FamilyRole.Admin, ct);
+
+            if (adminCount <= 1)
+                return BadRequest("NÃ£o podes remover o Ãºltimo administrador. Promove outro membro ou elimina o grupo.");
+        }
+
+        _db.FamilyMembers.Remove(membership);
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is not null && user.CurrentFamilyId == familyId)
+        {
+            user.CurrentFamilyId = null;
+            user.UpdatedAtUtc = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Elimina uma famÃ­lia (grupo) e todos os seus dados (apenas admins da famÃ­lia).
+    /// </summary>
+    /// <param name="familyId">Identificador da famÃ­lia.</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Sem conteÃºdo se bem-sucedido.</returns>
+    [HttpDelete("{familyId:guid}")]
+    public async Task<IActionResult> DeleteFamily(Guid familyId, CancellationToken ct)
+    {
+        var actorUserId = User.GetUserId();
+
+        var actorRole = await GetUserRoleInFamilyAsync(familyId, actorUserId, ct);
+        if (actorRole != FamilyRole.Admin) return Forbid();
+
+        var exists = await _db.Families.AsNoTracking().AnyAsync(f => f.Id == familyId, ct);
+        if (!exists) return NotFound();
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        var now = DateTime.UtcNow;
+
+        // Solta a FK (Restrict) de CurrentFamilyId antes de apagar a famÃ­lia
+        await _db.Users
+            .Where(u => u.CurrentFamilyId == familyId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(u => u.CurrentFamilyId, (Guid?)null)
+                .SetProperty(u => u.UpdatedAtUtc, now), ct);
+
+        // ActivityEntries estÃ¡ com DeleteBehavior.NoAction -> temos de remover manualmente
+        await _db.ActivityEntries
+            .Where(a => a.FamilyId == familyId)
+            .ExecuteDeleteAsync(ct);
+
+        await _db.Families
+            .Where(f => f.Id == familyId)
+            .ExecuteDeleteAsync(ct);
+
+        await tx.CommitAsync(ct);
+        return NoContent();
+    }
+
+    private async Task<FamilyRole?> GetUserRoleInFamilyAsync(Guid familyId, Guid userId, CancellationToken ct)
+    {
+        return await _db.FamilyMembers
+            .AsNoTracking()
+            .Where(m => m.FamilyId == familyId && m.UserId == userId)
+            .Select(m => (FamilyRole?)m.Role)
+            .FirstOrDefaultAsync(ct);
+    }
+
 }

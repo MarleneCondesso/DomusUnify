@@ -7,10 +7,10 @@ import { ApiError } from '../../api/http'
 import { ActionSheet, type ActionSheetItem } from '../../ui/ActionSheet'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { ErrorDisplay } from '../../utils/ErrorDisplay'
-import { useAppSettings } from '../../utils/appSettings'
 import { getUserIdFromAccessToken } from '../../utils/jwt'
-import { pickTipOfDay, type Tip } from '../../utils/tips'
+import { useI18n } from '../../i18n/i18n'
 import { CreateBudgetSheet } from '../budget/CreateBudgetSheet'
+import { capitalizeFirst, formatCurrency, formatMonthYear, formatTimeAgo, formatUpcomingParts } from '../../utils/intl'
 
 type DashboardPageProps = {
   token: string
@@ -19,9 +19,9 @@ type DashboardPageProps = {
 
 export function DashboardPage({ family, token }: DashboardPageProps) {
 
+  const { t, locale } = useI18n()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const { settings } = useAppSettings()
   const [createBudgetOpen, setCreateBudgetOpen] = useState(false)
   const [groupMenuOpen, setGroupMenuOpen] = useState(false)
   const switchFamilyMutation = useMutation({
@@ -189,7 +189,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         apiError={apiFamilyError}
         queryKey={queryKeys.familyMembers}
         queryClient={queryClient}
-        title="Erro ao obter membros da família"
+        title={t('dashboard.error.familyMembers')}
       />
     )
   }
@@ -200,7 +200,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         apiError={apiMyFamiliesError}
         queryKey={queryKeys.familiesMy}
         queryClient={queryClient}
-        title="Erro ao obter grupos"
+        title={t('dashboard.error.groups')}
       />
     )
   }
@@ -211,7 +211,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         apiError={apiListsError}
         queryKey={queryKeys.lists}
         queryClient={queryClient}
-        title="Erro ao obter listas da família"
+        title={t('dashboard.error.lists')}
       />
     )
   }
@@ -222,7 +222,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         apiError={apiBudgetsError}
         queryKey={queryKeys.budgets}
         queryClient={queryClient}
-        title="Erro ao obter orçamentos"
+        title={t('dashboard.error.budgets')}
       />
     )
   }
@@ -233,7 +233,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         apiError={apiBudgetDetailError}
         queryKey={primaryBudgetId ? queryKeys.budgetById(primaryBudgetId) : ['budgetById', null]}
         queryClient={queryClient}
-        title="Erro ao obter orçamento"
+        title={t('dashboard.error.budget')}
       />
     )
   }
@@ -248,7 +248,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
             : ['budgetTotals', null, todayUtc]
         }
         queryClient={queryClient}
-        title="Erro ao obter totais do orçamento"
+        title={t('dashboard.error.budgetTotals')}
       />
     )
   }
@@ -259,7 +259,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         apiError={apiListUpdatesTodayError}
         queryKey={listUpdatesTodayKey}
         queryClient={queryClient}
-        title="Erro ao obter atividade recente"
+        title={t('dashboard.error.recentListActivity')}
       />
     )
   }
@@ -270,7 +270,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         apiError={apiRecentUpdatesError}
         queryKey={recentUpdatesKey}
         queryClient={queryClient}
-        title="Erro ao obter recent updates"
+        title={t('dashboard.error.recentUpdates')}
       />
     )
   }
@@ -281,7 +281,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         apiError={apiUnreadNotificationsError}
         queryKey={queryKeys.notificationsUnread}
         queryClient={queryClient}
-        title="Erro ao obter notificações"
+        title={t('dashboard.error.notifications')}
       />
     )
   }
@@ -292,7 +292,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
         apiError={apiNextScheduleError}
         queryKey={nextScheduleKey}
         queryClient={queryClient}
-        title="Erro ao obter próximo evento do calendário"
+        title={t('dashboard.error.nextEvent')}
       />
     )
   }
@@ -323,8 +323,8 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
   const budgetTotals = budgetTotalsQuery.data
 
   const monthLabel = budgetTotals?.periodStart
-    ? formatMonthYear(new Date(`${budgetTotals.periodStart}T00:00:00Z`))
-    : formatMonthYear(new Date())
+    ? formatMonthYear(new Date(`${budgetTotals.periodStart}T00:00:00Z`), locale)
+    : formatMonthYear(new Date(), locale)
 
   const currencyCode = (budgetDetail?.currencyCode ?? primaryBudget?.currencyCode ?? 'EUR') || 'EUR'
 
@@ -342,7 +342,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
   const budgetProgressBar = Math.max(0, Math.min(100, budgetProgressRaw))
 
   const remainingBudget = hasTotalBudget ? totalBudget - expensesThisPeriod : 0
-  const monthlyBudgetTotal = hasBudget ? formatCurrency(remainingBudget, currencyCode) : '—'
+  const monthlyBudgetTotal = hasBudget ? formatCurrency(remainingBudget, currencyCode, locale) : '—'
 
   //#endregion
 
@@ -351,7 +351,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
   const groupMenuItems: ActionSheetItem[] = [
     {
       id: 'create-group',
-      label: 'Criar novo Grupo',
+      label: t('groups.manage.createGroup'),
       icon: 'ri-add-line',
       onPress: () => {
         setGroupMenuOpen(false)
@@ -363,7 +363,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
       .map((f) => {
         const id = f.id!
         const isCurrent = Boolean(family.id) && id === family.id
-        const label = (f.name ?? '').trim() || 'Sem nome'
+        const label = (f.name ?? '').trim() || t('groups.manage.unnamed')
 
         return {
           id,
@@ -384,31 +384,27 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
       }),
   ]
 
-  const tip = settings.showSmartCard && settings.showTips ? pickTipOfDay(new Date()) : null
 
   return (
     <div className="min-h-screen bg-offwhite w-full p-0">
 
       {/** FAMILY */}
-      <section className="bg-linear-to-b from-sage-light to-offwhite py-20">
+      <section className="bg-linear-to-b from-sage-light to-offwhite py-6">
         <div className="max-w-7xl mx-auto px-6">
           <nav className="flex w-full items-center justify-between mb-10">
             <button
               type="button"
-              className="relative grid h-12 w-12 place-items-center rounded-full bg-white/60 text-forest shadow-sm hover:bg-white"
-              aria-label="Perfil"
+              className="relative grid h-12 w-12 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark shadow-lg"
+              aria-label={t('common.profile')}
               onClick={() => navigate('/profile')}
             >
-              <span className="text-base font-bold">{safeInitial(currentMember?.name ?? 'Me')}</span>
-              <span className="absolute -top-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-white text-amber shadow">
-                <i className="ri-vip-crown-2-fill text-base leading-none" />
-              </span>
+              <span className="text-base font-bold">{safeInitial(currentMember?.name ?? t('common.me'))}</span>
             </button>
 
             <button
               type="button"
-              className="flex items-center gap-2 rounded-full bg-white/40 px-4 py-2 text-forest hover:bg-white/60"
-              aria-label="Selecionar grupo"
+              className="flex items-center gap-2 rounded-full bg-white/60 hover:bg-white text-sage-dark px-4 py-2 shadow-lg"
+              aria-label={t('common.selectGroup')}
               onClick={() => setGroupMenuOpen(true)}
             >
               <span className="text-lg font-semibold">{family.name}</span>
@@ -417,8 +413,8 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
             <button
               type="button"
-              className="grid h-12 w-12 place-items-center rounded-full bg-white/60 text-forest shadow-sm hover:bg-white"
-              aria-label="Configurações"
+              className="grid h-12 w-12 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark shadow-md"
+              aria-label={t('settings.title')}
               onClick={() => navigate('/settings')}
             >
               <i className="ri-settings-3-line text-2xl leading-none" />
@@ -428,23 +424,14 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center gap-2 bg-forest/10 text-forest px-3 py-1.5 rounded-full text-xs font-medium">
               <i className="ri-vip-diamond-line"></i>
-              <span>ACTIVE FAMILY</span>
+              <span>{t('dashboard.badge.activeFamily')}</span>
             </div>
           </div>
           <h1 className="text-6xl font-serif font-medium text-forest mb-3">{family.name}</h1>
           <p className="text-lg text-charcoal/80 mb-6">
-            {familyMembers.length} members · You are {family.role}
+            {t('dashboard.family.membersLine', { count: familyMembers.length, role: family.role ?? '' })}
           </p>
 
-          {settings.showSmartCard ? (
-            <div className="mt-10">
-              <SmartCard
-                event={nextCalendarEvent}
-                tip={tip}
-                onOpenCalendar={() => navigate('/calendar')}
-              />
-            </div>
-          ) : null}
         </div>
       </section>
 
@@ -465,8 +452,8 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
             ))}
           </div>
           <div className="text-8xl font-serif font-medium text-forest mb-2">{lists.length}</div>
-          <p className="text-xl font-semibold text-forest mb-1">Shared Lists</p>
-          <p className="text-sm text-charcoal/80">{updatedListsTodayCount} updated today</p>
+          <p className="text-xl font-semibold text-forest mb-1">{t('dashboard.card.lists.title')}</p>
+          <p className="text-sm text-charcoal/80">{t('dashboard.card.lists.updatedToday', { count: updatedListsTodayCount })}</p>
           <div className="flex justify-end">
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
               <i className="ri-arrow-right-up-line text-forest" />
@@ -476,17 +463,22 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
         {/** CALENDAR */}
         <div className="bg-amber rounded-2xl p-8 text-white hover:shadow-2xl transition-all cursor-pointer">
-          <span className="text-xs font-medium mb-4 opacity-90">UPCOMING</span>
-          <h3 className="text-3xl font-bold mb-2">{nextCalendarEvent?.title ?? 'No upcoming events'}</h3>
+          <span className="text-xs font-medium mb-4 opacity-90">{t('dashboard.card.calendar.upcoming')}</span>
+          <h3 className="text-3xl font-bold mb-2">{nextCalendarEvent?.title ?? t('dashboard.card.calendar.noUpcomingTitle')}</h3>
           <p className="text-sm opacity-90 mb-4">
-            {nextCalendarEvent?.startUtc ? formatUpcomingWhen(nextCalendarEvent.startUtc) : 'No events scheduled.'}
+            {(() => {
+              if (!nextCalendarEvent?.startUtc) return t('dashboard.card.calendar.noUpcomingBody')
+              const parts = formatUpcomingParts(nextCalendarEvent.startUtc, locale)
+              if (!parts) return t('dashboard.card.calendar.noUpcomingBody')
+              return t('common.dayAtTime', { day: parts.dayLabel, time: parts.timeLabel })
+            })()}
           </p>
           <button
             type="button"
             onClick={() => navigate('/calendar')}
             className="border-2 border-white text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-white hover:text-amber transition-all whitespace-nowrap cursor-pointer"
           >
-            View Calendar
+            {t('dashboard.card.calendar.view')}
           </button>
         </div>
 
@@ -511,21 +503,21 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
             {hasBudget ? (
               <>
                 <div className="text-xl font-semibold mb-4">
-                  {monthLabel[0].toLocaleUpperCase() + monthLabel.substring(1)}
+                  {capitalizeFirst(monthLabel)}
                 </div>
                 <div className="mb-4">
                   <div className="h-2 bg-white/20 rounded-full overflow-hidden mb-2">
                     <div className="h-full bg-amber rounded-full" style={{ width: `${budgetProgressBar}%` }}></div>
                   </div>
-                  <div className="text-sm opacity-90 font-semibold">{budgetProgress}% spent this month</div>
+                  <div className="text-sm opacity-90 font-semibold">{t('dashboard.card.budget.spentThisMonth', { percent: budgetProgress })}</div>
                   <div className="text-4xl font-bold">{monthlyBudgetTotal}</div>
-                  <div className="text-sm opacity-90 font-semibold">remaining</div>
+                  <div className="text-sm opacity-90 font-semibold">{t('dashboard.card.budget.remaining')}</div>
                 </div>
               </>
             ) : (
               <div className="space-y-4">
-                <div className="text-xl font-semibold">Ainda não possui um orçamento.</div>
-                <div className="text-sm opacity-90">Create a new.</div>
+                <div className="text-xl font-semibold">{t('dashboard.card.budget.none.title')}</div>
+                <div className="text-sm opacity-90">{t('dashboard.card.budget.none.subtitle')}</div>
                 <button
                   type="button"
                   className="inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-2.5 text-sm font-semibold hover:bg-white/20 transition-colors cursor-pointer"
@@ -534,7 +526,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
                     setCreateBudgetOpen(true)
                   }}
                 >
-                  Create a new <i className="ri-arrow-right-line text-lg leading-none" />
+                  {t('dashboard.card.budget.none.button')} <i className="ri-arrow-right-line text-lg leading-none" />
                 </button>
               </div>
             )}
@@ -543,7 +535,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
         <div className="grid grid-cols-1 gap-6">
           <div className="bg-white rounded-2xl p-8 hover:shadow-xl transition-all">
-            <h3 className="text-2xl font-bold text-forest mb-6">Recent Updates</h3>
+            <h3 className="text-2xl font-bold text-forest mb-6">{t('dashboard.section.recentUpdates')}</h3>
             <div className="space-y-4">
               {recentUpdates.length > 0 ? (
                 recentUpdates.map((x) => (
@@ -559,13 +551,13 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
                         <strong className="font-semibold">{x.actorName}</strong> {x.message}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {x.createdAtUtc ? formatTimeAgo(x.createdAtUtc) : ''}
+                        {x.createdAtUtc ? formatTimeAgo(x.createdAtUtc, locale) : ''}
                       </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">No activity yet.</p>
+                <p className="text-sm text-gray-500">{t('dashboard.recentUpdates.empty')}</p>
               )}
             </div>
             <button
@@ -573,7 +565,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
               className="mt-6 text-sm text-amber-dark hover:text-amber font-medium transition-colors cursor-pointer"
               onClick={() => navigate('/activity')}
             >
-              View All Activity →
+              {t('dashboard.recentUpdates.viewAll')}
             </button>
           </div>
           <div className="space-y-6">
@@ -584,7 +576,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
               <div className="w-12 h-12 bg-amber rounded-full flex items-center justify-center mb-3">
                 <i className="ri-add-line text-2xl text-white"></i>
               </div>
-              <div className="text-lg font-semibold text-forest">Quick Add Item</div>
+              <div className="text-lg font-semibold text-forest">{t('dashboard.quickAdd.title')}</div>
             </div>
             <div
               className="bg-amber/10 rounded-2xl p-8 hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center text-center h-40"
@@ -596,8 +588,8 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
                   {unreadCount}
                 </span>
               </div>
-              <div className="text-lg font-semibold text-forest mb-1">{unreadCount} New</div>
-              <div className="text-sm text-gray-600">Notifications</div>
+              <div className="text-lg font-semibold text-forest mb-1">{t('dashboard.notifications.newCount', { count: unreadCount })}</div>
+              <div className="text-sm text-gray-600">{t('dashboard.notifications.title')}</div>
             </div>
           </div>
         </div>
@@ -616,74 +608,12 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
       ) : null}
 
       {groupMenuOpen ? (
-        <ActionSheet title="Grupos" items={groupMenuItems} onClose={() => setGroupMenuOpen(false)} />
+        <ActionSheet title={t('common.groups')} items={groupMenuItems} onClose={() => setGroupMenuOpen(false)} />
       ) : null}
     </div>
   )
 }
 
-function SmartCard({
-  event,
-  tip,
-  onOpenCalendar,
-}: {
-  event: { title?: string | null; isAllDay?: boolean; startUtc?: string; endUtc?: string } | null
-  tip: Tip | null
-  onOpenCalendar: () => void
-}) {
-  const now = new Date()
-  const weekday = now.toLocaleDateString(undefined, { weekday: 'long' })
-  const weekdayLabel = weekday ? weekday[0]!.toLocaleUpperCase() + weekday.slice(1) : ''
-  const dateLabel = now.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
-
-  const title = (event?.title ?? '').trim() || 'Sem eventos'
-  const when = event?.startUtc ? formatEventWhen(event) : 'Nenhum evento agendado.'
-
-  return (
-    <div className="relative overflow-hidden rounded-3xl bg-[#57bcc6] text-white shadow-lg">
-      <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-      <div className="absolute -left-20 -bottom-24 h-64 w-64 rounded-full bg-forest/10 blur-2xl" />
-
-      <div className="relative p-8">
-        <div className="text-5xl font-extrabold leading-tight">
-          {weekdayLabel}
-          <br />
-          {dateLabel}
-        </div>
-
-        <div className="mt-6 flex items-start gap-4">
-          <div className="mt-1 h-14 w-1.5 rounded-full bg-amber" />
-          <div className="min-w-0">
-            <div className="text-xl font-bold truncate">{title}</div>
-            <div className="text-sm opacity-90">{when}</div>
-          </div>
-        </div>
-
-        {tip ? (
-          <div className="mt-6 rounded-2xl bg-white/15 p-4">
-            <div className="flex items-start gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15">
-                <i className={`${tip.icon} text-xl`} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-sm font-semibold">{tip.title}</div>
-                <div className="text-sm opacity-90">{tip.body}</div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        <button
-          type="button"
-          className="mt-6 inline-flex items-center gap-2 rounded-full border-2 border-white/80 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white hover:text-[#57bcc6] transition-colors"
-          onClick={onOpenCalendar}
-        >
-          Ver calendário <i className="ri-arrow-right-line text-lg leading-none" />
-        </button>
-      </div>
-    </div>
-  )
-}
 
 function getSharedPreviewMembers(
   lists: { sharedWithMembers?: { userId?: string | null; name?: string | null }[] | null }[],
@@ -709,17 +639,6 @@ function pickPrimaryBudgetId(budgets: Array<{ id?: string; type?: string | null 
   return first?.id ?? null
 }
 
-function formatCurrency(amount: number, currencyCode: string): string {
-  const safeAmount = Number.isFinite(amount) ? amount : 0
-  const code = (currencyCode || 'EUR').toUpperCase()
-
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: code }).format(safeAmount)
-  } catch {
-    return `${safeAmount.toFixed(2)} ${code}`
-  }
-}
-
 function safeInitial(name: string | null | undefined): string {
   const trimmed = (name ?? '').trim()
   return trimmed ? trimmed[0]!.toUpperCase() : '?'
@@ -734,66 +653,4 @@ function countUniqueListUpdatesToday(rows: ActivityEntryResponse[]): number {
   }
 
   return ids.size
-}
-
-function formatTimeAgo(isoUtc: string): string {
-  const d = new Date(isoUtc)
-  if (Number.isNaN(d.getTime())) return isoUtc
-
-  const diffMs = Date.now() - d.getTime()
-  const diffSeconds = Math.max(0, Math.floor(diffMs / 1000))
-
-  if (diffSeconds < 60) return 'just now'
-
-  const diffMinutes = Math.floor(diffSeconds / 60)
-  if (diffMinutes < 60) return `${diffMinutes} min ago`
-
-  const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours < 24) return `${diffHours} hours ago`
-
-  const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays} days ago`
-}
-
-function formatMonthYear(d: Date): string {
-  return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
-}
-
-function formatUpcomingWhen(startUtc: string): string {
-  const start = new Date(startUtc)
-  if (Number.isNaN(start.getTime())) return startUtc
-
-  const now = new Date()
-  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-
-  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString()
-
-  const dayLabel = sameDay(start, now)
-    ? 'Today'
-    : sameDay(start, tomorrow)
-      ? 'Tomorrow'
-      : start.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
-
-  const timeLabel = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-  return `${dayLabel} at ${timeLabel}.`
-}
-
-function formatEventWhen(event: { isAllDay?: boolean; startUtc?: string; endUtc?: string }): string {
-  if (event.isAllDay) return 'Dia inteiro'
-
-  const start = event.startUtc ? new Date(event.startUtc) : null
-  const end = event.endUtc ? new Date(event.endUtc) : null
-
-  const startLabel =
-    start && !Number.isNaN(start.getTime())
-      ? start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-      : null
-
-  const endLabel =
-    end && !Number.isNaN(end.getTime())
-      ? end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-      : null
-
-  if (startLabel && endLabel) return `${startLabel} - ${endLabel}`
-  return startLabel || endLabel || '—'
 }

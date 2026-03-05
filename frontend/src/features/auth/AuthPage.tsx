@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { domusApi, type AuthResponse } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
+import { useI18n } from '../../i18n/i18n'
 
 type AuthPageProps = {
   onAuthenticated: (auth: AuthResponse) => void
@@ -33,6 +34,8 @@ type GoogleGlobal = {
 }
 
 export function AuthPage({ onAuthenticated }: AuthPageProps) {
+
+    const { t } = useI18n()
 
     const [formData, setFormData] = useState({
         name: '',
@@ -95,8 +98,8 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
             // O backend por vezes devolve strings simples (ex.: "Credenciais inválidas.")
             return typeof error.body === 'string' ? error.body : JSON.stringify(error.body)
         }
-        return 'Erro inesperado.'
-    }, [error, externalAuthError])
+        return t('common.unexpectedError')
+    }, [error, externalAuthError, t])
 
     const googleButtonRef = useRef<HTMLDivElement | null>(null)
     const googleInitRef = useRef(false)
@@ -116,7 +119,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
             if (!google?.accounts?.id) {
                 if (Date.now() - startedAt > 8000) {
                     window.clearInterval(interval)
-                    setExternalAuthError('Não foi possível carregar o login do Google (bloqueador/privacidade?).')
+                    setExternalAuthError(t('auth.google.loadFailed'))
                 }
                 return
             }
@@ -129,7 +132,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                 callback: (response) => {
                     const credential = response?.credential
                     if (!credential) {
-                        setExternalAuthError('Resposta do Google sem credencial.')
+                        setExternalAuthError(t('auth.google.noCredential'))
                         return
                     }
                     googleMutation.mutate(credential)
@@ -155,7 +158,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
             cancelled = true
             window.clearInterval(interval)
         }
-    }, [googleClientId, googleMutation])
+    }, [googleClientId, googleMutation, t])
 
     return (
         <div className="min-h-screen flex w-full bg-offwhite">
@@ -166,8 +169,8 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                             <img src="https://static.readdy.ai/image/db3a1baa272b7103d1d66e2499b34854/ea4cd7db0748495157154226b17ae713.png" alt="DomusUnify" className="w-10 h-10 object-contain" />
                             <span className="text-xl font-bold lg:hidden text-forest">DomusUnify</span>
                         </div>
-                        <h2 className="text-5xl font-bold text-charcoal mb-3">Get Started</h2>
-                        <p className="text-base text-gray-600">Create your family workspace</p>
+                        <h2 className="text-5xl font-bold text-charcoal mb-3">{t('auth.welcome.title')}</h2>
+                        <p className="text-base text-gray-600">{t('auth.welcome.subtitle')}</p>
                     </div>
 
                     <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl bg-black/20 p-1">
@@ -180,7 +183,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                             type="button"
                             disabled={isBusy}
                         >
-                            Sign In
+                            {t('auth.mode.signIn')}
                         </button>
                         <button
                             className={[
@@ -191,7 +194,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                             type="button"
                             disabled={isBusy}
                         >
-                            Create Account
+                            {t('auth.mode.createAccount')}
                         </button>
                     </div>
 
@@ -199,7 +202,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                         {mode === 'register' && (
                             <div>
                                 <label htmlFor="name" className="block text-sm font-medium text-charcoal mb-2">
-                                    Full Name
+                                    {t('auth.field.fullName')}
                                 </label>
                                 <input
                                     id="name"
@@ -208,7 +211,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                                     value={formData.name}
                                     onChange={handleChange}
                                     className="w-full px-4 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber focus:border-transparent text-base bg-white"
-                                    placeholder="John Doe"
+                                    placeholder={t('auth.placeholder.fullName')}
                                     autoComplete='name'
                                     required
                                 />
@@ -216,7 +219,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                         )}
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-charcoal mb-2">
-                                Email Address
+                                {t('auth.field.email')}
                             </label>
                             <input
                                 id="email"
@@ -226,14 +229,14 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                                 autoComplete='email'
                                 onChange={handleChange}
                                 className="w-full px-4 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber focus:border-transparent text-base bg-white"
-                                placeholder="you@example.com"
+                                placeholder={t('auth.placeholder.email')}
                                 required
                             />
                         </div>
 
                         <div>
                             <label htmlFor="password" className="block text-sm font-medium text-charcoal mb-2">
-                                Password
+                                {t('auth.field.password')}
                             </label>
                             <div className="relative">
                                 <input
@@ -244,7 +247,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                                     onChange={handleChange}
                                     className="w-full px-4 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber focus:border-transparent text-base pr-12 bg-white"
-                                    placeholder="Create a password"
+                                    placeholder={t('auth.placeholder.password')}
                                     required
                                 />
                                 <button
@@ -261,7 +264,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                             <>
                                 <div>
                                     <label htmlFor="confirmPassword" className="block text-sm font-medium text-charcoal mb-2">
-                                        Confirm Password
+                                        {t('auth.field.confirmPassword')}
                                     </label>
                                     <div className="relative">
                                         <input
@@ -272,7 +275,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                                             onChange={handleChange}
                                             autoComplete='confirm-new-password'
                                             className="w-full px-4 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber focus:border-transparent text-base pr-12 bg-white"
-                                            placeholder="Confirm your password"
+                                            placeholder={t('auth.placeholder.confirmPassword')}
                                             required
                                         />
                                         <button
@@ -288,13 +291,13 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                                 <div className="flex items-start gap-2">
                                     <input type="checkbox" id="terms" className="w-4 h-4 border-gray-300 text-amber focus:ring-0 mt-1" required />
                                     <label htmlFor="terms" className="text-sm text-gray-600">
-                                        I agree to the{' '}
+                                        {t('auth.terms.prefix')}{' '}
                                         <a href="#" className="text-amber-dark hover:text-amber transition-colors cursor-pointer">
-                                            Terms of Service
+                                            {t('auth.terms.termsOfService')}
                                         </a>{' '}
-                                        and{' '}
+                                        {t('auth.terms.and')}{' '}
                                         <a href="#" className="text-amber-dark hover:text-amber transition-colors cursor-pointer">
-                                            Privacy Policy
+                                            {t('auth.terms.privacyPolicy')}
                                         </a>
                                     </label>
                                 </div>
@@ -302,7 +305,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                         )}
                         {errorMessage && (
                             <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm">
-                                Erro: {errorMessage}
+                                {t('common.error')}: {errorMessage}
                             </div>
                         )}
                         <button
@@ -317,7 +320,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                             ].join(' ')}
                         >
                             {isBusy && <LoadingSpinner size="sm" />}
-                            <span>{mode === 'login' ? 'Sign in' : 'Create Account'}</span>
+                            <span>{mode === 'login' ? t('auth.submit.signIn') : t('auth.submit.createAccount')}</span>
                             {!isBusy && <i className="ri-arrow-right-line"></i>}
                         </button>
                     </form>
@@ -328,7 +331,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                                 <div className="w-full border-t border-gray-300"></div>
                             </div>
                             <div className="relative flex justify-center text-sm">
-                                <span className="px-4 bg-gray-50 text-gray-500">Or continue with</span>
+                                <span className="px-4 bg-offwhite text-gray-500">{t('auth.continueWith')}</span>
                             </div>
                         </div>
 
@@ -353,7 +356,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
                                 disabled
                               >
                                 <i className="ri-google-fill text-xl"></i>
-                                <span className="text-sm font-medium">Google</span>
+                                <span className="text-sm font-medium">{t('auth.google')}</span>
                               </button>
                             )}
                         </div>

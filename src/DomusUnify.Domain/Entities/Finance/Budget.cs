@@ -109,6 +109,11 @@ public sealed class Budget : BaseEntity
     public ICollection<BudgetCategoryLimit> CategoryLimits { get; set; } = new List<BudgetCategoryLimit>();
 
     /// <summary>
+    /// Contas financeiras ocultadas neste orçamento.
+    /// </summary>
+    public ICollection<BudgetHiddenFinanceAccount> HiddenFinanceAccounts { get; set; } = new List<BudgetHiddenFinanceAccount>();
+
+    /// <summary>
     /// Transações associadas ao orçamento.
     /// </summary>
     public ICollection<FinanceTransaction> Transactions { get; set; } = new List<FinanceTransaction>();

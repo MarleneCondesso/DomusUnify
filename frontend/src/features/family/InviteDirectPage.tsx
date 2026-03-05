@@ -1,22 +1,42 @@
-import { useMemo, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
-import { domusApi, type FamilyResponse } from '../../api/domusApi'
+import { domusApi } from '../../api/domusApi'
+import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 
 type Props = {
   token: string
-  family: FamilyResponse
 }
 
-export function InviteDirectPage({ token, family }: Props) {
+type PreparedInviteMessage = {
+  contact: string
+  kind: 'email' | 'sms' | 'copy'
+  subject: string
+  message: string
+}
+
+export function InviteDirectPage({ token }: Props) {
   const navigate = useNavigate()
   const { familyId } = useParams<{ familyId: string }>()
+  const { t } = useI18n()
 
   const [firstName, setFirstName] = useState('')
   const [contact, setContact] = useState('')
   const [status, setStatus] = useState<string | null>(null)
+  const [prepared, setPrepared] = useState<PreparedInviteMessage | null>(null)
 
-  const familyName = (family.name ?? '').trim() || 'Grupo'
+  const familyQuery = useQuery({
+    queryKey: queryKeys.familyById(familyId ?? 'unknown'),
+    queryFn: () => domusApi.getFamilyById(token, familyId!),
+    enabled: Boolean(familyId),
+  })
+
+  const familyName = (familyQuery.data?.name ?? '').trim() || t('group.details.title')
+
+  useEffect(() => {
+    setPrepared(null)
+  }, [contact, firstName])
 
   const createMutation = useMutation({
     mutationFn: () => {
@@ -26,27 +46,31 @@ export function InviteDirectPage({ token, family }: Props) {
     onSuccess: async (res) => {
       const inviteUrl = (res.inviteUrl ?? '').trim()
       if (!inviteUrl) {
-        setStatus('Convite criado, mas sem link.')
+        setStatus(t('invite.direct.status.noLink'))
+        setPrepared(null)
         return
       }
-
-      const msg = `Olá ${firstName.trim() || ''}\n\nJunte-se ao meu ${familyName} para compartilhar todas as atividades da nossa família.\n${inviteUrl}`.trim()
 
       const contactTrimmed = contact.trim()
-      if (contactTrimmed.includes('@')) {
-        openMailto(contactTrimmed, `Convite para ${familyName}`, msg)
-        setStatus('Abrindo e-mail...')
+      const kind: PreparedInviteMessage['kind'] =
+        contactTrimmed.includes('@') ? 'email' : looksLikePhone(contactTrimmed) ? 'sms' : 'copy'
+
+      const subject = `${t('invite.link.shareTitle', { familyName })} — DomusUnify`
+
+      const name = firstName.trim()
+      const greeting = name ? t('invite.direct.greeting.named', { name }) : t('invite.direct.greeting.unnamed')
+      const message = `${greeting}\n\n${t('invite.message.joinBase', { familyName })}\n${inviteUrl}\n\n${t('invite.direct.message.welcome')}`.trim()
+
+      setPrepared({ contact: contactTrimmed, kind, subject, message })
+
+      if (kind === 'copy') {
+        await copyText(message)
+        setStatus(t('invite.link.copied'))
+        setTimeout(() => setStatus(null), 1500)
         return
       }
 
-      if (looksLikePhone(contactTrimmed)) {
-        openSms(contactTrimmed, msg)
-        setStatus('Abrindo SMS...')
-        return
-      }
-
-      await copyText(inviteUrl)
-      setStatus('Link copiado.')
+      setStatus(t('invite.direct.status.ready'))
       setTimeout(() => setStatus(null), 1500)
     },
   })
@@ -54,10 +78,11 @@ export function InviteDirectPage({ token, family }: Props) {
   const canInvite = Boolean(contact.trim()) && !createMutation.isPending
 
   const subtitle = useMemo(() => {
-    if (contact.trim().includes('@')) return 'E-mail'
-    if (looksLikePhone(contact.trim())) return 'SMS'
-    return 'Link'
-  }, [contact])
+    const trimmed = contact.trim()
+    if (trimmed.includes('@')) return t('invite.direct.destination.email')
+    if (looksLikePhone(trimmed)) return t('invite.direct.destination.sms')
+    return t('invite.direct.destination.link')
+  }, [contact, t])
 
   return (
     <div className="min-h-screen bg-offwhite w-full">
@@ -66,13 +91,13 @@ export function InviteDirectPage({ token, family }: Props) {
           <button
             type="button"
             className="grid h-12 w-12 place-items-center rounded-full hover:bg-sand-light"
-            aria-label="Voltar"
+            aria-label={t('common.back')}
             onClick={() => navigate(-1)}
           >
             <i className="ri-arrow-left-line text-2xl leading-none text-sage-dark" />
           </button>
 
-          <div className="text-lg font-bold text-charcoal">Convidar membro</div>
+          <div className="text-lg font-bold text-charcoal">{t('invite.members.title')}</div>
 
           <div className="h-12 w-12" />
         </div>
@@ -80,10 +105,8 @@ export function InviteDirectPage({ token, family }: Props) {
 
       <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-10">
         <div className="text-center">
-          <h1 className="text-5xl font-extrabold text-charcoal mb-4">Convidar membro</h1>
-          <p className="text-sm text-gray-600">
-            Convide as pessoas de quem você é mais próximo e comece a compartilhar com elas.
-          </p>
+          <h1 className="text-5xl font-extrabold text-forest mb-4">{t('invite.members.title')}</h1>
+          <p className="text-sm text-gray-600">{t('invite.direct.subtitle')}</p>
         </div>
 
         <div className="mt-10 space-y-4">
@@ -91,7 +114,7 @@ export function InviteDirectPage({ token, family }: Props) {
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Primeiro nome"
+              placeholder={t('invite.direct.firstName.placeholder')}
               className="w-full bg-transparent text-lg text-charcoal outline-none placeholder:text-gray-400"
             />
             <i className="ri-user-line text-2xl text-gray-400" />
@@ -101,7 +124,7 @@ export function InviteDirectPage({ token, family }: Props) {
             <input
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              placeholder="Telefone celular ou E-mail"
+              placeholder={t('invite.direct.contact.placeholder')}
               className="w-full bg-transparent text-lg text-charcoal outline-none placeholder:text-gray-400"
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return
@@ -114,23 +137,72 @@ export function InviteDirectPage({ token, family }: Props) {
 
           <button
             type="button"
-            className="mt-4 w-full rounded-full bg-blue-500 px-6 py-4 text-center text-lg font-extrabold text-white shadow-lg hover:bg-blue-600 disabled:opacity-60"
+            className="mt-4 w-full rounded-full bg-sage-dark/60 py-4 text-center text-lg font-extrabold text-white shadow-lg hover:bg-sage-dark disabled:opacity-60"
             onClick={() => createMutation.mutate()}
             disabled={!canInvite}
           >
-            {createMutation.isPending ? 'Convidando...' : 'Convidar'}
+            {createMutation.isPending ? t('invite.direct.button.inviting') : t('invite.direct.button.invite')}
           </button>
 
-          <div className="text-center text-xs text-gray-500">Destino: {subtitle}</div>
+          <div className="text-center text-xs text-gray-500">{t('invite.direct.destination.line', { destination: subtitle })}</div>
 
           {status ? <div className="mt-2 text-center text-sm font-semibold text-forest">{status}</div> : null}
 
           {createMutation.isError ? (
             <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
-              Não foi possível criar o convite.
+              {t('invite.direct.errorCreate')}
             </div>
           ) : null}
         </div>
+
+        {prepared ? (
+          <section className="mt-8 rounded-2xl bg-white p-5 shadow-sm">
+            <div className="text-sm font-semibold text-charcoal mb-2">{t('invite.link.messageTitle')}</div>
+            <div className="rounded-2xl bg-sand-light px-4 py-3 text-sm text-charcoal whitespace-pre-wrap">
+              {prepared.message}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              {prepared.kind === 'sms' ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-full bg-blue-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-600"
+                  onClick={() => openSms(prepared.contact, prepared.message)}
+                >
+                  <i className="ri-message-3-line text-lg leading-none" /> {t('invite.direct.openMessages')}
+                </button>
+              ) : null}
+
+              {prepared.kind === 'email' ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-full bg-blue-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-600"
+                  onClick={() => openMailto(prepared.contact, prepared.subject, prepared.message)}
+                >
+                  <i className="ri-mail-send-line text-lg leading-none" /> {t('invite.direct.openEmail')}
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-charcoal border border-gray-200 hover:bg-sand-light"
+                onClick={async () => {
+                  await copyText(prepared.message)
+                  setStatus(t('invite.link.copied'))
+                  setTimeout(() => setStatus(null), 1500)
+                }}
+              >
+                <i className="ri-file-copy-line text-lg leading-none" /> {t('invite.link.copyMessage')}
+              </button>
+            </div>
+
+            {prepared.kind !== 'copy' ? (
+              <div className="mt-3 text-xs text-gray-500">
+                {t('invite.direct.to')}: <span className="font-semibold text-charcoal">{prepared.contact || '—'}</span>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
       </main>
     </div>
   )
@@ -143,13 +215,17 @@ function looksLikePhone(value: string): boolean {
 }
 
 function openMailto(email: string, subject: string, body: string) {
-  const url = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  const to = email.trim()
+  const url = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   window.location.href = url
 }
 
 function openSms(phone: string, body: string) {
-  const url = `sms:${encodeURIComponent(phone)}?&body=${encodeURIComponent(body)}`
-  window.location.href = url
+  const to = normalizePhoneForSms(phone)
+  const bodyEncoded = encodeURIComponent(body)
+  const separator = isIOS() ? '&' : '?'
+  const url = `sms:${to}${separator}body=${bodyEncoded}`
+  window.location.assign(url)
 }
 
 async function copyText(text: string) {
@@ -160,3 +236,24 @@ async function copyText(text: string) {
   }
 }
 
+function normalizePhoneForSms(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+
+  const hasPlus = trimmed.startsWith('+')
+  const digits = trimmed.replace(/\\D/g, '')
+  if (!digits) return ''
+
+  if (!hasPlus && digits.startsWith('00') && digits.length > 2) {
+    return `+${digits.slice(2)}`
+  }
+
+  return hasPlus ? `+${digits}` : digits
+}
+
+function isIOS(): boolean {
+  const ua = navigator.userAgent
+  if (/iPad|iPhone|iPod/i.test(ua)) return true
+  // iPadOS 13+ reports as Mac; detect touch-capable Macs.
+  return /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1
+}

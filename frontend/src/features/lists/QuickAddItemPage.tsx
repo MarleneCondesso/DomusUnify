@@ -7,6 +7,7 @@ import { queryKeys } from '../../api/queryKeys'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { ErrorDisplay } from '../../utils/ErrorDisplay'
 import { AddItemButtonSheet } from './AddItemButtonSheet'
+import { useI18n } from '../../i18n/i18n'
 
 type Props = {
   token: string
@@ -14,6 +15,7 @@ type Props = {
 }
 
 export function QuickAddItemPage({ token, family }: Props) {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [sheetOpen, setSheetOpen] = useState(true)
@@ -48,7 +50,7 @@ export function QuickAddItemPage({ token, family }: Props) {
         apiError={apiError}
         queryKey={listsKey}
         queryClient={queryClient}
-        title="Erro ao obter listas"
+        title={t('quickAdd.errorTitle')}
       />
     )
   }
@@ -62,7 +64,7 @@ export function QuickAddItemPage({ token, family }: Props) {
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-            aria-label="Home"
+            aria-label={t('common.home')}
             onClick={() => navigate('/')}
           >
             <i className="ri-home-7-line text-2xl leading-none" />
@@ -71,7 +73,7 @@ export function QuickAddItemPage({ token, family }: Props) {
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-            aria-label="Back"
+            aria-label={t('common.back')}
             onClick={() => navigate(-1)}
           >
             <i className="ri-arrow-left-line text-2xl leading-none" />
@@ -79,22 +81,22 @@ export function QuickAddItemPage({ token, family }: Props) {
         </nav>
 
         <section className="py-10 px-2">
-          <h1 className="text-6xl font-bold text-charcoal mb-4">Quick Add</h1>
-          <p className="text-md text-gray-600">Add an item to a list in {family.name}.</p>
+          <h1 className="text-6xl font-bold text-charcoal mb-4">{t('quickAdd.title')}</h1>
+          <p className="text-md text-gray-600">{t('quickAdd.subtitle', { familyName: family.name ?? '' })}</p>
         </section>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 pb-16">
         <div className="rounded-2xl bg-white p-6 shadow-sm">
           <div className="text-sm text-charcoal/70">
-            Choose a list and we’ll open the item sheet for you.
+            {t('quickAdd.body')}
           </div>
           <button
             type="button"
             className="mt-4 inline-flex items-center gap-2 rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber/90"
             onClick={() => setSheetOpen(true)}
           >
-            Add item <i className="ri-add-line text-lg leading-none" />
+            {t('quickAdd.addItem')} <i className="ri-add-line text-lg leading-none" />
           </button>
 
           <button
@@ -102,7 +104,7 @@ export function QuickAddItemPage({ token, family }: Props) {
             className="mt-4 ml-3 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-amber border border-amber/30 hover:bg-sand-light"
             onClick={() => navigate('/lists')}
           >
-            View lists <i className="ri-arrow-right-line text-lg leading-none" />
+            {t('quickAdd.viewLists')} <i className="ri-arrow-right-line text-lg leading-none" />
           </button>
         </div>
       </main>
@@ -121,4 +123,3 @@ export function QuickAddItemPage({ token, family }: Props) {
     </div>
   )
 }
-

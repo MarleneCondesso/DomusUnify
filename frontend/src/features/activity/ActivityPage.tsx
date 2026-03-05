@@ -6,6 +6,8 @@ import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { ErrorDisplay } from '../../utils/ErrorDisplay'
+import { useI18n } from '../../i18n/i18n'
+import { formatTimeAgo } from '../../utils/intl'
 
 type Props = {
   token: string
@@ -13,6 +15,7 @@ type Props = {
 }
 
 export function ActivityPage({ token, family }: Props) {
+  const { t, locale } = useI18n()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -40,7 +43,7 @@ export function ActivityPage({ token, family }: Props) {
         apiError={apiError}
         queryKey={activityKey}
         queryClient={queryClient}
-        title="Erro ao obter atividade"
+        title={t('activity.errorTitle')}
       />
     )
   }
@@ -54,7 +57,7 @@ export function ActivityPage({ token, family }: Props) {
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-            aria-label="Home"
+            aria-label={t('common.home')}
             onClick={() => navigate('/')}
           >
             <i className="ri-home-7-line text-2xl leading-none" />
@@ -63,7 +66,7 @@ export function ActivityPage({ token, family }: Props) {
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-            aria-label="Back"
+            aria-label={t('common.back')}
             onClick={() => navigate(-1)}
           >
             <i className="ri-arrow-left-line text-2xl leading-none" />
@@ -71,8 +74,8 @@ export function ActivityPage({ token, family }: Props) {
         </nav>
 
         <section className="py-10 px-2">
-          <h1 className="text-6xl font-bold text-charcoal mb-4">Activity</h1>
-          <p className="text-md text-gray-600">Everything that’s been happening in {family.name}</p>
+          <h1 className="text-6xl font-bold text-charcoal mb-4">{t('activity.title')}</h1>
+          <p className="text-md text-gray-600">{t('activity.subtitle', { familyName: family.name ?? '' })}</p>
         </section>
       </header>
 
@@ -88,17 +91,17 @@ export function ActivityPage({ token, family }: Props) {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-charcoal">
-                        <strong className="font-semibold">{x.actorName ?? 'Someone'}</strong> {x.message ?? ''}
+                        <strong className="font-semibold">{x.actorName ?? t('common.someone')}</strong> {x.message ?? ''}
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                        <span>{x.createdAtUtc ? formatTimeAgo(x.createdAtUtc) : ''}</span>
+                        <span>{x.createdAtUtc ? formatTimeAgo(x.createdAtUtc, locale) : ''}</span>
                         {x.listId ? (
                           <button
                             type="button"
                             className="text-amber-dark hover:text-amber font-medium"
                             onClick={() => navigate(`/lists/items/${x.listId}`)}
                           >
-                            Open list
+                            {t('activity.openList')}
                           </button>
                         ) : null}
                       </div>
@@ -109,7 +112,7 @@ export function ActivityPage({ token, family }: Props) {
               ))}
             </ul>
           ) : (
-            <div className="px-5 py-10 text-center text-sm text-gray-500">No activity yet.</div>
+            <div className="px-5 py-10 text-center text-sm text-gray-500">{t('activity.empty')}</div>
           )}
         </div>
       </main>
@@ -120,23 +123,4 @@ export function ActivityPage({ token, family }: Props) {
 function safeInitial(name: string | null | undefined): string {
   const trimmed = (name ?? '').trim()
   return trimmed ? trimmed[0]!.toUpperCase() : '?'
-}
-
-function formatTimeAgo(isoUtc: string): string {
-  const d = new Date(isoUtc)
-  if (Number.isNaN(d.getTime())) return isoUtc
-
-  const diffMs = Date.now() - d.getTime()
-  const diffSeconds = Math.max(0, Math.floor(diffMs / 1000))
-
-  if (diffSeconds < 60) return 'just now'
-
-  const diffMinutes = Math.floor(diffSeconds / 60)
-  if (diffMinutes < 60) return `${diffMinutes} min ago`
-
-  const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours < 24) return `${diffHours} hours ago`
-
-  const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays} days ago`
 }

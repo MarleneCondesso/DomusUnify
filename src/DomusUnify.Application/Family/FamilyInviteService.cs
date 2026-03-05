@@ -67,7 +67,8 @@ public sealed class FamilyInviteService : IFamilyInviteService
         _db.FamilyInvites.Add(invite);
         await _db.SaveChangesAsync(ct);
 
-        var url = $"{_publicAppBaseUrl}/invite/{token}";
+        // O frontend usa HashRouter, por isso o link pÃºblico precisa conter `/#/`.
+        var url = $"{_publicAppBaseUrl}/#/invite/{token}";
         return new CreateInviteResult(url, expires);
     }
 

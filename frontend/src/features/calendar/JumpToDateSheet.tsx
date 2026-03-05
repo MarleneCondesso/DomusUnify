@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FirstDayOfWeek } from './calendarPreferences'
 import { capitalizeFirst, clampDateToMonth, dateKey } from './dateUtils'
+import { useI18n } from '../../i18n/i18n'
 
 type Props = {
   initialMonthStart: Date
@@ -14,22 +15,6 @@ type PickerMode = 'calendar' | 'wheel'
 
 type WheelOption<TValue extends number> = { value: TValue; label: string }
 
-const WEEKDAY_LABELS = ['DOM.', 'SEG.', 'TER.', 'QUA.', 'QUI.', 'SEX.', 'SÁB.'] as const
-const MONTH_LABELS = [
-  'janeiro',
-  'fevereiro',
-  'março',
-  'abril',
-  'maio',
-  'junho',
-  'julho',
-  'agosto',
-  'setembro',
-  'outubro',
-  'novembro',
-  'dezembro',
-] as const
-
 const WHEEL_ITEM_HEIGHT_PX = 44
 const WHEEL_HEIGHT_PX = 196
 
@@ -40,6 +25,7 @@ export function JumpToDateSheet({
   onClose,
   onConfirm,
 }: Props) {
+  const { t, locale } = useI18n()
   const initialYear = initialMonthStart.getFullYear()
   const initialMonth = initialMonthStart.getMonth()
 
@@ -51,23 +37,37 @@ export function JumpToDateSheet({
   const [wheelYear, setWheelYear] = useState<number>(initialYear)
 
   const monthTitle = useMemo(() => {
-    return capitalizeFirst(cursor.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' }))
-  }, [cursor])
+    return capitalizeFirst(cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' }))
+  }, [cursor, locale])
 
   const wheelTitle = useMemo(() => {
-    return capitalizeFirst(new Date(wheelYear, wheelMonth, 1).toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' }))
-  }, [wheelMonth, wheelYear])
+    return capitalizeFirst(new Date(wheelYear, wheelMonth, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' }))
+  }, [locale, wheelMonth, wheelYear])
 
   const headerTitle = mode === 'wheel' ? wheelTitle : monthTitle
   const selectedKey = useMemo(() => dateKey(selectedDate), [selectedDate])
   const weekdayLabels = useMemo(() => {
-    if (firstDayOfWeek === 'monday') return [...WEEKDAY_LABELS.slice(1), WEEKDAY_LABELS[0]]
-    return [...WEEKDAY_LABELS]
-  }, [firstDayOfWeek])
+    let labels: string[]
+    try {
+      const fmt = new Intl.DateTimeFormat(locale, { weekday: 'narrow' })
+      const base = new Date(2021, 7, 1, 12, 0, 0) // Sunday
+      labels = Array.from({ length: 7 }, (_, i) => fmt.format(new Date(base.getFullYear(), base.getMonth(), base.getDate() + i)))
+    } catch {
+      labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+    }
+
+    if (firstDayOfWeek === 'monday') return [...labels.slice(1), labels[0]!]
+    return labels
+  }, [firstDayOfWeek, locale])
 
   const monthOptions = useMemo<Array<WheelOption<number>>>(() => {
-    return MONTH_LABELS.map((m, idx) => ({ value: idx, label: m }))
-  }, [])
+    try {
+      const fmt = new Intl.DateTimeFormat(locale, { month: 'long' })
+      return Array.from({ length: 12 }, (_, idx) => ({ value: idx, label: fmt.format(new Date(2021, idx, 1)) }))
+    } catch {
+      return Array.from({ length: 12 }, (_, idx) => ({ value: idx, label: String(idx + 1) }))
+    }
+  }, [locale])
 
   const yearOptions = useMemo<Array<WheelOption<number>>>(() => {
     const nowYear = new Date().getFullYear()
@@ -140,7 +140,7 @@ export function JumpToDateSheet({
 
   return (
     <div className="fixed inset-0 z-[70]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl rounded-t-3xl bg-white p-4 shadow-2xl">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
@@ -150,7 +150,7 @@ export function JumpToDateSheet({
             type="button"
             className="flex min-w-0 items-center gap-1 rounded-2xl px-2 py-1 text-left text-lg font-semibold text-forest hover:bg-sand-light"
             onClick={toggleMode}
-            aria-label="Selecionar mês e ano"
+            aria-label={t('calendar.jumpToDate.aria')}
           >
             <span className="truncate">{headerTitle}</span>
             <i className={`ri-arrow-${mode === 'calendar' ? 'down' : 'up'}-s-line text-2xl`} />
@@ -161,7 +161,7 @@ export function JumpToDateSheet({
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light text-sage-dark"
               onClick={goPrev}
-              aria-label="Mês anterior"
+              aria-label={t('calendar.month.prev')}
             >
               <i className="ri-arrow-left-s-line text-2xl leading-none" />
             </button>
@@ -169,7 +169,7 @@ export function JumpToDateSheet({
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light text-sage-dark"
               onClick={goNext}
-              aria-label="Mês seguinte"
+              aria-label={t('calendar.month.next')}
             >
               <i className="ri-arrow-right-s-line text-2xl leading-none" />
             </button>
@@ -202,7 +202,7 @@ export function JumpToDateSheet({
                       isSelected ? 'bg-sage-light text-forest' : 'text-charcoal hover:bg-sand-light',
                     ].join(' ')}
                     onClick={() => setSelectedDate(d)}
-                    aria-label={`Dia ${d.getDate()}`}
+                    aria-label={t('calendar.day.aria', { day: d.getDate() })}
                   >
                     {d.getDate()}
                   </button>
@@ -212,8 +212,8 @@ export function JumpToDateSheet({
           </div>
         ) : (
           <div className="mt-4 grid grid-cols-2 gap-6 px-2 pb-2">
-            <WheelPicker options={monthOptions} value={wheelMonth} onChange={setWheelMonth} ariaLabel="Mês" />
-            <WheelPicker options={yearOptions} value={wheelYear} onChange={setWheelYear} ariaLabel="Ano" />
+            <WheelPicker options={monthOptions} value={wheelMonth} onChange={setWheelMonth} ariaLabel={t('calendar.month.label')} />
+            <WheelPicker options={yearOptions} value={wheelYear} onChange={setWheelYear} ariaLabel={t('calendar.year.label')} />
           </div>
         )}
 
@@ -223,7 +223,7 @@ export function JumpToDateSheet({
             className="w-full rounded-full bg-forest px-4 py-3 text-base font-semibold text-white hover:bg-forest/95"
             onClick={confirm}
           >
-            Confirmar
+            {t('common.confirm')}
           </button>
         </div>
       </div>

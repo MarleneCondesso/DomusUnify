@@ -6,6 +6,8 @@ import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { ErrorDisplay } from '../../utils/ErrorDisplay'
+import { useI18n } from '../../i18n/i18n'
+import { formatTimeAgo } from '../../utils/intl'
 
 type Props = {
   token: string
@@ -13,6 +15,7 @@ type Props = {
 }
 
 export function NotificationsPage({ token, family }: Props) {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -56,7 +59,7 @@ export function NotificationsPage({ token, family }: Props) {
         apiError={apiUnreadError}
         queryKey={queryKeys.notificationsUnread}
         queryClient={queryClient}
-        title="Erro ao obter notificações"
+        title={t('notificationsPage.errorUnreadTitle')}
       />
     )
   }
@@ -67,7 +70,7 @@ export function NotificationsPage({ token, family }: Props) {
         apiError={apiActivityError}
         queryKey={activityKey}
         queryClient={queryClient}
-        title="Erro ao obter histórico de atividade"
+        title={t('notificationsPage.errorActivityTitle')}
       />
     )
   }
@@ -85,7 +88,7 @@ export function NotificationsPage({ token, family }: Props) {
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-            aria-label="Home"
+            aria-label={t('common.home')}
             onClick={() => navigate('/')}
           >
             <i className="ri-home-7-line text-2xl leading-none" />
@@ -94,7 +97,7 @@ export function NotificationsPage({ token, family }: Props) {
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-            aria-label="Back"
+            aria-label={t('common.back')}
             onClick={() => navigate(-1)}
           >
             <i className="ri-arrow-left-line text-2xl leading-none" />
@@ -102,14 +105,14 @@ export function NotificationsPage({ token, family }: Props) {
         </nav>
 
         <section className="py-10 px-2">
-          <h1 className="text-6xl font-bold text-charcoal mb-4">Notificações</h1>
-          <p className="text-md text-gray-600">Tudo o que aconteceu em {family.name}.</p>
+          <h1 className="text-6xl font-bold text-charcoal mb-4">{t('notificationsPage.title')}</h1>
+          <p className="text-md text-gray-600">{t('notificationsPage.subtitle', { familyName: family.name ?? '' })}</p>
         </section>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 pb-16 space-y-6">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-sm text-charcoal/70">{unread.length} por ver</div>
+          <div className="text-sm text-charcoal/70">{t('notificationsPage.unseenCount', { count: unread.length })}</div>
           <button
             type="button"
             className="inline-flex items-center gap-2 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white hover:bg-forest/90 disabled:opacity-50"
@@ -121,20 +124,20 @@ export function NotificationsPage({ token, family }: Props) {
             ) : (
               <i className="ri-check-double-line text-lg leading-none" />
             )}
-            Marcar todas como vistas
+            {t('notificationsPage.markAllSeen')}
           </button>
         </div>
 
         <NotificationSection
-          title="Por ver"
-          emptyText="Sem notificações por ver."
+          title={t('notificationsPage.section.unseen')}
+          emptyText={t('notificationsPage.empty.unseen')}
           items={unread}
           onOpenList={(listId) => navigate(`/lists/items/${listId}`)}
         />
 
         <NotificationSection
-          title="Vistas"
-          emptyText="Ainda não há histórico."
+          title={t('notificationsPage.section.seen')}
+          emptyText={t('notificationsPage.empty.seen')}
           items={seen}
           onOpenList={(listId) => navigate(`/lists/items/${listId}`)}
         />
@@ -154,6 +157,8 @@ function NotificationSection({
   items: ActivityEntryResponse[]
   onOpenList: (listId: string) => void
 }) {
+  const { t, locale } = useI18n()
+
   return (
     <section className="rounded-2xl bg-white shadow-sm">
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -171,17 +176,17 @@ function NotificationSection({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-charcoal">
-                    <strong className="font-semibold">{x.actorName ?? 'Someone'}</strong> {x.message ?? ''}
+                    <strong className="font-semibold">{x.actorName ?? t('common.someone')}</strong> {x.message ?? ''}
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                    <span>{x.createdAtUtc ? formatTimeAgo(x.createdAtUtc) : ''}</span>
+                    <span>{x.createdAtUtc ? formatTimeAgo(x.createdAtUtc, locale) : ''}</span>
                     {x.listId ? (
                       <button
                         type="button"
                         className="text-amber-dark hover:text-amber font-medium"
                         onClick={() => onOpenList(x.listId!)}
                       >
-                        Open list
+                        {t('notificationsPage.openList')}
                       </button>
                     ) : null}
                   </div>
@@ -202,23 +207,3 @@ function safeInitial(name: string | null | undefined): string {
   const trimmed = (name ?? '').trim()
   return trimmed ? trimmed[0]!.toUpperCase() : '?'
 }
-
-function formatTimeAgo(isoUtc: string): string {
-  const d = new Date(isoUtc)
-  if (Number.isNaN(d.getTime())) return isoUtc
-
-  const diffMs = Date.now() - d.getTime()
-  const diffSeconds = Math.max(0, Math.floor(diffMs / 1000))
-
-  if (diffSeconds < 60) return 'just now'
-
-  const diffMinutes = Math.floor(diffSeconds / 60)
-  if (diffMinutes < 60) return `${diffMinutes} min ago`
-
-  const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours < 24) return `${diffHours} hours ago`
-
-  const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays} days ago`
-}
-

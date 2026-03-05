@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { domusApi, type FamilyResponse } from '../../api/domusApi'
 import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 
 type Props = {
   token: string
@@ -11,6 +12,7 @@ type Props = {
 export function CreateGroupPage({ token }: Props) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useI18n()
 
   const fileRef = useRef<HTMLInputElement | null>(null)
 
@@ -62,14 +64,14 @@ export function CreateGroupPage({ token }: Props) {
           <button
             type="button"
             className="grid h-12 w-12 place-items-center rounded-full hover:bg-sand-light"
-            aria-label="Fechar"
+            aria-label={t('common.close')}
             onClick={() => navigate(-1)}
             disabled={createMutation.isPending}
           >
             <i className="ri-close-line text-2xl leading-none text-sage-dark" />
           </button>
 
-          <div className="text-lg font-bold text-charcoal">Novo Grupo</div>
+          <div className="text-lg font-bold text-charcoal">{t('groups.create.title')}</div>
 
           <div className="h-12 w-12" />
         </div>
@@ -99,7 +101,7 @@ export function CreateGroupPage({ token }: Props) {
           <div className="absolute inset-0 grid place-items-center">
             <div className="flex items-center gap-3 rounded-full bg-black/30 px-5 py-3 text-white">
               <i className="ri-camera-line text-2xl" />
-              <span className="text-base font-semibold">Adicionar foto de capa</span>
+              <span className="text-base font-semibold">{t('groups.create.addCover')}</span>
             </div>
           </div>
         </button>
@@ -120,7 +122,7 @@ export function CreateGroupPage({ token }: Props) {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Nomeie o seu Grupo"
+            placeholder={t('groups.create.namePlaceholder')}
             className="w-full bg-transparent py-2 text-lg text-charcoal outline-none placeholder:text-gray-400"
             disabled={createMutation.isPending}
             onKeyDown={(e) => {
@@ -133,7 +135,7 @@ export function CreateGroupPage({ token }: Props) {
             <button
               type="button"
               className="grid h-10 w-10 place-items-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
-              aria-label="Limpar"
+              aria-label={t('common.clear')}
               onClick={() => setName('')}
               disabled={createMutation.isPending}
             >
@@ -148,7 +150,7 @@ export function CreateGroupPage({ token }: Props) {
           onClick={submit}
           disabled={!canCreate || createMutation.isPending}
         >
-          {createMutation.isPending ? 'Criando...' : 'CRIAR'}
+          {createMutation.isPending ? t('common.creating') : t('common.create').toUpperCase()}
         </button>
       </main>
     </div>
@@ -163,4 +165,3 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.readAsDataURL(file)
   })
 }
-

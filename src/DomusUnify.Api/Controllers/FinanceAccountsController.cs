@@ -118,7 +118,7 @@ public sealed class FinanceAccountsController : ControllerBase
     /// Elimina uma conta financeira.
     /// </summary>
     /// <remarks>
-    /// A operação falha com conflito se a conta estiver a ser usada por transações.
+    /// Apenas é possível eliminar contas que não sejam por defeito e que não estejam em uso por transações.
     /// </remarks>
     /// <param name="accountId">Identificador da conta.</param>
     /// <param name="ct">Token de cancelamento.</param>

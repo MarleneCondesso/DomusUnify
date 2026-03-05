@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 export type ThemeMode = 'system' | 'light' | 'dark'
+export type LanguageMode = 'system' | 'en' | 'pt' | 'zh'
 
 export type NotificationCategoryId =
   | 'note'
@@ -18,6 +19,7 @@ export type NotificationCategoryId =
 
 export type AppSettings = {
   themeMode: ThemeMode
+  languageMode: LanguageMode
   notificationsEnabled: boolean
   notificationCategories: Record<NotificationCategoryId, boolean>
   showSmartCard: boolean
@@ -43,6 +45,7 @@ const DEFAULT_NOTIFICATION_CATEGORIES: Record<NotificationCategoryId, boolean> =
 
 const DEFAULT_SETTINGS: AppSettings = {
   themeMode: 'system',
+  languageMode: 'system',
   notificationsEnabled: true,
   notificationCategories: DEFAULT_NOTIFICATION_CATEGORIES,
   showSmartCard: true,
@@ -53,6 +56,10 @@ function isThemeMode(value: unknown): value is ThemeMode {
   return value === 'system' || value === 'light' || value === 'dark'
 }
 
+function isLanguageMode(value: unknown): value is LanguageMode {
+  return value === 'system' || value === 'en' || value === 'pt' || value === 'zh'
+}
+
 function readStoredSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -61,6 +68,7 @@ function readStoredSettings(): AppSettings {
     if (!parsed || typeof parsed !== 'object') return DEFAULT_SETTINGS
 
     const themeMode = isThemeMode(parsed.themeMode) ? parsed.themeMode : DEFAULT_SETTINGS.themeMode
+    const languageMode = isLanguageMode(parsed.languageMode) ? parsed.languageMode : DEFAULT_SETTINGS.languageMode
     const notificationsEnabled =
       typeof parsed.notificationsEnabled === 'boolean' ? parsed.notificationsEnabled : DEFAULT_SETTINGS.notificationsEnabled
     const showSmartCard = typeof parsed.showSmartCard === 'boolean' ? parsed.showSmartCard : DEFAULT_SETTINGS.showSmartCard
@@ -76,6 +84,7 @@ function readStoredSettings(): AppSettings {
 
     return {
       themeMode,
+      languageMode,
       notificationsEnabled,
       notificationCategories,
       showSmartCard,
@@ -142,4 +151,3 @@ export function useAppSettings(): AppSettingsContextValue {
   if (!ctx) throw new Error('useAppSettings must be used within AppSettingsProvider')
   return ctx
 }
-

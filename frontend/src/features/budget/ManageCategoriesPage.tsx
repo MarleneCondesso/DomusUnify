@@ -4,7 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { domusApi, type FinanceCategoryResponse } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
+import { getFinanceCategoryDisplayName } from '../../utils/categoryLocalization'
 import { financeCategoryEmoji } from '../../utils/financeCategoryEmoji'
 import { CreateFinanceCategorySheet } from './CreateFinanceCategorySheet'
 import { EditFinanceCategorySheet } from './EditFinanceCategorySheet'
@@ -24,12 +26,13 @@ type DragState = {
   width: number
 }
 
-function sortByOrderThenName(rows: FinanceCategoryResponse[]): FinanceCategoryResponse[] {
+function sortByOrderThenName(rows: FinanceCategoryResponse[], locale: string): FinanceCategoryResponse[] {
+  const collator = new Intl.Collator(locale)
   return [...rows].sort((a, b) => {
     const ao = a.sortOrder ?? 0
     const bo = b.sortOrder ?? 0
     if (ao !== bo) return ao - bo
-    return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'pt-PT')
+    return collator.compare(String(a.name ?? ''), String(b.name ?? ''))
   })
 }
 
@@ -37,6 +40,7 @@ export function ManageCategoriesPage({ token }: Props) {
   const { budgetId } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t, locale, language } = useI18n()
 
   const [type, setType] = useState<'Expense' | 'Income'>('Expense')
   const [createOpen, setCreateOpen] = useState(false)
@@ -67,8 +71,8 @@ export function ManageCategoriesPage({ token }: Props) {
 
   useEffect(() => {
     if (dragStateRef.current) return
-    setOrderedRows(sortByOrderThenName(categoriesQuery.data ?? []))
-  }, [categoriesQuery.data])
+    setOrderedRows(sortByOrderThenName(categoriesQuery.data ?? [], locale))
+  }, [categoriesQuery.data, locale])
 
   useEffect(() => {
     setEditingCategory(null)
@@ -82,7 +86,7 @@ export function ManageCategoriesPage({ token }: Props) {
       await queryClient.invalidateQueries({ queryKey: ['financeCategories'] })
     },
     onError: (err, vars) => {
-      window.alert(err instanceof Error ? err.message : 'Erro ao reordenar categorias.')
+      window.alert(err instanceof Error ? err.message : t('budget.categories.reorder.error'))
       if (vars?.previousRows) setOrderedRows(vars.previousRows)
     },
   })
@@ -93,7 +97,7 @@ export function ManageCategoriesPage({ token }: Props) {
       await queryClient.invalidateQueries({ queryKey: ['financeCategories'] })
     },
     onError: (err) => {
-      window.alert(err instanceof Error ? err.message : 'Erro ao eliminar categoria.')
+      window.alert(err instanceof Error ? err.message : t('budget.categories.delete.error'))
     },
   })
 
@@ -177,18 +181,18 @@ export function ManageCategoriesPage({ token }: Props) {
 
   return (
     <div className="min-h-screen w-full bg-offwhite pb-28">
-      <header className="bg-linear-to-b from-blue-500 to-offwhite pt-8">
+      <header className="bg-linear-to-b from-sage-light to-offwhite pt-8">
         <nav className="mx-auto flex w-full max-w-3xl items-center justify-between px-4 pb-6">
           <button
             type="button"
-            className="grid h-11 w-11 place-items-center rounded-full bg-white/70 hover:bg-white text-blue-700"
-            aria-label="Voltar"
+            className="grid h-11 w-11 place-items-center rounded-full bg-white/70 hover:bg-white text-sage-dark"
+            aria-label={t('common.back')}
             onClick={() => (budgetId ? navigate(`/budgets/${budgetId}`) : navigate('/'))}
           >
             <i className="ri-arrow-left-line text-2xl leading-none" />
           </button>
 
-          <div className="text-lg font-extrabold text-white">Gerenciar categorias</div>
+          <div className="text-lg font-bold text-forest">{t('budget.categories.manage.title')}</div>
           <div className="h-11 w-11" />
         </nav>
       </header>
@@ -198,23 +202,21 @@ export function ManageCategoriesPage({ token }: Props) {
           <div className="grid grid-cols-2 gap-1">
             <button
               type="button"
-              className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
-                type === 'Expense' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/60 hover:bg-white/60'
-              } disabled:opacity-60 disabled:cursor-not-allowed`}
+              className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${type === 'Expense' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/60 hover:bg-white/60'
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
               onClick={() => setType('Expense')}
               disabled={reorderMutation.isPending || Boolean(dragState)}
             >
-              Despesas
+              {t('budget.type.expense')}
             </button>
             <button
               type="button"
-              className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
-                type === 'Income' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/60 hover:bg-white/60'
-              } disabled:opacity-60 disabled:cursor-not-allowed`}
+              className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${type === 'Income' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/60 hover:bg-white/60'
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
               onClick={() => setType('Income')}
               disabled={reorderMutation.isPending || Boolean(dragState)}
             >
-              Renda
+              {t('budget.type.income')}
             </button>
           </div>
         </div>
@@ -226,7 +228,7 @@ export function ManageCategoriesPage({ token }: Props) {
             </div>
           ) : categoriesQuery.isError ? (
             <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
-              <div className="font-semibold">Erro ao obter categorias</div>
+              <div className="font-semibold">{t('budget.categories.manage.errorTitle')}</div>
               <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl border border-red-500/20 bg-white/40 p-3 text-xs text-red-800">
                 {apiError ? JSON.stringify(apiError.body, null, 2) : String(categoriesQuery.error)}
               </pre>
@@ -235,17 +237,19 @@ export function ManageCategoriesPage({ token }: Props) {
                 className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
                 onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.financeCategories(type) })}
               >
-                Tentar novamente
+                {t('common.tryAgain')}
               </button>
             </div>
           ) : orderedRows.length === 0 ? (
             <div className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-sm text-charcoal/70 shadow-sm">
-              Sem categorias.
+              {t('budget.categories.manage.empty')}
             </div>
           ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div className="gap-3 flex flex-col">
               {orderedRows.map((c, idx) => {
                 const emoji = financeCategoryEmoji({ iconKey: c.iconKey ?? null, name: c.name ?? null, type })
+                const rawName = (c.name ?? '').trim()
+                const name = getFinanceCategoryDisplayName({ type, iconKey: c.iconKey ?? null, name: rawName, language }) || '—'
                 const isDragging = Boolean(dragState?.categoryId && c.id && dragState.categoryId === c.id)
                 const actionsDisabled =
                   reorderMutation.isPending || deleteMutation.isPending || Boolean(dragState) || Boolean(editingCategory)
@@ -256,18 +260,18 @@ export function ManageCategoriesPage({ token }: Props) {
                       if (!c.id) return
                       rowRefs.current[c.id] = el
                     }}
-                    className={`flex items-center justify-between gap-4 px-4 py-4 border-b border-gray-200 last:border-b-0 ${isDragging ? 'opacity-30' : ''}`}
+                    className={`flex items-center justify-between gap-4 px-3 py-1.5 rounded-2xl border border-gray-200 last:border-b-0 ${isDragging ? 'opacity-30' : ''}`}
                   >
                     <div className="flex min-w-0 items-center gap-4">
-                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-sand-light text-2xl">{emoji}</div>
-                      <div className="truncate text-lg font-extrabold text-charcoal">{c.name ?? '—'}</div>
+                      <div className="grid h-7 w-7 place-items-center rounded-2xl text-lg">{emoji}</div>
+                      <div className="truncate font-bold text-charcoal">{name}</div>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         className="grid h-10 w-10 place-items-center rounded-full text-gray-600 hover:bg-sand-light disabled:opacity-50"
-                        aria-label="Editar"
-                        title="Editar"
+                        aria-label={t('common.edit')}
+                        title={t('common.edit')}
                         disabled={actionsDisabled || !c.id}
                         onClick={() => {
                           if (!c.id) return
@@ -279,12 +283,12 @@ export function ManageCategoriesPage({ token }: Props) {
                       <button
                         type="button"
                         className="grid h-10 w-10 place-items-center rounded-full text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        aria-label="Eliminar"
-                        title="Eliminar"
+                        aria-label={t('common.delete')}
+                        title={t('common.delete')}
                         disabled={actionsDisabled || !c.id}
                         onClick={() => {
                           if (!c.id) return
-                          const ok = window.confirm('Eliminar esta categoria?')
+                          const ok = window.confirm(t('budget.categories.delete.confirm'))
                           if (!ok) return
                           deleteMutation.mutate({ categoryId: c.id })
                         }}
@@ -294,7 +298,8 @@ export function ManageCategoriesPage({ token }: Props) {
                       <button
                         type="button"
                         className="grid h-10 w-10 place-items-center rounded-full text-gray-300 hover:bg-sand-light cursor-grab active:cursor-grabbing disabled:opacity-50"
-                        aria-label="Reordenar"
+                        aria-label={t('common.reorder')}
+                        title={t('common.reorder')}
                         disabled={actionsDisabled || !c.id}
                         onPointerDown={(e) => {
                           if (actionsDisabled) return
@@ -305,7 +310,7 @@ export function ManageCategoriesPage({ token }: Props) {
                           dragStartRowsRef.current = orderedRowsRef.current
                           setDragState({
                             categoryId: c.id,
-                            name: (c.name ?? '').trim() || '—',
+                            name: name.trim() || '—',
                             emoji,
                             x: e.clientX,
                             y: e.clientY,
@@ -313,7 +318,7 @@ export function ManageCategoriesPage({ token }: Props) {
                             offsetY: e.clientY - rect.top,
                             width: rect.width,
                           })
-                          ;(e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId)
+                            ; (e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId)
                           e.preventDefault()
                         }}
                       >
@@ -327,11 +332,11 @@ export function ManageCategoriesPage({ token }: Props) {
               <button
                 type="button"
                 className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left hover:bg-sand-light"
-                onClick={() => window.alert('Em breve.')}
+                onClick={() => window.alert(t('common.comingSoon'))}
               >
                 <div className="flex min-w-0 items-center gap-4">
                   <div className="grid h-12 w-12 place-items-center rounded-2xl bg-sand-light text-2xl">🙈</div>
-                  <div className="truncate text-lg font-extrabold text-charcoal">Categorias ocultas</div>
+                  <div className="truncate text-lg font-extrabold text-charcoal">{t('budget.categories.hiddenCategories')}</div>
                 </div>
                 <i className="ri-arrow-right-s-line text-2xl text-gray-300" aria-hidden="true" />
               </button>
@@ -342,11 +347,12 @@ export function ManageCategoriesPage({ token }: Props) {
 
       <button
         type="button"
-        className="fixed inset-x-0 bottom-6 mx-auto flex w-[min(720px,calc(100%-32px))] items-center justify-center gap-3 rounded-full bg-blue-500 px-6 py-4 text-lg font-extrabold text-white shadow-2xl hover:bg-blue-600"
+        className="place-items-center h-12 w-12 rounded-full bg-amber/90 hover:bg-amber fixed bottom-20 right-20"
         onClick={() => setCreateOpen(true)}
+        aria-label={t('common.add')}
+        title={t('common.add')}
       >
-        <i className="ri-add-line text-2xl" aria-hidden="true" />
-        Nova Categoria
+        <i className="ri-add-large-fill"></i>
       </button>
 
       {createOpen ? (

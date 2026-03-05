@@ -1432,6 +1432,406 @@
         }
       }
     },
+    "/api/v1/families/{familyId}": {
+      "get": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "ObtÃ©m uma famÃ­lia especÃ­fica (apenas se o utilizador autenticado for membro).",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "description": "Identificador da famÃ­lia.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Elimina uma famÃ­lia (grupo) e todos os seus dados (apenas admins da famÃ­lia).",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "description": "Identificador da famÃ­lia.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/members": {
+      "get": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Lista os membros de uma famÃ­lia especÃ­fica (apenas se o utilizador autenticado for membro).",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "description": "Identificador da famÃ­lia.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyMemberResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyMemberResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FamilyMemberResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/members/{userId}/profile": {
+      "get": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "ObtÃ©m o perfil de um membro dentro de uma famÃ­lia especÃ­fica.",
+        "description": "O utilizador autenticado tem de ser membro da famÃ­lia indicada.",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "description": "Identificador da famÃ­lia.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Identificador do membro.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyMemberProfileResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyMemberProfileResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyMemberProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/members/{userId}/make-admin": {
+      "post": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Promove um membro a administrador (apenas admins da famÃ­lia).",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "description": "Identificador da famÃ­lia.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Identificador do utilizador a promover.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/members/{userId}": {
+      "delete": {
+        "tags": [
+          "Families"
+        ],
+        "summary": "Remove um membro de uma famÃ­lia (apenas admins da famÃ­lia).",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "description": "Identificador da famÃ­lia.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Identificador do utilizador a remover.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/activity/recent": {
+      "get": {
+        "tags": [
+          "FamilyActivity"
+        ],
+        "summary": "ObtÃ©m as entradas mais recentes do feed de atividade.",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "description": "Identificador da famÃ­lia.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "description": "NÃºmero de entradas a devolver (por defeito 4).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 4
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/activity": {
+      "get": {
+        "tags": [
+          "FamilyActivity"
+        ],
+        "summary": "ObtÃ©m entradas do feed de atividade (paginado).",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "dateUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/families/invites/preview": {
       "get": {
         "tags": [
@@ -1663,7 +2063,7 @@
           "FinanceAccounts"
         ],
         "summary": "Elimina uma conta financeira.",
-        "description": "A operação falha com conflito se a conta estiver a ser usada por transações.",
+        "description": "Ao eliminar a conta, são também eliminadas as transações associadas a essa conta.",
         "parameters": [
           {
             "name": "accountId",
@@ -3147,6 +3547,84 @@
           }
         }
       }
+    },
+    "/api/v1/users/me/profile": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Obtém o perfil do utilizador autenticado.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Atualiza o perfil do utilizador autenticado.",
+        "description": "Define os campos recebidos; valores vazios são normalizados para `null`.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfileRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfileRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3773,6 +4251,11 @@
             "description": "Nome da categoria.",
             "nullable": true
           },
+          "type": {
+            "type": "string",
+            "description": "Tipo de lista ao qual esta categoria pertence (`Shopping`, `Tasks` ou `Custom`).",
+            "nullable": true
+          },
           "iconKey": {
             "type": "string",
             "description": "Chave do ícone da categoria.",
@@ -4039,6 +4522,11 @@
           "name": {
             "type": "string",
             "description": "Nome da categoria.",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de lista ao qual esta categoria pertence (`Shopping`, `Tasks` ou `Custom`).",
             "nullable": true
           },
           "iconKey": {
@@ -4321,6 +4809,50 @@
         },
         "additionalProperties": false,
         "description": "Pedido de login via provider externo (ex.: Google)."
+      },
+      "FamilyMemberProfileResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Identificador do utilizador.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome (registo).",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "EndereÃ§o de email.",
+            "nullable": true
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Nome de exibiÃ§Ã£o (opcional).",
+            "nullable": true
+          },
+          "profileColorHex": {
+            "type": "string",
+            "description": "Cor do perfil (hex), ex.: `#8b5cf6` (opcional).",
+            "nullable": true
+          },
+          "birthday": {
+            "type": "string",
+            "description": "Data de aniversÃ¡rio (opcional).",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "role": {
+            "type": "string",
+            "description": "Papel do utilizador na famÃ­lia.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informaÃ§Ã£o de perfil de um membro dentro de uma famÃ­lia."
       },
       "FamilyMemberResponse": {
         "type": "object",
@@ -5052,6 +5584,11 @@
             "description": "Novo nome da categoria (opcional).",
             "nullable": true
           },
+          "type": {
+            "type": "string",
+            "description": "Novo tipo de lista associado (opcional).",
+            "nullable": true
+          },
           "iconKey": {
             "type": "string",
             "description": "Nova chave do ícone (opcional).",
@@ -5375,6 +5912,99 @@
         },
         "additionalProperties": false,
         "description": "Pedido para atualizar um evento recorrente, com controlo de âmbito (ocorrência/serie/futuro)."
+      },
+      "UpdateUserProfileRequest": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Nome de exibição (opcional). Envia `null` para remover.",
+            "nullable": true
+          },
+          "profileColorHex": {
+            "type": "string",
+            "description": "Cor do perfil (hex), ex.: `#8b5cf6` (opcional). Envia `null` para remover.",
+            "nullable": true
+          },
+          "birthday": {
+            "type": "string",
+            "description": "Data de aniversário (opcional). Envia `null` para remover.",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "gender": {
+            "type": "string",
+            "description": "Género (opcional): `female`, `male`, `other`. Envia `null` para remover.",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "description": "Telefone (opcional). Envia `null` para remover.",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "description": "Morada/endereço (opcional). Envia `null` para remover.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para atualizar o perfil do utilizador autenticado."
+      },
+      "UserProfileResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Identificador do utilizador.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome (registo).",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "Endereço de email.",
+            "nullable": true
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Nome de exibição (opcional).",
+            "nullable": true
+          },
+          "profileColorHex": {
+            "type": "string",
+            "description": "Cor do perfil (hex), ex.: `#8b5cf6` (opcional).",
+            "nullable": true
+          },
+          "birthday": {
+            "type": "string",
+            "description": "Data de aniversário (opcional).",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-02-04"
+          },
+          "gender": {
+            "type": "string",
+            "description": "Género (opcional): `female`, `male`, `other`.",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "description": "Telefone (opcional).",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "description": "Morada/endereço (opcional).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com informação do perfil do utilizador autenticado."
       }
     },
     "securitySchemes": {

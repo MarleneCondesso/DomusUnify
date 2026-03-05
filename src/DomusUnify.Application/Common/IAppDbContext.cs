@@ -113,6 +113,11 @@ public interface IAppDbContext
     DbSet<BudgetCategoryLimit> BudgetCategoryLimits { get; }
 
     /// <summary>
+    /// Conjunto de contas financeiras ocultadas num orçamento.
+    /// </summary>
+    DbSet<BudgetHiddenFinanceAccount> BudgetHiddenFinanceAccounts { get; }
+
+    /// <summary>
     /// Conjunto de categorias financeiras (despesas/rendimentos).
     /// </summary>
     DbSet<FinanceCategory> FinanceCategories { get; }

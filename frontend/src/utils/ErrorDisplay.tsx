@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { ApiError } from "../api/http";
+import { useI18n } from "../i18n/i18n";
 
 
 type ErrorDisplayProps = {
@@ -34,6 +35,7 @@ type ErrorDisplayProps = {
  *  - Nota: este componente é para erros "esperados" (ex.: falha de API). Para erros inesperados (ex.: bugs JS), o ideal é ter um mecanismo de logging e monitoramento (ex.: Sentry) para capturar esses erros e agir sobre eles.
  **/
 export function ErrorDisplay({ apiError, queryKey, queryClient, title }: ErrorDisplayProps) {
+    const { t } = useI18n()
 
     return (
         <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
@@ -46,7 +48,7 @@ export function ErrorDisplay({ apiError, queryKey, queryClient, title }: ErrorDi
                 onClick={() => queryClient.invalidateQueries({ queryKey: queryKey })}
                 type="button"
             >
-                Tentar novamente
+                {t('common.tryAgain')}
             </button>
         </div>
     )

@@ -1,15 +1,19 @@
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { domusApi, type CalendarResponse, type CreateCalendarEventRequest, type FamilyResponse } from '../../api/domusApi'
+import { domusApi, type CalendarResponse, type CreateCalendarEventRequest, type FamilyResponse, type UpdateCalendarEventRequest } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { ErrorDisplay } from '../../utils/ErrorDisplay'
+import { useI18n } from '../../i18n/i18n'
+import { formatMonthYear } from '../../utils/intl'
+import { getUserIdFromAccessToken } from '../../utils/jwt'
 import { AddEventSheet } from './AddEventSheet'
 import { CalendarFilterSheet } from './CalendarFilterSheet'
 import { CalendarSettingsSheet } from './CalendarSettingsSheet'
 import { CalendarViewMenu } from './CalendarViewMenu'
+import { EventDetailsSheet } from './EventDetailsSheet'
 import { JumpToDateSheet } from './JumpToDateSheet'
 import {
   loadCalendarPreferences,
@@ -32,15 +36,16 @@ type Props = {
   family: FamilyResponse
 }
 
-const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'] as const
 const SWIPE_THRESHOLD_PX = 48
 const SWIPE_MAX_OFF_AXIS_RATIO = 1.25
 
 export function CalendarPage({ token }: Props) {
+  const { t, locale } = useI18n()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   const now = useMemo(() => new Date(), [])
+  const meUserId = useMemo(() => getUserIdFromAccessToken(token), [token])
   const [prefs, setPrefs] = useState<CalendarPreferences>(() => loadCalendarPreferences())
   const [cursor, setCursor] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1))
   const [selectedDate, setSelectedDate] = useState(() => now)
@@ -54,6 +59,9 @@ export function CalendarPage({ token }: Props) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [filterUserIds, setFilterUserIds] = useState<string[]>([]) // empty => all members
   const [addEventDate, setAddEventDate] = useState<Date | null>(null)
+  const [dayEventsDate, setDayEventsDate] = useState<Date | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarResponse | null>(null)
+  const [editEvent, setEditEvent] = useState<CalendarResponse | null>(null)
   const [createEventError, setCreateEventError] = useState<string | null>(null)
 
   const viewMode: CalendarViewMode = prefs.viewMode
@@ -90,21 +98,42 @@ export function CalendarPage({ token }: Props) {
       await queryClient.invalidateQueries({ queryKey: ['calendarEvents'] })
     },
     onError: (err) => {
-      setCreateEventError(formatMutationError(err))
+      setCreateEventError(formatMutationError(err, t('calendar.createEvent.error')))
+    },
+  })
+
+  const updateEventMutation = useMutation({
+    mutationFn: (vars: { eventId: string; request: UpdateCalendarEventRequest }) =>
+      domusApi.updateCalendarEvent(token, vars.eventId, vars.request),
+    onSuccess: async () => {
+      setEditEvent(null)
+      setCreateEventError(null)
+      await queryClient.invalidateQueries({ queryKey: ['calendarEvents'] })
+    },
+    onError: (err) => {
+      setCreateEventError(formatMutationError(err, t('calendar.updateEvent.error')))
     },
   })
 
   const apiEventsError = eventsQuery.error instanceof ApiError ? eventsQuery.error : null
 
   const monthLabel = useMemo(() => {
-    const raw = monthStart.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })
-    return capitalizeFirst(raw)
-  }, [monthStart])
+    return capitalizeFirst(formatMonthYear(monthStart, locale))
+  }, [locale, monthStart])
 
   const weekdayLabels = useMemo(() => {
-    if (prefs.firstDayOfWeek === 'monday') return [...WEEKDAY_LABELS.slice(1), WEEKDAY_LABELS[0]]
-    return [...WEEKDAY_LABELS]
-  }, [prefs.firstDayOfWeek])
+    let labels: string[]
+    try {
+      const fmt = new Intl.DateTimeFormat(locale, { weekday: 'narrow' })
+      const base = new Date(2021, 7, 1, 12, 0, 0) // Sunday
+      labels = Array.from({ length: 7 }, (_, i) => fmt.format(new Date(base.getFullYear(), base.getMonth(), base.getDate() + i)))
+    } catch {
+      labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+    }
+
+    if (prefs.firstDayOfWeek === 'monday') return [...labels.slice(1), labels[0]!]
+    return labels
+  }, [locale, prefs.firstDayOfWeek])
 
   const gridColsClass = prefs.showWeekNumbers ? 'grid-cols-8' : 'grid-cols-7'
 
@@ -130,7 +159,6 @@ export function CalendarPage({ token }: Props) {
   const weeks = useMemo(() => chunkIntoWeeks(days, 7), [days])
 
   const eventsRaw = eventsQuery.data ?? []
-  const eventsByDayRaw = useMemo(() => groupEventsByDay(eventsRaw), [eventsRaw])
 
   const normalizedSearch = useMemo(() => searchText.trim().toLocaleLowerCase(), [searchText])
   const eventsFiltered = useMemo(() => {
@@ -159,6 +187,23 @@ export function CalendarPage({ token }: Props) {
       .map((e) => e.id ?? '')
       .filter(Boolean)
   }, [eventsRaw])
+
+  const visibleMembersSorted = useMemo(() => {
+    const rows = familyMembersQuery.data ?? []
+    const allowed =
+      filterUserIds.length === 0
+        ? null
+        : new Set(filterUserIds.map((id) => id.trim()).filter(Boolean))
+
+    return rows
+      .filter((m) => {
+        const id = (m.userId ?? '').trim()
+        if (!id) return false
+        return allowed ? allowed.has(id) : true
+      })
+      .slice()
+      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', locale, { sensitivity: 'base' }))
+  }, [familyMembersQuery.data, filterUserIds, locale])
 
   const monthDays = useMemo(() => {
     const out: Date[] = []
@@ -215,6 +260,10 @@ export function CalendarPage({ token }: Props) {
     setAddEventDate(d)
   }
 
+  function openDayEventsForDay(d: Date) {
+    setDayEventsDate(d)
+  }
+
   function setSelectedDateAndCursor(d: Date) {
     setSelectedDate(d)
     if (d.getFullYear() !== cursor.getFullYear() || d.getMonth() !== cursor.getMonth()) {
@@ -247,7 +296,7 @@ export function CalendarPage({ token }: Props) {
         apiError={apiEventsError}
         queryKey={eventsQueryKey}
         queryClient={queryClient}
-        title="Erro ao obter eventos do calendário"
+        title={t('calendar.errorLoadEvents')}
       />
     )
   }
@@ -261,7 +310,7 @@ export function CalendarPage({ token }: Props) {
               <button
                 type="button"
                 className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark shrink-0"
-                aria-label="Home"
+                aria-label={t('common.home')}
                 onClick={() => navigate('/')}
               >
                 <i className="ri-home-7-line text-2xl leading-none" />
@@ -270,7 +319,7 @@ export function CalendarPage({ token }: Props) {
                 type="button"
                 className="inline-flex min-w-0 items-center gap-1 rounded-2xl px-2 py-1 text-3xl font-bold text-forest hover:bg-white/50"
                 onClick={() => setIsJumpToDateOpen(true)}
-                aria-label="Escolher mês e ano"
+                aria-label={t('calendar.jumpToDate.aria')}
               >
                 <span className="truncate">{monthLabel}</span>
                 <i className="ri-arrow-down-s-line text-3xl leading-none text-forest/70" />
@@ -281,7 +330,7 @@ export function CalendarPage({ token }: Props) {
               <button
                 type="button"
                 className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-                aria-label="Vistas"
+                aria-label={t('calendar.viewMenu.aria')}
                 onClick={() => setIsViewMenuOpen(true)}
               >
                 <i className={`${viewModeIcon(viewMode)} text-2xl leading-none`} />
@@ -290,7 +339,7 @@ export function CalendarPage({ token }: Props) {
               <button
                 type="button"
                 className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-                aria-label="Search"
+                aria-label={t('common.search')}
                 onClick={() => setSearchOpen((v) => !v)}
               >
                 <i className="ri-search-2-line text-2xl leading-none" />
@@ -299,7 +348,7 @@ export function CalendarPage({ token }: Props) {
               <button
                 type="button"
                 className="grid h-10 w-10 place-items-center rounded-full bg-white/60 hover:bg-white text-sage-dark"
-                aria-label="Settings"
+                aria-label={t('settings.title')}
                 onClick={() => setIsSettingsOpen(true)}
               >
                 <i className="ri-settings-3-line text-2xl leading-none" />
@@ -312,7 +361,7 @@ export function CalendarPage({ token }: Props) {
               <input
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Pesquisar eventos…"
+                placeholder={t('calendar.search.placeholder')}
                 className="w-full rounded-2xl border border-sand-dark/60 bg-white px-4 py-3 text-charcoal placeholder:text-charcoal/50 focus:outline-none focus:ring-2 focus:ring-sage-dark/25"
               />
             </div>
@@ -383,7 +432,6 @@ export function CalendarPage({ token }: Props) {
                       const inMonth = day.getMonth() === monthStart.getMonth()
                       const isSelected = k === selectedKey
                       const isToday = k === todayKey
-                      const allEvents = eventsByDayRaw.get(k) ?? []
                       const events = eventsByDayVisible.get(k) ?? []
                       const visible = events.slice(0, 4)
                       const extraCount = Math.max(0, events.length - visible.length)
@@ -400,10 +448,7 @@ export function CalendarPage({ token }: Props) {
                           onClick={() => {
                             if (ignoreNextCellClickRef.current) return
                             setSelectedDateAndCursor(day)
-
-                            if (eventsQuery.isSuccess && allEvents.length === 0) {
-                              openAddEventForDay(day)
-                            }
+                            openDayEventsForDay(day)
                           }}
                         >
                           <div className="flex items-start justify-end">
@@ -421,7 +466,7 @@ export function CalendarPage({ token }: Props) {
 
                           <div className="mt-1 space-y-1 overflow-hidden">
                             {visible.map((e) => {
-                              const title = (e.title ?? 'Sem título').trim() || 'Sem título'
+                              const title = (e.title ?? '').trim() || t('calendar.event.untitled')
                               const color = getEventColor(e)
                               return (
                                 <div
@@ -436,7 +481,9 @@ export function CalendarPage({ token }: Props) {
                             })}
 
                             {extraCount > 0 ? (
-                              <div className="text-[10px] font-semibold text-charcoal/60">+{extraCount} mais</div>
+                              <div className="text-[10px] font-semibold text-charcoal/60">
+                                {t('calendar.more', { count: extraCount })}
+                              </div>
                             ) : null}
                           </div>
                         </button>
@@ -450,25 +497,22 @@ export function CalendarPage({ token }: Props) {
             <div className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate text-base font-bold text-charcoal">Visão da Família</div>
-                  <div className="truncate text-sm text-charcoal/60">{formatDayHeader(selectedDate)}</div>
+                  <div className="truncate text-base font-bold text-charcoal">{t('calendar.familyView.title')}</div>
+                  <div className="truncate text-sm text-charcoal/60">{formatDayHeader(selectedDate, locale)}</div>
                 </div>
                 <button
                   type="button"
                   className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light text-sage-dark"
                   onClick={() => openAddEventForDay(selectedDate)}
-                  aria-label="Adicionar evento"
+                  aria-label={t('calendar.addEvent.aria')}
                 >
                   <i className="ri-add-line text-2xl leading-none" />
                 </button>
               </div>
 
               <div className="mt-4 space-y-4">
-                {familyMembersQuery.data && familyMembersQuery.data.length > 0 ? (
-                  familyMembersQuery.data
-                    .slice()
-                    .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'pt-PT', { sensitivity: 'base' }))
-                    .map((m) => {
+                {visibleMembersSorted.length > 0 ? (
+                  visibleMembersSorted.map((m) => {
                       const id = m.userId ?? ''
                       if (!id) return null
 
@@ -493,7 +537,7 @@ export function CalendarPage({ token }: Props) {
 
                           <div className="px-4 py-3">
                             {events.length === 0 ? (
-                              <div className="text-sm text-charcoal/50">Sem eventos</div>
+                              <div className="text-sm text-charcoal/50">{t('calendar.events.none')}</div>
                             ) : (
                               <div className="space-y-2">
                                 {events.map((e) => (
@@ -510,7 +554,7 @@ export function CalendarPage({ token }: Props) {
                     <LoadingSpinner size="lg" />
                   </div>
                 ) : (
-                  <div className="text-sm text-charcoal/50">Sem membros para filtrar.</div>
+                  <div className="text-sm text-charcoal/50">{t('calendar.filter.emptyMembers')}</div>
                 )}
               </div>
             </div>
@@ -535,7 +579,7 @@ export function CalendarPage({ token }: Props) {
                         type="button"
                         className="min-w-0 text-left"
                         onClick={() => setSelectedDateAndCursor(day)}
-                        aria-label={`Selecionar ${formatDayHeader(day)}`}
+                        aria-label={t('calendar.selectDay.aria', { day: formatDayHeader(day, locale) })}
                       >
                         <div className="flex items-center gap-2">
                           <span
@@ -547,9 +591,13 @@ export function CalendarPage({ token }: Props) {
                             {day.getDate()}
                           </span>
                           <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold text-charcoal">{formatDayHeader(day)}</div>
+                            <div className="truncate text-sm font-semibold text-charcoal">{formatDayHeader(day, locale)}</div>
                             <div className="truncate text-xs text-charcoal/50">
-                              {events.length === 0 ? 'Sem eventos' : `${events.length} evento${events.length === 1 ? '' : 's'}`}
+                              {events.length === 0
+                                ? t('calendar.events.none')
+                                : events.length === 1
+                                  ? t('calendar.events.countOne')
+                                  : t('calendar.events.countMany', { count: events.length })}
                             </div>
                           </div>
                         </div>
@@ -559,14 +607,14 @@ export function CalendarPage({ token }: Props) {
                         type="button"
                         className="grid h-9 w-9 place-items-center rounded-full hover:bg-sand-light text-sage-dark"
                         onClick={() => openAddEventForDay(day)}
-                        aria-label="Adicionar evento"
+                        aria-label={t('calendar.addEvent.aria')}
                       >
                         <i className="ri-add-line text-xl leading-none" />
                       </button>
                     </div>
 
                     {events.length === 0 ? (
-                      <div className="mt-3 text-sm text-charcoal/45">Nenhum evento para este dia.</div>
+                      <div className="mt-3 text-sm text-charcoal/45">{t('calendar.events.noneForDay')}</div>
                     ) : (
                       <div className="mt-3 space-y-2">
                         {events.map((e) => (
@@ -601,7 +649,7 @@ export function CalendarPage({ token }: Props) {
               }}
             >
               <i className="ri-time-line text-xl leading-none" />
-              <span className="text-xs font-semibold">Hoje</span>
+              <span className="text-xs font-semibold">{t('common.today')}</span>
             </button>
 
             <button
@@ -610,7 +658,7 @@ export function CalendarPage({ token }: Props) {
               onClick={() => openAddEventForDay(selectedDate)}
             >
               <i className="ri-add-circle-line text-xl leading-none" />
-              <span className="text-xs font-semibold">Adicionar</span>
+              <span className="text-xs font-semibold">{t('common.add')}</span>
             </button>
 
             <button
@@ -622,7 +670,7 @@ export function CalendarPage({ token }: Props) {
               }}
             >
               <i className="ri-filter-3-line text-xl leading-none" />
-              <span className="text-xs font-semibold">Filtrar</span>
+              <span className="text-xs font-semibold">{t('common.filter')}</span>
             </button>
           </div>
         </div>
@@ -645,13 +693,67 @@ export function CalendarPage({ token }: Props) {
       {addEventDate ? (
         <AddEventSheet
           initialDate={addEventDate}
+          members={familyMembersQuery.data ?? []}
+          currentUserId={meUserId}
           defaultReminderMinutes={prefs.defaultReminderMinutes}
           isSaving={createEventMutation.isPending}
+          isMembersLoading={familyMembersQuery.isLoading}
           errorMessage={createEventError}
           onClose={() => setAddEventDate(null)}
           onSave={(req) => {
             setCreateEventError(null)
             createEventMutation.mutate(req)
+          }}
+        />
+      ) : null}
+
+      {editEvent ? (
+        <AddEventSheet
+          initialDate={safeUtcToLocalDate(editEvent.startUtc) ?? new Date()}
+          initialEvent={editEvent}
+          sheetTitle={t('calendar.editEvent.sheetTitle')}
+          members={familyMembersQuery.data ?? []}
+          currentUserId={meUserId}
+          defaultReminderMinutes={prefs.defaultReminderMinutes}
+          isSaving={updateEventMutation.isPending}
+          isMembersLoading={familyMembersQuery.isLoading}
+          errorMessage={createEventError}
+          onClose={() => setEditEvent(null)}
+          onSave={(req) => {
+            const eventId = (editEvent.id ?? '').trim()
+            if (!eventId) return
+            setCreateEventError(null)
+            updateEventMutation.mutate({ eventId, request: req })
+          }}
+        />
+      ) : null}
+
+      {dayEventsDate ? (
+        <DayEventsSheet
+          day={dayEventsDate}
+          events={eventsByDayVisible.get(dateKey(dayEventsDate)) ?? []}
+          isLoading={eventsQuery.isLoading}
+          onClose={() => {
+            setSelectedEvent(null)
+            setDayEventsDate(null)
+          }}
+          onAddEvent={(d) => {
+            openAddEventForDay(d)
+          }}
+          onSelectEvent={(e) => setSelectedEvent(e)}
+        />
+      ) : null}
+
+      {selectedEvent ? (
+        <EventDetailsSheet
+          event={selectedEvent}
+          members={familyMembersQuery.data ?? []}
+          currentUserId={meUserId}
+          onClose={() => setSelectedEvent(null)}
+          onEdit={() => {
+            setCreateEventError(null)
+            setSelectedEvent(null)
+            setEditEvent(selectedEvent)
           }}
         />
       ) : null}
@@ -695,17 +797,17 @@ export function CalendarPage({ token }: Props) {
   )
 }
 
-function formatMutationError(err: unknown): string {
+function formatMutationError(err: unknown, fallbackMessage: string): string {
   if (err instanceof ApiError) {
     if (typeof err.body === 'string' && err.body.trim()) return err.body
     try {
       return JSON.stringify(err.body, null, 2)
     } catch {
-      return 'Erro ao criar evento.'
+      return fallbackMessage
     }
   }
   if (err instanceof Error && err.message) return err.message
-  return 'Erro ao criar evento.'
+  return fallbackMessage
 }
 
 function normalizeColorHex(input: string | null | undefined): string | null {
@@ -802,8 +904,8 @@ function isoWeekNumber(d: Date): number {
   return Math.ceil(diffDays / 7)
 }
 
-function formatDayHeader(d: Date): string {
-  const raw = d.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
+function formatDayHeader(d: Date, locale: string): string {
+  const raw = d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })
   return capitalizeFirst(raw)
 }
 
@@ -812,10 +914,108 @@ function safeInitial(name: string | null | undefined): string {
   return trimmed ? trimmed[0]!.toUpperCase() : '?'
 }
 
+function safeUtcToLocalDate(utcIso: string | null | undefined): Date | null {
+  const raw = (utcIso ?? '').trim()
+  if (!raw) return null
+  const d = new Date(raw)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function DayEventsSheet({
+  day,
+  events,
+  isLoading,
+  onClose,
+  onAddEvent,
+  onSelectEvent,
+}: {
+  day: Date
+  events: CalendarResponse[]
+  isLoading?: boolean
+  onClose: () => void
+  onAddEvent: (day: Date) => void
+  onSelectEvent: (event: CalendarResponse) => void
+}) {
+  const { t, locale } = useI18n()
+  const title = formatDayHeader(day, locale)
+
+  const countLabel =
+    events.length === 0
+      ? t('calendar.events.none')
+      : events.length === 1
+        ? t('calendar.events.countOne')
+        : t('calendar.events.countMany', { count: events.length })
+
+  return (
+    <div className="fixed inset-0 z-[70]">
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
+
+      <div className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-3xl flex-col max-h-[92vh] overflow-hidden rounded-t-3xl bg-sand-light shadow-2xl">
+        <div className="p-4 pb-0">
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
+
+          <header className="mb-2 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              className="grid h-10 w-10 place-items-center rounded-full hover:bg-white"
+              onClick={onClose}
+              aria-label={t('common.close')}
+              title={t('common.close')}
+            >
+              <i className="ri-close-line text-2xl text-gray-600" />
+            </button>
+
+            <div className="min-w-0 flex-1 text-center">
+              <div className="truncate text-base font-semibold text-charcoal">{title}</div>
+              <div className="truncate text-xs font-semibold text-charcoal/55">{countLabel}</div>
+            </div>
+
+            <button
+              type="button"
+              className="grid h-10 w-10 place-items-center rounded-full bg-forest text-white hover:bg-forest/95"
+              onClick={() => onAddEvent(day)}
+              aria-label={t('calendar.addEvent.aria')}
+              title={t('common.add')}
+            >
+              <i className="ri-add-line text-2xl leading-none" />
+            </button>
+          </header>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+          {isLoading ? (
+            <div className="py-8 text-center text-sm text-charcoal/70">
+              <LoadingSpinner />
+            </div>
+          ) : events.length === 0 ? (
+            <div className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-charcoal/70 shadow-sm">
+              {t('calendar.events.noneForDay')}
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm divide-y divide-gray-200">
+              {events.map((e) => (
+                <button
+                  key={`${e.id ?? 'event'}-${e.startUtc ?? ''}`}
+                  type="button"
+                  className="w-full px-4 py-4 text-left hover:bg-sand-light"
+                  onClick={() => onSelectEvent(e)}
+                >
+                  <EventRow event={e} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function EventRow({ event }: { event: CalendarResponse }) {
-  const title = (event.title ?? 'Sem título').trim() || 'Sem título'
+  const { t, locale } = useI18n()
+  const title = (event.title ?? '').trim() || t('calendar.event.untitled')
   const color = getEventColor(event)
-  const time = formatEventTimeRange(event)
+  const time = event.isAllDay ? t('calendar.event.allDay') : formatEventTimeRange(event, locale)
 
   return (
     <div className="flex items-start gap-3">
@@ -831,19 +1031,18 @@ function EventRow({ event }: { event: CalendarResponse }) {
   )
 }
 
-function formatEventTimeRange(e: CalendarResponse): string | null {
-  if (e.isAllDay) return 'Dia inteiro'
+function formatEventTimeRange(e: CalendarResponse, locale: string): string | null {
   if (!e.startUtc) return null
 
   const start = new Date(e.startUtc)
   if (Number.isNaN(start.getTime())) return null
 
-  const startStr = start.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+  const startStr = start.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 
   if (!e.endUtc) return startStr
   const end = new Date(e.endUtc)
   if (Number.isNaN(end.getTime())) return startStr
 
-  const endStr = end.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+  const endStr = end.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   return `${startStr}–${endStr}`
 }

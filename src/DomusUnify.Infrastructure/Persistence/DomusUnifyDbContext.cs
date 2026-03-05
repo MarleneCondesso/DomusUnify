@@ -86,6 +86,9 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     public DbSet<BudgetCategoryLimit> BudgetCategoryLimits => Set<BudgetCategoryLimit>();
 
     /// <inheritdoc />
+    public DbSet<BudgetHiddenFinanceAccount> BudgetHiddenFinanceAccounts => Set<BudgetHiddenFinanceAccount>();
+
+    /// <inheritdoc />
     public DbSet<FinanceCategory> FinanceCategories => Set<FinanceCategory>();
 
     /// <inheritdoc />
@@ -109,6 +112,12 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
             b.HasKey(x => x.Id);
 
             b.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            b.Property(x => x.DisplayName).HasMaxLength(120);
+            b.Property(x => x.ProfileColorHex).HasMaxLength(16);
+            b.Property(x => x.Birthday).HasColumnType("date");
+            b.Property(x => x.Gender).HasMaxLength(16);
+            b.Property(x => x.Phone).HasMaxLength(30);
+            b.Property(x => x.Address).HasMaxLength(240);
             b.Property(x => x.Email).HasMaxLength(200).IsRequired();
             b.HasIndex(x => x.Email).IsUnique();
 
@@ -642,6 +651,28 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
                 .OnDelete(DeleteBehavior.NoAction);
         });
 
+        // BUDGET HIDDEN FINANCE ACCOUNT (accounts hidden per budget)
+        modelBuilder.Entity<BudgetHiddenFinanceAccount>(b =>
+        {
+            b.ToTable("BudgetHiddenFinanceAccounts");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.CreatedAtUtc).IsRequired();
+
+            b.HasOne(x => x.Budget)
+                .WithMany(x => x.HiddenFinanceAccounts)
+                .HasForeignKey(x => x.BudgetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            b.HasIndex(x => new { x.BudgetId, x.AccountId }).IsUnique();
+            b.HasIndex(x => x.AccountId);
+        });
+
         // FINANCE TRANSACTION
         modelBuilder.Entity<FinanceTransaction>(b =>
         {
@@ -662,6 +693,7 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
 
             b.HasIndex(x => new { x.BudgetId, x.Date });
             b.HasIndex(x => new { x.BudgetId, x.Type, x.Date });
+            b.HasIndex(x => new { x.RepeatSourceTransactionId, x.Date }).IsUnique();
             b.HasIndex(x => x.CategoryId);
             b.HasIndex(x => x.AccountId);
             b.HasIndex(x => x.PaidByUserId);

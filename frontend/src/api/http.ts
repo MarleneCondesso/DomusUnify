@@ -11,6 +11,8 @@
  * - Se quiseres chamar o backend diretamente (sem proxy), define `VITE_API_ORIGIN` (ex.: `https://localhost:7214`).
  */
 
+import { messagesByLanguage, type Language } from '../i18n/messages'
+
 export class ApiError extends Error {
   public readonly status: number
   public readonly body: unknown
@@ -30,6 +32,9 @@ type ApiRequestOptions = {
   signal?: AbortSignal
 }
 
+const APP_SETTINGS_STORAGE_KEY = 'domus.appSettings.v1'
+const GENERIC_API_ERROR_KEY = 'common.unexpectedError' as const
+
 function buildUrl(path: string): string {
   const origin = import.meta.env.VITE_API_ORIGIN as string | undefined
   if (!origin) return path
@@ -40,6 +45,59 @@ export type ApiDownloadResult = {
   blob: Blob
   fileName: string | null
   contentType: string | null
+}
+
+function isLanguage(value: unknown): value is Language {
+  return value === 'en' || value === 'pt' || value === 'zh'
+}
+
+function normalizeLanguageTag(tag: string): string {
+  return tag.trim().toLowerCase()
+}
+
+function detectSystemLanguage(): Language {
+  const candidates: string[] = []
+
+  try {
+    if (Array.isArray(navigator.languages)) candidates.push(...navigator.languages)
+    if (typeof navigator.language === 'string') candidates.push(navigator.language)
+  } catch {
+    // ignore
+  }
+
+  for (const c of candidates) {
+    const tag = normalizeLanguageTag(c)
+    if (!tag) continue
+
+    if (tag.startsWith('pt')) return 'pt'
+    if (tag.startsWith('zh')) return 'zh'
+    if (tag.startsWith('en')) return 'en'
+  }
+
+  return 'en'
+}
+
+function detectPreferredLanguage(): Language {
+  try {
+    const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY)
+    if (!raw) return detectSystemLanguage()
+
+    const parsed = JSON.parse(raw) as { languageMode?: unknown } | null
+    const mode = parsed?.languageMode
+
+    if (mode === 'system' || mode == null) return detectSystemLanguage()
+    if (isLanguage(mode)) return mode
+
+    return detectSystemLanguage()
+  } catch {
+    return detectSystemLanguage()
+  }
+}
+
+function genericApiErrorMessage(): string {
+  const lang = detectPreferredLanguage()
+  const table = messagesByLanguage[lang] ?? messagesByLanguage.en
+  return table[GENERIC_API_ERROR_KEY] ?? messagesByLanguage.en[GENERIC_API_ERROR_KEY] ?? 'Unexpected error.'
 }
 
 async function readBody(response: Response): Promise<unknown> {
@@ -86,7 +144,7 @@ export async function apiRequest<TResponse>(
   const parsed = await readBody(response)
 
   if (!response.ok) {
-    throw new ApiError('Erro ao chamar a API.', response.status, parsed)
+    throw new ApiError(genericApiErrorMessage(), response.status, parsed)
   }
 
   return parsed as TResponse
@@ -120,7 +178,7 @@ export async function apiDownload(
 
   if (!response.ok) {
     const parsed = await readBody(response)
-    throw new ApiError('Erro ao chamar a API.', response.status, parsed)
+    throw new ApiError(genericApiErrorMessage(), response.status, parsed)
   }
 
   return {

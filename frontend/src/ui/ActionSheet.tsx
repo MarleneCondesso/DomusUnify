@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useI18n } from '../i18n/i18n'
 
 export type ActionSheetItem = {
   id: string
@@ -17,16 +18,24 @@ type Props = {
 }
 
 export function ActionSheet({ title, items, onClose }: Props) {
+  const { t } = useI18n()
+
   return (
     <div className="fixed inset-0 z-[60]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl rounded-t-3xl bg-white p-4 shadow-2xl">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
 
         <div className="mb-3 flex items-center justify-between">
           <div className="text-base font-semibold text-charcoal">{title}</div>
-          <button type="button" className="rounded-full p-2 hover:bg-sand-light" onClick={onClose}>
+          <button
+            type="button"
+            className="rounded-full p-2 hover:bg-sand-light"
+            onClick={onClose}
+            aria-label={t('common.close')}
+            title={t('common.close')}
+          >
             <i className="ri-close-line text-xl text-gray-600" />
           </button>
         </div>
@@ -62,4 +71,3 @@ export function ActionSheet({ title, items, onClose }: Props) {
     </div>
   )
 }
-

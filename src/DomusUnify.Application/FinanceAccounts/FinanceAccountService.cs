@@ -15,6 +15,19 @@ public sealed class FinanceAccountService : IFinanceAccountService
 {
     private static readonly Regex IconKeyRegex = new("^[a-z0-9_-]{1,40}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    private static readonly (FinanceAccountType Type, string Name, string IconKey)[] DefaultAccountDefinitions =
+    [
+        (FinanceAccountType.Checking, "Conta corrente", "landmark"),
+        (FinanceAccountType.Cash, "Dinheiro", "banknote"),
+        (FinanceAccountType.CreditCard, "Cartão de crédito", "credit-card"),
+        (FinanceAccountType.Savings, "Conta poupança", "piggy-bank"),
+        (FinanceAccountType.Credit, "Conta de crédito", "receipt"),
+        (FinanceAccountType.Joint, "Conta conjunta", "users")
+    ];
+
+    private static readonly HashSet<string> DefaultAccountNames =
+        new(DefaultAccountDefinitions.Select(x => x.Name), StringComparer.OrdinalIgnoreCase);
+
     private readonly IAppDbContext _db;
     private readonly IRealtimeNotifier _rt;
 
@@ -32,11 +45,17 @@ public sealed class FinanceAccountService : IFinanceAccountService
     /// <inheritdoc />
     public async Task EnsureDefaultsAsync(Guid familyId, CancellationToken ct)
     {
-        var any = await _db.FinanceAccounts.AsNoTracking().AnyAsync(a => a.FamilyId == familyId, ct);
-        if (any) return;
+        var existingNames = await _db.FinanceAccounts
+            .AsNoTracking()
+            .Where(a => a.FamilyId == familyId)
+            .Select(a => a.Name)
+            .ToListAsync(ct);
 
-        var defaults = GetDefaults(familyId);
-        _db.FinanceAccounts.AddRange(defaults);
+        var existing = existingNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var missing = GetDefaults(familyId).Where(a => !existing.Contains(a.Name)).ToList();
+        if (missing.Count == 0) return;
+
+        _db.FinanceAccounts.AddRange(missing);
 
         try
         {
@@ -161,14 +180,22 @@ public sealed class FinanceAccountService : IFinanceAccountService
         var role = await EnsureMemberAsync(userId, familyId, ct);
         EnsureNotViewer(role);
 
-        var isUsed = await _db.FinanceTransactions.AsNoTracking()
+        var entity = await _db.FinanceAccounts.FirstOrDefaultAsync(a => a.Id == accountId && a.FamilyId == familyId, ct);
+        if (entity is null) throw new KeyNotFoundException("Conta não encontrada.");
+
+        if (DefaultAccountNames.Contains(entity.Name))
+            throw new InvalidOperationException("Não podes apagar uma conta por defeito.");
+
+        var isUsed = await _db.FinanceTransactions
+            .AsNoTracking()
             .AnyAsync(t => t.AccountId == accountId && t.Budget.FamilyId == familyId, ct);
 
         if (isUsed)
             throw new InvalidOperationException("Não podes apagar: esta conta está em uso por transações.");
 
-        var entity = await _db.FinanceAccounts.FirstOrDefaultAsync(a => a.Id == accountId && a.FamilyId == familyId, ct);
-        if (entity is null) throw new KeyNotFoundException("Conta não encontrada.");
+        await _db.BudgetHiddenFinanceAccounts
+            .Where(h => h.AccountId == accountId)
+            .ExecuteDeleteAsync(ct);
 
         _db.FinanceAccounts.Remove(entity);
         await _db.SaveChangesAsync(ct);
@@ -182,20 +209,10 @@ public sealed class FinanceAccountService : IFinanceAccountService
 
     private static IReadOnlyList<FinanceAccount> GetDefaults(Guid familyId)
     {
-        var accounts = new[]
+        var list = new List<FinanceAccount>(DefaultAccountDefinitions.Length);
+        for (var i = 0; i < DefaultAccountDefinitions.Length; i++)
         {
-            (FinanceAccountType.Checking, "Conta corrente", "landmark"),
-            (FinanceAccountType.Cash, "Dinheiro", "banknote"),
-            (FinanceAccountType.CreditCard, "Cartão de crédito", "credit-card"),
-            (FinanceAccountType.Savings, "Conta poupança", "piggy-bank"),
-            (FinanceAccountType.Credit, "Conta de crédito", "receipt"),
-            (FinanceAccountType.Joint, "Conta conjunta", "users")
-        };
-
-        var list = new List<FinanceAccount>(accounts.Length);
-        for (var i = 0; i < accounts.Length; i++)
-        {
-            var (type, name, icon) = accounts[i];
+            var (type, name, icon) = DefaultAccountDefinitions[i];
             list.Add(new FinanceAccount
             {
                 FamilyId = familyId,

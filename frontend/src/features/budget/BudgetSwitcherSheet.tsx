@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { domusApi } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
+import { useI18n } from '../../i18n/i18n'
 import { LoadingSpinner } from '../../ui/LoadingSpinner'
 import { iconKeyToEmoji } from '../../utils/emojiIconKey'
 
@@ -15,6 +16,7 @@ type Props = {
 
 export function BudgetSwitcherSheet({ token, selectedBudgetId, onClose, onSelectBudget, onCreateBudget }: Props) {
   const queryClient = useQueryClient()
+  const { t } = useI18n()
 
   const budgetsQuery = useQuery({
     queryKey: queryKeys.budgets,
@@ -25,14 +27,20 @@ export function BudgetSwitcherSheet({ token, selectedBudgetId, onClose, onSelect
 
   return (
     <div className="fixed inset-0 z-[80]">
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl rounded-t-3xl bg-white p-4 shadow-2xl">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
 
         <div className="mb-3 flex items-center justify-between">
-          <div className="text-base font-semibold text-charcoal">Mudar orçamento</div>
-          <button type="button" className="rounded-full p-2 hover:bg-sand-light" onClick={onClose} aria-label="Fechar">
+          <div className="text-base font-semibold text-charcoal">{t('budget.switcher.title')}</div>
+          <button
+            type="button"
+            className="rounded-full p-2 hover:bg-sand-light"
+            onClick={onClose}
+            aria-label={t('common.close')}
+            title={t('common.close')}
+          >
             <i className="ri-close-line text-xl text-gray-600" />
           </button>
         </div>
@@ -43,7 +51,7 @@ export function BudgetSwitcherSheet({ token, selectedBudgetId, onClose, onSelect
           </div>
         ) : budgetsQuery.isError ? (
           <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
-            <div className="font-semibold">Erro ao obter orçamentos</div>
+            <div className="font-semibold">{t('budget.switcher.errorTitle')}</div>
             <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap rounded-xl border border-red-500/20 bg-white/40 p-3 text-xs text-red-800">
               {apiError ? JSON.stringify(apiError.body, null, 2) : String(budgetsQuery.error)}
             </pre>
@@ -52,7 +60,7 @@ export function BudgetSwitcherSheet({ token, selectedBudgetId, onClose, onSelect
               className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
               onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.budgets })}
             >
-              Tentar novamente
+              {t('common.tryAgain')}
             </button>
           </div>
         ) : (
@@ -75,12 +83,12 @@ export function BudgetSwitcherSheet({ token, selectedBudgetId, onClose, onSelect
                       <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-sand-light text-xl">
                         <span aria-hidden="true">{emoji}</span>
                       </div>
-                      <div className={`truncate text-base font-semibold ${isSelected ? 'text-blue-600' : 'text-charcoal'}`}>
+                      <div className={`truncate text-base font-semibold ${isSelected ? 'text-sage-dark' : 'text-forest'}`}>
                         {b.name ?? '—'}
                       </div>
                     </div>
 
-                    {isSelected ? <i className="ri-check-line text-2xl text-blue-600" aria-hidden="true" /> : null}
+                    {isSelected ? <i className="ri-check-line text-2xl text-sage-dark" aria-hidden="true" /> : null}
                   </button>
                 )
               })}
@@ -94,7 +102,7 @@ export function BudgetSwitcherSheet({ token, selectedBudgetId, onClose, onSelect
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-sand-light text-xl">
                   <span aria-hidden="true">🐷</span>
                 </div>
-                <div className="truncate text-base font-semibold text-charcoal">Criar um novo orçamento</div>
+                <div className="truncate text-base font-semibold text-charcoal">{t('budget.switcher.createNew')}</div>
               </div>
             </button>
           </div>
@@ -103,4 +111,3 @@ export function BudgetSwitcherSheet({ token, selectedBudgetId, onClose, onSelect
     </div>
   )
 }
-

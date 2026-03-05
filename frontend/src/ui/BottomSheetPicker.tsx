@@ -1,3 +1,5 @@
+import { useI18n } from '../i18n/i18n'
+
 export type BottomSheetOption = {
   id: string
   label: string
@@ -25,11 +27,12 @@ export function BottomSheetPicker({
   isLoading,
   zIndexClass,
 }: Props) {
+  const { t } = useI18n()
   const zIndex = zIndexClass ?? 'z-[60]'
 
   return (
     <div className={`fixed inset-0 ${zIndex}`}>
-      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label="Fechar" />
+      <button className="absolute inset-0 bg-black/40" type="button" onClick={onClose} aria-label={t('common.close')} />
 
       <div className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-3xl flex-col max-h-[92vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl">
         <div className="p-4 pb-0">
@@ -37,7 +40,13 @@ export function BottomSheetPicker({
 
           <div className="mb-3 flex items-center justify-between">
             <div className="text-base font-semibold text-charcoal">{title}</div>
-            <button type="button" className="rounded-full p-2 hover:bg-sand-light" onClick={onClose}>
+            <button
+              type="button"
+              className="rounded-full p-2 hover:bg-sand-light"
+              onClick={onClose}
+              aria-label={t('common.close')}
+              title={t('common.close')}
+            >
               <i className="ri-close-line text-xl text-gray-600" />
             </button>
           </div>
@@ -47,7 +56,7 @@ export function BottomSheetPicker({
           {isLoading ? (
             <div className="py-6 text-center text-sm text-charcoal/70">
               <div className="mx-auto mb-2 h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-forest" />
-              A carregar...
+              {t('common.loading')}
             </div>
           ) : (
             <div className="space-y-2">
@@ -88,7 +97,7 @@ export function BottomSheetPicker({
               ))}
 
               {!clearLabel && options.length === 0 ? (
-                <div className="py-6 text-center text-sm text-charcoal/70">Sem opções.</div>
+                <div className="py-6 text-center text-sm text-charcoal/70">{t('common.noOptions')}</div>
               ) : null}
             </div>
           )}

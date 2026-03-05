@@ -1,4 +1,5 @@
 import type { ReactNode, RefObject } from 'react'
+import { useI18n } from '../../i18n/i18n'
 
 export type AddBottomSheetSummary = {
   categoryLabel?: string | null
@@ -33,7 +34,7 @@ export function AddBottomSheet({
   canSubmit,
   isSubmitting,
   inputRef,
-  placeholder = 'Adicionar',
+  placeholder,
   onCategoryPress,
   onAssigneePress,
   onImagePress,
@@ -42,6 +43,9 @@ export function AddBottomSheet({
   summary,
   expandedContent,
 }: Props) {
+  const { t } = useI18n()
+  const resolvedPlaceholder = placeholder ?? t('lists.addBottomSheet.placeholder')
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
       <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
@@ -52,7 +56,7 @@ export function AddBottomSheet({
             <input
               ref={inputRef}
               className="w-full bg-transparent py-2 text-lg text-charcoal outline-none placeholder:text-gray-400"
-              placeholder={placeholder}
+              placeholder={resolvedPlaceholder}
               value={value}
               onChange={(e) => onValueChange(e.target.value)}
               onKeyDown={(e) => {
@@ -67,7 +71,7 @@ export function AddBottomSheet({
               type="button"
               onClick={onSubmit}
               disabled={!canSubmit || isSubmitting}
-              title="Adicionar item"
+              title={t('lists.addBottomSheet.submitTitle')}
             >
               <i className="ri-arrow-up-line text-xl" />
             </button>
@@ -79,7 +83,7 @@ export function AddBottomSheet({
             <button
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
               type="button"
-              title="Categoria"
+              title={t('lists.addBottomSheet.category')}
               onClick={onCategoryPress}
             >
               <i className="ri-price-tag-3-line text-xl" />
@@ -88,7 +92,7 @@ export function AddBottomSheet({
             <button
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
               type="button"
-              title="Atribuir"
+              title={t('lists.addBottomSheet.assign')}
               onClick={onAssigneePress}
             >
               <i className="ri-user-line text-xl" />
@@ -97,7 +101,7 @@ export function AddBottomSheet({
             <button
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
               type="button"
-              title="Imagem"
+              title={t('lists.addBottomSheet.image')}
               onClick={onImagePress}
             >
               <i className="ri-image-line text-xl" />
@@ -106,7 +110,7 @@ export function AddBottomSheet({
             <button
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
               type="button"
-              title="Notas"
+              title={t('lists.addBottomSheet.notes')}
               onClick={onNotePress}
             >
               <i className="ri-file-text-line text-xl" />
@@ -115,7 +119,7 @@ export function AddBottomSheet({
             <button
               className="grid h-10 w-10 place-items-center rounded-full hover:bg-sand-light"
               type="button"
-              title="Mais opções"
+              title={t('lists.addBottomSheet.moreOptions')}
               onClick={onMorePress}
             >
               <i className="ri-more-2-fill text-xl" />
@@ -129,8 +133,8 @@ export function AddBottomSheet({
             {summary?.assigneeLabel && (
               <span className="rounded-full bg-sand-light px-2 py-1">{summary.assigneeLabel}</span>
             )}
-            {summary?.hasPhoto && <span className="rounded-full bg-sand-light px-2 py-1">1 foto</span>}
-            {summary?.hasNote && <span className="rounded-full bg-sand-light px-2 py-1">Nota</span>}
+            {summary?.hasPhoto && <span className="rounded-full bg-sand-light px-2 py-1">{t('lists.addBottomSheet.photoChip')}</span>}
+            {summary?.hasNote && <span className="rounded-full bg-sand-light px-2 py-1">{t('lists.addBottomSheet.noteChip')}</span>}
           </div>
         </div>
 
