@@ -33,12 +33,30 @@ export function SwipeableRow({
 
   const [offsetX, setOffsetX] = useState(0)
   const [animating, setAnimating] = useState(false)
+  const [dragging, setDragging] = useState(false)
 
   useEffect(() => {
     if (!animating) return
     const t = window.setTimeout(() => setAnimating(false), 180)
     return () => window.clearTimeout(t)
   }, [animating])
+
+  useEffect(() => {
+    if (!dragging) return
+
+    const html = document.documentElement
+    const body = document.body
+    const previousHtmlOverflow = html.style.overflow
+    const previousBodyOverflow = body.style.overflow
+
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+
+    return () => {
+      html.style.overflow = previousHtmlOverflow
+      body.style.overflow = previousBodyOverflow
+    }
+  }, [dragging])
 
   const canSwipeRight = Boolean(onSwipedRight)
   const canSwipeLeft = Boolean(onSwipedLeft)
@@ -52,6 +70,7 @@ export function SwipeableRow({
     startYRef.current = e.clientY
     isDraggingRef.current = false
     suppressClickRef.current = false
+    setDragging(false)
     setAnimating(false)
   }
 
@@ -65,6 +84,7 @@ export function SwipeableRow({
       if (Math.abs(dx) < 8) return
       if (Math.abs(dx) <= Math.abs(dy)) return
       isDraggingRef.current = true
+      setDragging(true)
 
       try {
         e.currentTarget.setPointerCapture(e.pointerId)
@@ -87,6 +107,8 @@ export function SwipeableRow({
     const didSwipeRight = dx >= threshold && canSwipeRight
     const didSwipeLeft = dx <= -threshold && canSwipeLeft
 
+    setDragging(false)
+
     if (didSwipeRight) onSwipedRight?.()
     if (didSwipeLeft) onSwipedLeft?.()
 
@@ -97,12 +119,23 @@ export function SwipeableRow({
   const handlePointerUp: React.PointerEventHandler<HTMLDivElement> = (e) => {
     if (pointerIdRef.current !== e.pointerId) return
     pointerIdRef.current = null
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      // best-effort
+    }
     settle()
   }
 
   const handlePointerCancel: React.PointerEventHandler<HTMLDivElement> = (e) => {
     if (pointerIdRef.current !== e.pointerId) return
     pointerIdRef.current = null
+    setDragging(false)
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      // best-effort
+    }
     setAnimating(true)
     setOffsetX(0)
   }
@@ -116,12 +149,13 @@ export function SwipeableRow({
 
   return (
     <div
-      className={`relative overflow-hidden ${className ?? ''}`}
+      className={`relative overflow-hidden select-none ${className ?? ''}`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
       onClickCapture={handleClickCapture}
+      style={{ touchAction: disabled ? 'auto' : 'pan-y' }}
     >
       <div className="absolute inset-0 flex items-center justify-between">
         <div className={`flex h-full items-center pl-4 ${offsetX > 0 ? 'opacity-100' : 'opacity-0'}`}>

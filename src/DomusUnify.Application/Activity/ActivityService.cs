@@ -1,5 +1,6 @@
 using DomusUnify.Application.Activity.Models;
 using DomusUnify.Application.Common.Interfaces;
+using DomusUnify.Application.Notifications;
 using DomusUnify.Domain.Entities;
 using DomusUnify.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -12,12 +13,18 @@ namespace DomusUnify.Application.Activity;
 public sealed class ActivityService : IActivityService
 {
     private readonly IAppDbContext _db;
+    private readonly IActivityPushNotifier _pushNotifier;
 
     /// <summary>
     /// Inicializa uma nova instância de <see cref="ActivityService"/>.
     /// </summary>
     /// <param name="db">Contexto de base de dados.</param>
-    public ActivityService(IAppDbContext db) => _db = db;
+    /// <param name="pushNotifier">Despachante de notificações push.</param>
+    public ActivityService(IAppDbContext db, IActivityPushNotifier pushNotifier)
+    {
+        _db = db;
+        _pushNotifier = pushNotifier;
+    }
 
     /// <inheritdoc />
     public async Task LogAsync(Guid familyId, Guid actorUserId, ActivityLogInput input, CancellationToken ct)
@@ -45,6 +52,7 @@ public sealed class ActivityService : IActivityService
 
         _db.ActivityEntries.Add(entry);
         await _db.SaveChangesAsync(ct);
+        await _pushNotifier.NotifyAsync(entry, ct);
     }
 
     /// <inheritdoc />

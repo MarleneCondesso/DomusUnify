@@ -207,10 +207,10 @@
 @layer components {
   /* Loader: animação "cute loading" (4 bolhas) */
   .domus-loading-bubbles {
-    --domus-loader-dot: 12px;
-    --domus-loader-gap: calc(var(--domus-loader-dot) * 2.6);
-    --domus-loader-radius: calc(var(--domus-loader-dot) * 2.25);
-    --domus-loader-duration: 1.8s;
+    --domus-loader-dot: 8px;
+    --domus-loader-gap: calc(var(--domus-loader-dot) * 2.15);
+    --domus-loader-radius: calc(var(--domus-loader-dot) * 1.8);
+    --domus-loader-duration: 0.95s;
 
     --domus-loader-c1: var(--color-clay);
     --domus-loader-c2: var(--color-sage-light);
@@ -219,7 +219,7 @@
 
     position: relative;
     width: calc(var(--domus-loader-gap) * 3 + var(--domus-loader-dot));
-    height: calc(var(--domus-loader-radius) * 2.3 + var(--domus-loader-dot));
+    height: calc(var(--domus-loader-radius) * 1.9 + var(--domus-loader-dot));
   }
 
   .domus-loading-bubbles__dot {

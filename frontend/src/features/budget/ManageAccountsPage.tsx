@@ -178,7 +178,7 @@ export function ManageAccountsPage({ token }: Props) {
 
       <button
         type="button"
-        className="place-items-center h-14 w-14 rounded-full bg-amber/60 hover:bg-amber fixed bottom-20 right-15"
+        className="fixed bottom-20 right-6 grid h-14 w-14 place-items-center rounded-full bg-amber/60 text-charcoal shadow-2xl hover:bg-amber"
         onClick={() => setCreateOpen(true)}
         aria-label={t('common.add')}
         title={t('common.add')}

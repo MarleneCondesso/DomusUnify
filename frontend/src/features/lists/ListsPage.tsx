@@ -51,6 +51,7 @@ export function ListsPage({ token, family }: Props) {
   const hasPexelsCovers = Boolean(
     listsQuery.data?.some((l) => (l.coverImageUrl ?? '').includes('pexels.com')),
   )
+  const hasLists = (listsQuery.data?.length ?? 0) > 0
 
   const menuItems = useMemo<ActionSheetItem[]>(() => {
     const items: ActionSheetItem[] = [
@@ -140,13 +141,15 @@ export function ListsPage({ token, family }: Props) {
           </div>
         </section>
       </header>
-
-
-
-      {listsQuery.data?.length === 0 && <p className="mt-2 text-sm text-charcoal">{t('lists.empty')}</p>}
-      {listsQuery.data && listsQuery.data.length > 0 && (
-
-        <section className='max-w-7xl mx-auto px-6 pb-16'>
+      <main className="mx-auto w-full max-w-7xl px-6 pb-16">
+        {!hasLists ? (
+          <section className="pt-2">
+            <div className="rounded-2xl border border-gray-200 bg-white px-5 py-6 text-sm text-charcoal shadow-sm">
+              {t('lists.empty')}
+            </div>
+          </section>
+        ) : (
+          <section className='pb-16'>
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
             {listsQuery.data?.map((l) => {
               const itemsCount = l.itemsCount ?? 0
@@ -208,29 +211,34 @@ export function ListsPage({ token, family }: Props) {
               )
             })}
           </div>
+          </section>
+        )}
 
-          <button
-            className='place-items-center h-12 w-12 rounded-full bg-amber/60 hover:bg-amber fixed bottom-20 right-15'
-            onClick={() => navigate('/lists/new', { state: { backgroundLocation: location } })}>
-            <i className="ri-add-large-fill"></i>
-          </button>
+        <button
+          type="button"
+          className="fixed bottom-20 right-6 grid h-12 w-12 place-items-center rounded-full bg-amber/60 text-charcoal shadow-2xl hover:bg-amber"
+          onClick={() => navigate('/lists/new', { state: { backgroundLocation: location } })}
+          aria-label={t('common.add')}
+          title={t('common.add')}
+        >
+          <i className="ri-add-large-fill" aria-hidden="true"></i>
+        </button>
 
-          {hasPexelsCovers && (
-            <div className="mt-6 text-center text-xs text-charcoal/70">
-              {t('lists.pexels.credit.prefix')}{' '}
-              <a
-                className="underline hover:text-charcoal"
-                href="https://www.pexels.com"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Pexels
-              </a>
-              {t('lists.pexels.credit.suffix')}
-            </div>
-          )}
-        </section>
-      )}
+        {hasPexelsCovers ? (
+          <div className="mt-6 text-center text-xs text-charcoal/70">
+            {t('lists.pexels.credit.prefix')}{' '}
+            <a
+              className="underline hover:text-charcoal"
+              href="https://www.pexels.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Pexels
+            </a>
+            {t('lists.pexels.credit.suffix')}
+          </div>
+        ) : null}
+      </main>
 
       {menuOpen ? <ActionSheet title={t('common.options')} items={menuItems} onClose={() => setMenuOpen(false)} /> : null}
 

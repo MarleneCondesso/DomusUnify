@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { domusApi, type CalendarResponse, type CreateCalendarEventRequest, type FamilyResponse, type UpdateCalendarEventRequest } from '../../api/domusApi'
 import { ApiError } from '../../api/http'
 import { queryKeys } from '../../api/queryKeys'
@@ -42,6 +42,7 @@ const SWIPE_MAX_OFF_AXIS_RATIO = 1.25
 export function CalendarPage({ token }: Props) {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
 
   const now = useMemo(() => new Date(), [])
@@ -63,8 +64,40 @@ export function CalendarPage({ token }: Props) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarResponse | null>(null)
   const [editEvent, setEditEvent] = useState<CalendarResponse | null>(null)
   const [createEventError, setCreateEventError] = useState<string | null>(null)
+  const [routeOverrideViewMode, setRouteOverrideViewMode] = useState<CalendarViewMode | null>(null)
+  const lastAppliedRouteDateRef = useRef<string | null>(null)
+  const lastAppliedRouteViewRef = useRef<CalendarViewMode | null>(null)
+  const routeViewMode = useMemo(() => parseRouteViewMode(location.search), [location.search])
+  const routeDate = useMemo(() => parseRouteDate(location.search), [location.search])
 
-  const viewMode: CalendarViewMode = prefs.viewMode
+  useEffect(() => {
+    if (!routeDate) {
+      lastAppliedRouteDateRef.current = null
+      return
+    }
+
+    const nextKey = dateKey(routeDate)
+    if (lastAppliedRouteDateRef.current === nextKey) return
+
+    lastAppliedRouteDateRef.current = nextKey
+    setSelectedDate(routeDate)
+    setCursor(new Date(routeDate.getFullYear(), routeDate.getMonth(), 1))
+  }, [routeDate])
+
+  useEffect(() => {
+    if (!routeViewMode) {
+      lastAppliedRouteViewRef.current = null
+      setRouteOverrideViewMode(null)
+      return
+    }
+
+    if (lastAppliedRouteViewRef.current === routeViewMode) return
+
+    lastAppliedRouteViewRef.current = routeViewMode
+    setRouteOverrideViewMode(routeViewMode)
+  }, [routeViewMode])
+
+  const viewMode: CalendarViewMode = routeOverrideViewMode ?? prefs.viewMode
 
   const monthStart = useMemo(() => new Date(cursor.getFullYear(), cursor.getMonth(), 1), [cursor])
   const monthEnd = useMemo(() => new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0), [cursor])
@@ -762,7 +795,10 @@ export function CalendarPage({ token }: Props) {
         <CalendarViewMenu
           value={viewMode}
           onClose={() => setIsViewMenuOpen(false)}
-          onChange={(v) => patchPrefs({ viewMode: v })}
+          onChange={(v) => {
+            setRouteOverrideViewMode(null)
+            patchPrefs({ viewMode: v })
+          }}
         />
       ) : null}
 
@@ -836,6 +872,29 @@ function getEventColor(e: CalendarResponse): string {
   const seed = (e.id ?? e.title ?? '').trim()
   const idx = Math.abs(hashString(seed)) % palette.length
   return palette[idx] ?? 'var(--color-amber)'
+}
+
+function parseRouteViewMode(search: string): CalendarViewMode | null {
+  const value = new URLSearchParams(search).get('view')?.trim()
+  return value === 'agenda' || value === 'family' || value === 'day' || value === 'threeDays' || value === 'week' || value === 'month'
+    ? value
+    : null
+}
+
+function parseRouteDate(search: string): Date | null {
+  const raw = new URLSearchParams(search).get('date')?.trim()
+  if (!raw) return null
+
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) return null
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null
+
+  const parsed = new Date(year, month - 1, day)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
 function hashString(s: string): number {

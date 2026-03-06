@@ -52,6 +52,9 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     public DbSet<UserNotificationState> UserNotificationStates => Set<UserNotificationState>();
 
     /// <inheritdoc />
+    public DbSet<WebPushSubscription> WebPushSubscriptions => Set<WebPushSubscription>();
+
+    /// <inheritdoc />
     public DbSet<ItemCategory> ItemCategories => Set<ItemCategory>();
 
     /// <inheritdoc />
@@ -502,6 +505,26 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<WebPushSubscription>(b =>
+        {
+            b.ToTable("WebPushSubscriptions");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.Endpoint).HasMaxLength(2048).IsRequired();
+            b.Property(x => x.EndpointHash).HasMaxLength(64).IsRequired();
+            b.Property(x => x.P256Dh).HasMaxLength(200).IsRequired();
+            b.Property(x => x.Auth).HasMaxLength(120).IsRequired();
+            b.Property(x => x.UserAgent).HasMaxLength(512);
+
+            b.HasIndex(x => x.EndpointHash).IsUnique();
+            b.HasIndex(x => x.UserId);
+
+            b.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // FINANCE CATEGORY

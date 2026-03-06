@@ -58,6 +58,11 @@ public interface IAppDbContext
     DbSet<UserNotificationState> UserNotificationStates { get; }
 
     /// <summary>
+    /// Conjunto de subscrições Web Push por utilizador/dispositivo.
+    /// </summary>
+    DbSet<WebPushSubscription> WebPushSubscriptions { get; }
+
+    /// <summary>
     /// Conjunto de categorias de itens (listas).
     /// </summary>
     DbSet<ItemCategory> ItemCategories { get; }

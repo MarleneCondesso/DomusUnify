@@ -1,8 +1,9 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { FamilyResponse } from '../../api/domusApi'
 import { useI18n } from '../../i18n/i18n'
 import { useAppSettings } from '../../utils/appSettings'
+import { syncWebPushSubscription } from '../../utils/webPush'
 
 type Props = {
   token: string
@@ -10,10 +11,11 @@ type Props = {
   onLogout: () => void
 }
 
-export function SettingsPage({ onLogout }: Props) {
+export function SettingsPage({ token, onLogout }: Props) {
   const navigate = useNavigate()
   const { t } = useI18n()
   const { settings, updateSettings } = useAppSettings()
+  const [pushBusy, setPushBusy] = useState(false)
 
   const shareApp = async () => {
     const url = `${window.location.origin}${window.location.pathname}#/`
@@ -37,9 +39,46 @@ export function SettingsPage({ onLogout }: Props) {
   }
 
   const notificationsLabel = useMemo(
-    () => (settings.notificationsEnabled ? t('settings.notifications.enabled') : t('settings.notifications.disabled')),
-    [settings.notificationsEnabled, t],
+    () => (
+      pushBusy
+        ? t('common.loading')
+        : settings.notificationsEnabled
+          ? t('settings.notifications.enabled')
+          : t('settings.notifications.disabled')
+    ),
+    [pushBusy, settings.notificationsEnabled, t],
   )
+
+  const handleNotificationsToggle = async (nextValue: boolean) => {
+    if (pushBusy) return
+
+    if (!nextValue) {
+      updateSettings({ notificationsEnabled: false })
+      return
+    }
+
+    setPushBusy(true)
+    try {
+      const result = await syncWebPushSubscription(token, { ...settings, notificationsEnabled: true }, { requestPermission: true })
+      if (result === 'enabled') {
+        updateSettings({ notificationsEnabled: true })
+        return
+      }
+
+      const message =
+        result === 'unsupported'
+          ? t('settings.notifications.pushUnsupported')
+          : result === 'permission-denied'
+            ? t('settings.notifications.permissionDenied')
+            : t('settings.notifications.syncError')
+
+      window.alert(message)
+    } catch {
+      window.alert(t('settings.notifications.syncError'))
+    } finally {
+      setPushBusy(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-offwhite w-full">
@@ -81,8 +120,9 @@ export function SettingsPage({ onLogout }: Props) {
             right={
               <Toggle
                 checked={settings.notificationsEnabled}
-                onChange={(v) => updateSettings({ notificationsEnabled: v })}
+                onChange={(v) => void handleNotificationsToggle(v)}
                 ariaLabel={notificationsLabel}
+                disabled={pushBusy}
               />
             }
             subtitle={notificationsLabel}
@@ -161,7 +201,17 @@ function SettingsRow({
   )
 }
 
-function Toggle({ checked, onChange, ariaLabel }: { checked: boolean; onChange: (value: boolean) => void; ariaLabel: string }) {
+function Toggle({
+  checked,
+  onChange,
+  ariaLabel,
+  disabled,
+}: {
+  checked: boolean
+  onChange: (value: boolean) => void
+  ariaLabel: string
+  disabled?: boolean
+}) {
   return (
     <button
       type="button"
@@ -170,9 +220,11 @@ function Toggle({ checked, onChange, ariaLabel }: { checked: boolean; onChange: 
       }`}
       onClick={(e) => {
         e.stopPropagation()
+        if (disabled) return
         onChange(!checked)
       }}
       aria-label={ariaLabel}
+      disabled={disabled}
     >
       <span
         className={`inline-block h-7 w-7 transform rounded-full bg-white shadow transition-transform ${

@@ -9,8 +9,10 @@
  * Nota sobre URLs:
  * - Em DEV usamos o proxy do Vite (`vite.config.ts`) e chamamos caminhos relativos (ex.: `/api/v1/...`).
  * - Se quiseres chamar o backend diretamente (sem proxy), define `VITE_API_ORIGIN` (ex.: `https://localhost:7214`).
+ * - Em Capacitor, `VITE_API_ORIGIN` deve apontar para o backend real, porque a app corre em `capacitor://localhost`.
  */
 
+import { Capacitor } from '@capacitor/core'
 import { messagesByLanguage, type Language } from '../i18n/messages'
 
 export class ApiError extends Error {
@@ -34,11 +36,31 @@ type ApiRequestOptions = {
 
 const APP_SETTINGS_STORAGE_KEY = 'domus.appSettings.v1'
 const GENERIC_API_ERROR_KEY = 'common.unexpectedError' as const
+let hasWarnedAboutNativeApiOrigin = false
+
+export function getApiOrigin(): string | null {
+  const origin = (import.meta.env.VITE_API_ORIGIN as string | undefined)?.trim()
+  if (!origin) return null
+  return origin.replace(/\/+$/, '')
+}
 
 function buildUrl(path: string): string {
-  const origin = import.meta.env.VITE_API_ORIGIN as string | undefined
+  if (/^https?:\/\//i.test(path)) return path
+
+  const origin = getApiOrigin()
   if (!origin) return path
   return `${origin}${path}`
+}
+
+export function validateNativeApiOrigin(): void {
+  if (hasWarnedAboutNativeApiOrigin) return
+  if (!Capacitor.isNativePlatform()) return
+  if (getApiOrigin()) return
+
+  hasWarnedAboutNativeApiOrigin = true
+  console.warn(
+    '[DomusUnify] VITE_API_ORIGIN is not defined. Native builds need an absolute backend origin; relative /api routes will fail inside Capacitor.',
+  )
 }
 
 export type ApiDownloadResult = {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { queryKeys } from '../../api/queryKeys'
@@ -313,6 +313,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
   const unreadNotifications = unreadNotificationsQuery.data!
   const nextCalendarEvent =
     nextScheduleQuery.data && nextScheduleQuery.data.length > 0 ? nextScheduleQuery.data[0] : null
+  const familyName = (family.name ?? '').trim() || t('groups.manage.unnamed')
 
   const sharedPreviewMembers = getSharedPreviewMembers(lists, 3)
   const updatedListsTodayCount = countUniqueListUpdatesToday(listUpdatesToday)
@@ -343,6 +344,8 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
   const remainingBudget = hasTotalBudget ? totalBudget - expensesThisPeriod : 0
   const monthlyBudgetTotal = hasBudget ? formatCurrency(remainingBudget, currencyCode, locale) : '—'
+  const familySelectorTextStyle = useMemo(() => getFamilySelectorTextStyle(familyName), [familyName])
+  const familyHeadingStyle = useMemo(() => getFamilyHeadingStyle(familyName), [familyName])
 
   //#endregion
 
@@ -403,12 +406,14 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
             <button
               type="button"
-              className="flex items-center gap-2 rounded-full bg-white/60 hover:bg-white text-sage-dark px-4 py-2 shadow-lg"
+              className="mx-3 flex min-w-0 flex-1 items-center gap-2 rounded-full bg-white/60 px-4 py-2 text-sage-dark shadow-lg hover:bg-white"
               aria-label={t('common.selectGroup')}
               onClick={() => setGroupMenuOpen(true)}
             >
-              <span className="text-lg font-semibold">{family.name}</span>
-              <i className="ri-arrow-down-s-line text-2xl leading-none" />
+              <span className="min-w-0 flex-1 text-center font-semibold leading-tight" style={familySelectorTextStyle}>
+                {familyName}
+              </span>
+              <i className="ri-arrow-down-s-line shrink-0 text-2xl leading-none" />
             </button>
 
             <button
@@ -427,7 +432,9 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
               <span>{t('dashboard.badge.activeFamily')}</span>
             </div>
           </div>
-          <h1 className="text-6xl font-serif font-medium text-forest mb-3">{family.name}</h1>
+          <h1 className="mb-3 max-w-full font-serif font-medium leading-[0.92] text-forest" style={familyHeadingStyle}>
+            {familyName}
+          </h1>
           <p className="text-lg text-charcoal/80 mb-6">
             {t('dashboard.family.membersLine', { count: familyMembers.length, role: family.role ?? '' })}
           </p>
@@ -642,6 +649,25 @@ function pickPrimaryBudgetId(budgets: Array<{ id?: string; type?: string | null 
 function safeInitial(name: string | null | undefined): string {
   const trimmed = (name ?? '').trim()
   return trimmed ? trimmed[0]!.toUpperCase() : '?'
+}
+
+function getFamilySelectorTextStyle(name: string): CSSProperties {
+  const length = name.trim().length
+
+  return {
+    fontSize: length >= 28 ? '1rem' : length >= 20 ? '1.125rem' : '1.25rem',
+    lineHeight: 1.15,
+    overflowWrap: 'anywhere',
+  }
+}
+
+function getFamilyHeadingStyle(name: string): CSSProperties {
+  const length = name.trim().length
+
+  return {
+    fontSize: length >= 28 ? 'clamp(2.75rem, 10vw, 4.25rem)' : length >= 20 ? 'clamp(3.25rem, 11vw, 4.75rem)' : 'clamp(3.75rem, 12vw, 5.25rem)',
+    overflowWrap: 'anywhere',
+  }
 }
 
 function countUniqueListUpdatesToday(rows: ActivityEntryResponse[]): number {

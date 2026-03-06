@@ -1056,6 +1056,67 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                     b.ToTable("UserNotificationStates", (string)null);
                 });
 
+            modelBuilder.Entity("DomusUnify.Domain.Entities.WebPushSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Auth")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<bool>("BudgetEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CalendarEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("EndpointHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<bool>("ListsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("NotificationsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("P256Dh")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EndpointHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WebPushSubscriptions", (string)null);
+                });
+
             modelBuilder.Entity("DomusUnify.Domain.Entities.ActivityEntry", b =>
                 {
                     b.HasOne("DomusUnify.Domain.Entities.User", "ActorUser")
@@ -1494,6 +1555,17 @@ namespace DomusUnify.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Family");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DomusUnify.Domain.Entities.WebPushSubscription", b =>
+                {
+                    b.HasOne("DomusUnify.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

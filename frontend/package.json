@@ -8,9 +8,18 @@
     "build": "tsc -b && vite build",
     "gen:api": "openapi-typescript ../docs/api/openapi.json -o src/api/schema.ts",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:copy": "npm run build && npx cap copy",
+    "cap:android": "npx cap open android",
+    "cap:ios": "npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/app": "^8.0.1",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0",
     "@microsoft/signalr": "^10.0.0",
     "@tanstack/react-query": "^5.90.21",
     "react": "^19.2.0",

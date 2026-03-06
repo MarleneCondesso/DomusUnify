@@ -642,6 +642,48 @@ public sealed class FinanceTransactionService : IFinanceTransactionService
     }
 
     /// <inheritdoc />
+    public async Task<BudgetExpenseWidgetModel> GetExpenseWidgetSnapshotAsync(
+        Guid userId,
+        Guid familyId,
+        Guid budgetId,
+        DateOnly? referenceDate,
+        CancellationToken ct)
+    {
+        var (budget, _) = await EnsureBudgetAccessAsync(userId, familyId, budgetId, requireEdit: false, ct);
+
+        var today = referenceDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var monthStart = new DateOnly(today.Year, today.Month, 1);
+        var monthEnd = new DateOnly(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+
+        await EnsureRecurringOccurrencesAsync(budgetId, monthStart, monthEnd, ct);
+
+        var q = _db.FinanceTransactions
+            .AsNoTracking()
+            .Where(t => t.BudgetId == budgetId)
+            .Where(t => t.Type == FinanceTransactionType.Expense);
+
+        if (budget.OnlyPaidInTotals)
+            q = q.Where(t => t.IsPaid);
+
+        var monthExpenses = await q
+            .Where(t => t.Date >= monthStart && t.Date <= monthEnd)
+            .Select(t => (decimal?)t.Amount)
+            .SumAsync(ct) ?? 0m;
+
+        var todayExpenses = await q
+            .Where(t => t.Date == today)
+            .Select(t => (decimal?)t.Amount)
+            .SumAsync(ct) ?? 0m;
+
+        return new BudgetExpenseWidgetModel(
+            today,
+            monthStart,
+            monthEnd,
+            monthExpenses,
+            todayExpenses);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<CategorySummaryModel>> GetCategorySummaryAsync(
         Guid userId,
         Guid familyId,

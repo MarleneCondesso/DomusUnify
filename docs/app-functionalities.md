@@ -2,7 +2,7 @@
 
 Last updated: 2026-02-20
 
-This document describes the **user-facing features** of the DomusUnify website/web app (what users can do), without going into technical implementation details.
+This document describes the **user-facing features** of the DomusUnify website/web app (what users can do).
 
 ## 1) What is DomusUnify?
 
@@ -136,8 +136,8 @@ As of now, the web UI focuses on:
 ## 5) Planned / not yet exposed in the web UI
 
 Depending on your current build, some features may be planned but not visible yet, such as:
-- Full list item management screens
-- Category management screens
-- Invitation screens (create/preview/join)
-- Calendar screens
-- Budgets and finance screens
+- Recipe Lists screens
+- Recipe Plans screens
+- Recipe Lists logic
+- Recipe Plans logic
+

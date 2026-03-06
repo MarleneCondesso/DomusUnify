@@ -70,6 +70,22 @@ public interface IFinanceTransactionService
     Task<BudgetTotalsModel> GetTotalsAsync(Guid userId, Guid familyId, Guid budgetId, DateOnly? referenceDate, CancellationToken ct);
 
     /// <summary>
+    /// Obtém o snapshot de despesas do mês e do dia para o widget de orçamento.
+    /// </summary>
+    /// <param name="userId">Identificador do utilizador autenticado.</param>
+    /// <param name="familyId">Identificador da família.</param>
+    /// <param name="budgetId">Identificador do orçamento.</param>
+    /// <param name="referenceDate">Data de referência (por omissão, hoje).</param>
+    /// <param name="ct">Token de cancelamento.</param>
+    /// <returns>Totais de despesas para widget.</returns>
+    Task<BudgetExpenseWidgetModel> GetExpenseWidgetSnapshotAsync(
+        Guid userId,
+        Guid familyId,
+        Guid budgetId,
+        DateOnly? referenceDate,
+        CancellationToken ct);
+
+    /// <summary>
     /// Obtém um resumo por categorias para um tipo de transação.
     /// </summary>
     /// <param name="userId">Identificador do utilizador autenticado.</param>

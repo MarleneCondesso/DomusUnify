@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DomusUnify</string>
+    <string name="title_activity_main">DomusUnify</string>
+    <string name="package_name">com.domusunify.app</string>
+    <string name="custom_url_scheme">domusunify</string>
+    <string name="widget_calendar_week_label">Calendário semanal</string>
+    <string name="widget_calendar_day_label">Eventos do dia</string>
+    <string name="widget_budget_label">Resumo do orçamento</string>
+    <string name="widget_signed_out">Abra a app para iniciar sessão.</string>
+    <string name="widget_error">Sem dados atualizados.</string>
+    <string name="widget_calendar_empty">Só hoje</string>
+    <string name="widget_calendar_no_events">Sem eventos</string>
+    <string name="widget_budget_empty_title">Sem orçamento</string>
+    <string name="widget_budget_empty_subtitle">Abra a app para criar um.</string>
+    <string name="widget_budget_month_label">Despesas do mês</string>
+    <string name="widget_budget_today_label">Despesas de hoje</string>
+    <string name="widget_week_title">Calendário</string>
+    <string name="widget_day_title">Hoje</string>
+    <string name="widget_budget_title">Budget</string>
+</resources>

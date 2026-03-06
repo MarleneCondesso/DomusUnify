@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { Location } from 'react-router-dom'
@@ -37,6 +37,7 @@ import { SettingsPage } from '../settings/SettingsPage'
 import { GroupDetailsPage } from '../settings/GroupDetailsPage'
 import { GroupMembersPage } from '../settings/GroupMembersPage'
 import { GroupMemberProfilePage } from '../settings/GroupMemberProfilePage'
+import { refreshNativeWidgets, syncNativeWidgetState } from '../../native/widgetBridge'
 
 type Props = {
   token: string
@@ -54,6 +55,11 @@ export function FamilyGatePage({ token, onLogout }: Props) {
   const queryClient = useQueryClient()
   const location = useLocation()
   const { t } = useI18n()
+  const routeFamilyId = useMemo(() => {
+    const value = new URLSearchParams(location.search).get('familyId')?.trim()
+    return value || null
+  }, [location.search])
+  const switchingFamilyRef = useRef<string | null>(null)
 
   type ModalState = {
     backgroundLocation?: Location
@@ -70,6 +76,39 @@ export function FamilyGatePage({ token, onLogout }: Props) {
   const apiError = meQuery.error instanceof ApiError ? meQuery.error : null
   const isNoCurrentFamily = apiError?.status === 404
   const isUnauthorized = apiError?.status === 401
+
+  const routeFamilyMutation = useMutation({
+    mutationFn: (familyId: string) => domusApi.setCurrentFamily(token, { familyId }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.familyMe })
+    },
+    onSettled: () => {
+      switchingFamilyRef.current = null
+    },
+  })
+
+  const shouldSwitchToRouteFamily = Boolean(routeFamilyId) && (
+    isNoCurrentFamily ||
+    (meQuery.isSuccess && meQuery.data?.id && meQuery.data.id !== routeFamilyId)
+  )
+
+  useEffect(() => {
+    const familyId = meQuery.data?.id ?? null
+    void syncNativeWidgetState({ familyId }).catch(() => undefined)
+  }, [meQuery.data?.id])
+
+  useEffect(() => {
+    if (!meQuery.data?.id) return
+    void refreshNativeWidgets().catch(() => undefined)
+  }, [meQuery.data?.id])
+
+  useEffect(() => {
+    if (!routeFamilyId || !shouldSwitchToRouteFamily) return
+    if (switchingFamilyRef.current === routeFamilyId) return
+
+    switchingFamilyRef.current = routeFamilyId
+    routeFamilyMutation.mutate(routeFamilyId)
+  }, [routeFamilyId, routeFamilyMutation, shouldSwitchToRouteFamily])
 
   if (isUnauthorized) {
     return (
@@ -93,6 +132,40 @@ export function FamilyGatePage({ token, onLogout }: Props) {
         <div className="flex justify-center py-2">
           <LoadingSpinner size="lg" />
         </div>
+      </div>
+    )
+  }
+
+  if (routeFamilyMutation.isPending || (shouldSwitchToRouteFamily && !routeFamilyMutation.isError)) {
+    return (
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
+        <div className="flex justify-center py-2">
+          <LoadingSpinner size="lg" />
+        </div>
+      </div>
+    )
+  }
+
+  if (routeFamilyMutation.isError) {
+    return (
+      <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
+        <h2 className="text-xl font-semibold text-charcoal">{t('family.current.errorTitle')}</h2>
+        <pre className="mt-3 whitespace-pre-wrap wrap-break-words rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white">
+          {routeFamilyMutation.error instanceof ApiError
+            ? JSON.stringify(routeFamilyMutation.error.body, null, 2)
+            : String(routeFamilyMutation.error)}
+        </pre>
+        <button
+          className="mt-4 w-full rounded-xl bg-forest px-4 py-2 font-semibold text-white hover:bg-forest/90"
+          onClick={() => {
+            if (!routeFamilyId) return
+            switchingFamilyRef.current = routeFamilyId
+            routeFamilyMutation.mutate(routeFamilyId)
+          }}
+          type="button"
+        >
+          {t('common.tryAgain')}
+        </button>
       </div>
     )
   }

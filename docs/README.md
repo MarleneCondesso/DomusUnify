@@ -1,6 +1,6 @@
 # Documentação
 
-Este diretório contém artefactos de documentação gerados a partir dos comentários XML (Swagger/OpenAPI e ficheiros `.xml`).
+Este diretório contém documentação gerados a partir dos comentários XML (Swagger/OpenAPI e ficheiros `.xml`).
 
 ## Gerar/atualizar
 

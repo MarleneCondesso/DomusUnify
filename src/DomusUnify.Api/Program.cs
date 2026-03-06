@@ -1,4 +1,5 @@
 using DomusUnify.Api.Hubs;
+using DomusUnify.Api.Push;
 using DomusUnify.Api.Realtime;
 using DomusUnify.Api.Services.Covers;
 using DomusUnify.Api.Services.Auth;
@@ -161,6 +162,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.Configure<ExternalAuthOptions>(
     builder.Configuration.GetSection(ExternalAuthOptions.SectionName));
+builder.Services.Configure<WebPushOptions>(
+    builder.Configuration.GetSection(WebPushOptions.SectionName));
 builder.Services.AddSingleton<IExternalIdTokenValidator, ExternalIdTokenValidator>();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
@@ -169,6 +172,7 @@ builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 // Application
 builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IActivityPushNotifier, WebPushActivityNotifier>();
 
 builder.Services.AddScoped<IListService, ListService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();

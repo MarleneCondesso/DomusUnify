@@ -84,6 +84,17 @@ export type AccountSummaryResponse = components['schemas']['AccountSummaryRespon
 
 export type UserProfileResponse = components['schemas']['UserProfileResponse']
 export type UpdateUserProfileRequest = components['schemas']['UpdateUserProfileRequest']
+export type PushPublicKeyResponse = { publicKey: string }
+export type UpsertWebPushSubscriptionRequest = {
+  endpoint: string
+  p256Dh: string
+  auth: string
+  notificationsEnabled: boolean
+  listsEnabled: boolean
+  budgetEnabled: boolean
+  calendarEnabled: boolean
+  userAgent?: string
+}
 
 /**
  * Nota: as rotas aqui seguem exatamente o que está no backend.
@@ -454,4 +465,14 @@ export const domusApi = {
 
   markAllNotificationsSeen: async (token: string): Promise<void> =>
     apiRequest<void>('/api/v1/notifications/mark-all-seen', { method: 'POST', token }),
+
+  // Web Push
+  getPushPublicKey: async (token: string): Promise<PushPublicKeyResponse> =>
+    apiRequest<PushPublicKeyResponse>('/api/v1/push/public-key', { token }),
+
+  upsertPushSubscription: async (token: string, request: UpsertWebPushSubscriptionRequest): Promise<void> =>
+    apiRequest<void>('/api/v1/push/subscriptions', { method: 'PUT', token, json: request }),
+
+  deletePushSubscription: async (token: string, endpoint: string): Promise<void> =>
+    apiRequest<void>(`/api/v1/push/subscriptions?endpoint=${encodeURIComponent(endpoint)}`, { method: 'DELETE', token }),
 }

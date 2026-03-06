@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_forest">#255845</color>
+    <color name="widget_forest_deep">#18382D</color>
+    <color name="widget_ink">#24342D</color>
+    <color name="widget_muted">#6A756F</color>
+    <color name="widget_surface_green">#DCE8DE</color>
+    <color name="widget_surface_shell">#FBF8F2</color>
+    <color name="widget_surface_sand">#E5C57A</color>
+    <color name="widget_surface_sand_soft">#F3E5BD</color>
+    <color name="widget_white">#FFFFFFFF</color>
+</resources>

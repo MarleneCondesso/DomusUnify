@@ -1029,7 +1029,11 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
   }, [dragActiveItemId])
 
   if (listItemsQuery.isLoading || listsCategoriesQuery.isLoading) {
-    return <LoadingSpinner size="lg" />
+    return (
+      <div className="min-h-screen w-full bg-offwhite flex items-center justify-center px-6">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
   }
 
   const toggleSectionCollapsed = (key: string) => {
@@ -1493,9 +1497,13 @@ export function ListItemsPage({ token, family }: ListItemsPageProps) {
       ) : null}
 
       <button
-        className='place-items-center h-12 w-12 rounded-full bg-amber/60 hover:bg-amber fixed bottom-20 right-20'
-        onClick={() => setIsAddBottomSheetOpen(true)}>
-        <i className="ri-add-large-fill text-offwhite"></i>
+        type="button"
+        className="fixed bottom-20 right-6 grid h-12 w-12 place-items-center rounded-full bg-amber/60 text-offwhite shadow-2xl hover:bg-amber"
+        onClick={() => setIsAddBottomSheetOpen(true)}
+        aria-label={t('common.add')}
+        title={t('common.add')}
+      >
+        <i className="ri-add-large-fill" aria-hidden="true"></i>
       </button>
 
       {isAddBottomSheetOpen ? (

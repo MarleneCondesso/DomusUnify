@@ -151,6 +151,22 @@ public sealed record BudgetTotalsModel(
 );
 
 /// <summary>
+/// Snapshot de despesas para o widget de orçamento.
+/// </summary>
+/// <param name="Today">Dia de referência.</param>
+/// <param name="MonthStart">Início do mês.</param>
+/// <param name="MonthEnd">Fim do mês.</param>
+/// <param name="MonthExpenses">Despesas totais do mês.</param>
+/// <param name="TodayExpenses">Despesas totais do dia.</param>
+public sealed record BudgetExpenseWidgetModel(
+    DateOnly Today,
+    DateOnly MonthStart,
+    DateOnly MonthEnd,
+    decimal MonthExpenses,
+    decimal TodayExpenses
+);
+
+/// <summary>
 /// Resumo agregado por categoria.
 /// </summary>
 /// <param name="CategoryId">Identificador da categoria.</param>
