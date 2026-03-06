@@ -344,8 +344,8 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
   const remainingBudget = hasTotalBudget ? totalBudget - expensesThisPeriod : 0
   const monthlyBudgetTotal = hasBudget ? formatCurrency(remainingBudget, currencyCode, locale) : '—'
-  const familySelectorTextStyle = useMemo(() => getFamilySelectorTextStyle(familyName), [familyName])
-  const familyHeadingStyle = useMemo(() => getFamilyHeadingStyle(familyName), [familyName])
+  const familySelectorTextStyle = getFamilySelectorTextStyle(familyName)
+  const familyHeadingStyle = getFamilyHeadingStyle(familyName)
 
   //#endregion
 

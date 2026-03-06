@@ -42,7 +42,8 @@ export async function syncWebPushSubscription(
   if (permission === 'denied') return 'permission-denied'
   if (permission !== 'granted') return 'permission-default'
 
-  const registration = await navigator.serviceWorker.ready
+  const registration = await getReadyServiceWorkerRegistration()
+  if (!registration) return 'unsupported'
   const publicKey = (await domusApi.getPushPublicKey(token)).publicKey.trim()
   const existingSubscription = await registration.pushManager.getSubscription()
   const subscription =
@@ -76,7 +77,8 @@ export async function syncWebPushSubscription(
 export async function unsubscribeWebPush(token: string): Promise<void> {
   if (!supportsWebPush()) return
 
-  const registration = await navigator.serviceWorker.ready
+  const registration = await getReadyServiceWorkerRegistration({ timeoutMs: 250, waitForReady: false })
+  if (!registration) return
   const subscription = await registration.pushManager.getSubscription()
   if (!subscription) return
 
@@ -90,6 +92,33 @@ export async function unsubscribeWebPush(token: string): Promise<void> {
     await subscription.unsubscribe()
   } catch {
     // ignore local cleanup failures
+  }
+}
+
+async function getReadyServiceWorkerRegistration(
+  options: {
+    timeoutMs?: number
+    waitForReady?: boolean
+  } = {},
+): Promise<ServiceWorkerRegistration | null> {
+  const { timeoutMs = 3000, waitForReady = true } = options
+  const existing = await navigator.serviceWorker.getRegistration()
+
+  if (existing && (!waitForReady || existing.active || existing.waiting || existing.installing)) {
+    return existing
+  }
+
+  if (!waitForReady) return existing ?? null
+
+  try {
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => {
+        window.setTimeout(() => resolve(null), timeoutMs)
+      }),
+    ])
+  } catch {
+    return null
   }
 }
 

@@ -23,6 +23,12 @@ const queryClient = new QueryClient({
   },
 })
 
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+  void navigator.serviceWorker.getRegistrations()
+    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+    .catch(() => undefined)
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

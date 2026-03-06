@@ -12,7 +12,6 @@ export function LanguagePage() {
         { id: 'system' as const, label: t('settings.language.system') },
         { id: 'en' as const, label: t('settings.language.english') },
         { id: 'pt' as const, label: t('settings.language.portuguese') },
-        { id: 'zh' as const, label: t('settings.language.chinese') },
       ] satisfies Array<{ id: LanguageMode; label: string }>,
     [t],
   )

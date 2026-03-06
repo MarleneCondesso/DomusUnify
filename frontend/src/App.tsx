@@ -81,18 +81,19 @@ function App() {
     navigate(`${location.pathname}${location.search}`, { replace: true })
   }
 
-  async function onLogout() {
+  function onLogout() {
     const currentToken = token
-    if (currentToken) {
-      await unsubscribeWebPush(currentToken).catch(() => undefined)
-    }
-
-    await clearNativeWidgetState().catch(() => undefined)
 
     clearAuth()
     queryClient.clear()
     setToken(null)
     navigate('/', { replace: true })
+
+    void clearNativeWidgetState().catch(() => undefined)
+
+    if (currentToken) {
+      void unsubscribeWebPush(currentToken).catch(() => undefined)
+    }
   }
 
   return (
