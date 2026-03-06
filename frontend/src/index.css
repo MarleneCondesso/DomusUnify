@@ -60,7 +60,7 @@
 
     /* Primary actions (purple) */
     --color-forest: #7c3aed;
-
+    --color-amber: #9d6ef0;
     /* Text */
     --color-charcoal: #f8fafc;
 
@@ -153,6 +153,7 @@
     background-color: color-mix(in oklab, var(--color-sand-light) 80%, transparent);
   }
 
+
   /* In dark mode, `text-sage-dark` is a light accent, but `bg-sage-dark` is often used with `text-white`.
      Override the background utility to a deeper purple for contrast. */
   [data-theme='dark'] .bg-sage-dark {
@@ -175,6 +176,7 @@
     background-color: color-mix(in oklab, #6d28d9 60%, transparent);
   }
 }
+
 /**
  * Estilos base do projeto (Tailwind + pequenos ajustes globais).
  *
@@ -198,13 +200,14 @@
     @apply text-indigo-300 hover:text-indigo-200;
   }
 
-  button{
+  button {
     @apply cursor-pointer;
   }
- 
+
 }
 
 @layer components {
+
   /* Loader: animação "cute loading" (4 bolhas) */
   .domus-loading-bubbles {
     --domus-loader-dot: 8px;
@@ -270,33 +273,28 @@
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -1.5)) translateY(0) scale(1);
     border-radius: 9999px;
   }
+
   12% {
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -1.5)) translateY(0) scaleX(1.1) scaleY(2.4);
     border-radius: 9999px;
   }
+
   28%,
   50% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * -0.35))
-      translateY(calc(var(--domus-loader-radius) * -1))
-      scaleX(3.8)
-      scaleY(2.6)
-      rotate(-18deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * -0.35)) translateY(calc(var(--domus-loader-radius) * -1)) scaleX(3.8) scaleY(2.6) rotate(-18deg);
     border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
   }
+
   62% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * 1.05))
-      translateY(calc(var(--domus-loader-radius) * -0.25))
-      scaleX(3.8)
-      scaleY(2.6)
-      rotate(35deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * 1.05)) translateY(calc(var(--domus-loader-radius) * -0.25)) scaleX(3.8) scaleY(2.6) rotate(35deg);
     border-radius: 55% 45% 60% 40% / 60% 40% 55% 45%;
   }
+
   78% {
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 1.5)) translateY(0) scale(1);
     border-radius: 9999px;
   }
+
   100% {
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 1.5)) translateY(0) scale(1);
     border-radius: 9999px;
@@ -308,36 +306,28 @@
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -0.5)) translateY(0) scale(1);
     border-radius: 9999px;
   }
+
   12% {
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -0.5)) translateY(0) scale(1);
     border-radius: 9999px;
   }
+
   28%,
   50% {
-    transform: translate(-50%, -50%)
-      translateX(0)
-      translateY(0)
-      scale(0.85);
+    transform: translate(-50%, -50%) translateX(0) translateY(0) scale(0.85);
     border-radius: 9999px;
   }
+
   62% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * -0.45))
-      translateY(calc(var(--domus-loader-radius) * -0.2))
-      scaleX(2.2)
-      scaleY(1.6)
-      rotate(-22deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * -0.45)) translateY(calc(var(--domus-loader-radius) * -0.2)) scaleX(2.2) scaleY(1.6) rotate(-22deg);
     border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
   }
+
   70% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * 0.05))
-      translateY(calc(var(--domus-loader-radius) * -0.9))
-      scaleX(2.4)
-      scaleY(1.7)
-      rotate(18deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * 0.05)) translateY(calc(var(--domus-loader-radius) * -0.9)) scaleX(2.4) scaleY(1.7) rotate(18deg);
     border-radius: 55% 45% 60% 40% / 60% 40% 55% 45%;
   }
+
   78%,
   100% {
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 0.5)) translateY(0) scale(1);
@@ -350,38 +340,28 @@
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 0.5)) translateY(0) scale(1);
     border-radius: 9999px;
   }
+
   12% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * 0.15))
-      translateY(calc(var(--domus-loader-radius) * 0.95))
-      scaleX(3.8)
-      scaleY(2.6)
-      rotate(18deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * 0.15)) translateY(calc(var(--domus-loader-radius) * 0.95)) scaleX(3.8) scaleY(2.6) rotate(18deg);
     border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
   }
+
   28%,
   50% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * -0.25))
-      translateY(calc(var(--domus-loader-radius) * 1))
-      scaleX(3.8)
-      scaleY(2.6)
-      rotate(-14deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * -0.25)) translateY(calc(var(--domus-loader-radius) * 1)) scaleX(3.8) scaleY(2.6) rotate(-14deg);
     border-radius: 55% 45% 60% 40% / 60% 40% 55% 45%;
   }
+
   62% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * -1.1))
-      translateY(calc(var(--domus-loader-radius) * 0.25))
-      scaleX(2.4)
-      scaleY(1.7)
-      rotate(32deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * -1.1)) translateY(calc(var(--domus-loader-radius) * 0.25)) scaleX(2.4) scaleY(1.7) rotate(32deg);
     border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
   }
+
   78% {
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -1.5)) translateY(0) scale(1);
     border-radius: 9999px;
   }
+
   100% {
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -1.5)) translateY(0) scale(1);
     border-radius: 9999px;
@@ -393,38 +373,28 @@
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 1.5)) translateY(0) scale(1);
     border-radius: 9999px;
   }
+
   12% {
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * 1.5)) translateY(0) scale(1);
     border-radius: 9999px;
   }
+
   28%,
   50% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * 1.05))
-      translateY(calc(var(--domus-loader-radius) * 0.2))
-      scaleX(2.6)
-      scaleY(1.9)
-      rotate(48deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * 1.05)) translateY(calc(var(--domus-loader-radius) * 0.2)) scaleX(2.6) scaleY(1.9) rotate(48deg);
     border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
   }
+
   62% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * 0.15))
-      translateY(calc(var(--domus-loader-radius) * 1.1))
-      scaleX(3.8)
-      scaleY(2.6)
-      rotate(4deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * 0.15)) translateY(calc(var(--domus-loader-radius) * 1.1)) scaleX(3.8) scaleY(2.6) rotate(4deg);
     border-radius: 55% 45% 60% 40% / 60% 40% 55% 45%;
   }
+
   70% {
-    transform: translate(-50%, -50%)
-      translateX(calc(var(--domus-loader-radius) * -0.35))
-      translateY(calc(var(--domus-loader-radius) * 0.55))
-      scaleX(2.3)
-      scaleY(1.8)
-      rotate(-75deg);
+    transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-radius) * -0.35)) translateY(calc(var(--domus-loader-radius) * 0.55)) scaleX(2.3) scaleY(1.8) rotate(-75deg);
     border-radius: 60% 40% 55% 45% / 60% 55% 45% 40%;
   }
+
   78%,
   100% {
     transform: translate(-50%, -50%) translateX(calc(var(--domus-loader-gap) * -0.5)) translateY(0) scale(1);
