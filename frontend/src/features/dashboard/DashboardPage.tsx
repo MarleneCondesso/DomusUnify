@@ -393,7 +393,7 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
 
       {/** FAMILY */}
       <section className="bg-linear-to-b from-sage-light to-offwhite py-6">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6 mb-12">
           <nav className="flex w-full items-center justify-between mb-10">
             <button
               type="button"
@@ -410,8 +410,8 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
               aria-label={t('common.selectGroup')}
               onClick={() => setGroupMenuOpen(true)}
             >
-              <span className="min-w-0 flex-1 text-center font-semibold leading-tight" style={familySelectorTextStyle}>
-                {familyName}
+              <span className="min-w-0 flex-1 text-center leading-tight text-xl" style={familySelectorTextStyle}>
+                {family.name}
               </span>
               <i className="ri-arrow-down-s-line shrink-0 text-2xl leading-none" />
             </button>
@@ -433,10 +433,10 @@ export function DashboardPage({ family, token }: DashboardPageProps) {
             </div>
           </div>
           <h1 className="mb-3 max-w-full font-serif font-medium leading-[0.92] text-forest" style={familyHeadingStyle}>
-            {familyName}
+            {family.name}
           </h1>
           <p className="text-lg text-charcoal/80 mb-6">
-            {t('dashboard.family.membersLine', { count: familyMembers.length, role: family.role ?? '' })}
+            {t('dashboard.family.membersLine', { count: familyMembers.length})}
           </p>
 
         </div>
@@ -655,7 +655,7 @@ function getFamilySelectorTextStyle(name: string): CSSProperties {
   const length = name.trim().length
 
   return {
-    fontSize: length >= 28 ? '1rem' : length >= 20 ? '1.125rem' : '1.25rem',
+    fontSize: length >= 28 ? '1rem' : length >= 20 ? '1.2rem' : '1rem',
     lineHeight: 1.15,
     overflowWrap: 'anywhere',
   }

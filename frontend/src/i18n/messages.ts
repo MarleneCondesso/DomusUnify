@@ -1033,7 +1033,7 @@ export const pt: Record<MessageKey, string> = {
   'dashboard.error.nextEvent': 'Erro ao obter próximo evento do calendário',
 
   'dashboard.badge.activeFamily': 'FAMÍLIA ATIVA',
-  'dashboard.family.membersLine': '{{count}} membros · Você é {{role}}',
+  'dashboard.family.membersLine': '{{count}} membros',
   'dashboard.card.lists.title': 'Listas compartilhadas',
   'dashboard.card.lists.updatedToday': '{{count}} atualizadas hoje',
   'dashboard.card.calendar.upcoming': 'PRÓXIMO',
