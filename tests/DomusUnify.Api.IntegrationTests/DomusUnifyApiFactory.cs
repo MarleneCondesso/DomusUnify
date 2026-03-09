@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace DomusUnify.Api.IntegrationTests;
 
@@ -23,6 +24,7 @@ public sealed class DomusUnifyApiFactory : WebApplicationFactory<Program>
         TestEnv.Load();
 
         builder.UseEnvironment("Testing");
+        builder.ConfigureLogging(logging => logging.ClearProviders());
 
         builder.ConfigureServices(services =>
         {

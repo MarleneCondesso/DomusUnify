@@ -4,6 +4,7 @@ using DomusUnify.Api.Services.Auth;
 using DomusUnify.Domain.Entities;
 using DomusUnify.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -18,12 +19,18 @@ public class AuthController : ControllerBase
 {
     private readonly DomusUnifyDbContext _db;
     private readonly IJwtTokenService _jwt;
+    private readonly IRefreshTokenService _refreshTokens;
     private readonly IExternalIdTokenValidator _externalIdTokenValidator;
 
-    public AuthController(DomusUnifyDbContext db, IJwtTokenService jwt, IExternalIdTokenValidator externalIdTokenValidator)
+    public AuthController(
+        DomusUnifyDbContext db,
+        IJwtTokenService jwt,
+        IRefreshTokenService refreshTokens,
+        IExternalIdTokenValidator externalIdTokenValidator)
     {
         _db = db;
         _jwt = jwt;
+        _refreshTokens = refreshTokens;
         _externalIdTokenValidator = externalIdTokenValidator;
     }
 
@@ -53,9 +60,7 @@ public class AuthController : ControllerBase
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        var (token, expires) = _jwt.CreateToken(user);
-
-        return Ok(new AuthResponse { AccessToken = token, ExpiresAtUtc = expires });
+        return Ok(await CreateAuthResponseAsync(user, cancellationToken: HttpContext.RequestAborted));
     }
 
     /// <summary>
@@ -77,9 +82,7 @@ public class AuthController : ControllerBase
         var ok = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
         if (!ok) return Unauthorized("Credenciais inválidas.");
 
-        var (token, expires) = _jwt.CreateToken(user);
-
-        return Ok(new AuthResponse { AccessToken = token, ExpiresAtUtc = expires });
+        return Ok(await CreateAuthResponseAsync(user, cancellationToken: HttpContext.RequestAborted));
     }
 
     /// <summary>
@@ -113,8 +116,42 @@ public class AuthController : ControllerBase
             tokenUser: tokenUser,
             cancellationToken: cancellationToken);
 
-        var (token, expires) = _jwt.CreateToken(user);
-        return Ok(new AuthResponse { AccessToken = token, ExpiresAtUtc = expires });
+        return Ok(await CreateAuthResponseAsync(user, cancellationToken));
+    }
+
+    /// <summary>
+    /// Renova silenciosamente a sessão com base num refresh token válido.
+    /// </summary>
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResponse>> Refresh(RefreshTokenRequest request, CancellationToken cancellationToken)
+    {
+        var rotated = await _refreshTokens.RotateAsync(request.RefreshToken, Request.Headers.UserAgent.ToString(), cancellationToken);
+        if (rotated is null)
+            return Unauthorized("Refresh token inválido ou expirado.");
+
+        var (accessToken, accessExpiresAtUtc) = _jwt.CreateToken(rotated.Value.user);
+        return Ok(new AuthResponse
+        {
+            AccessToken = accessToken,
+            ExpiresAtUtc = accessExpiresAtUtc,
+            RefreshToken = rotated.Value.token,
+            RefreshTokenExpiresAtUtc = rotated.Value.expiresAtUtc,
+        });
+    }
+
+    /// <summary>
+    /// Termina a sessão persistente atual revogando o refresh token.
+    /// </summary>
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Logout(LogoutRequest request, CancellationToken cancellationToken)
+    {
+        var refreshToken = request.RefreshToken?.Trim();
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+            await _refreshTokens.RevokeAsync(refreshToken, ct: cancellationToken);
+
+        return NoContent();
     }
 
     private async Task<User> GetOrCreateExternalUserAsync(
@@ -173,5 +210,22 @@ public class AuthController : ControllerBase
 
         var at = email.IndexOf('@');
         return at > 0 ? email[..at] : email;
+    }
+
+    private async Task<AuthResponse> CreateAuthResponseAsync(User user, CancellationToken cancellationToken)
+    {
+        var (accessToken, accessExpiresAtUtc) = _jwt.CreateToken(user);
+        var (refreshToken, refreshExpiresAtUtc) = await _refreshTokens.CreateAsync(
+            user,
+            Request.Headers.UserAgent.ToString(),
+            cancellationToken);
+
+        return new AuthResponse
+        {
+            AccessToken = accessToken,
+            ExpiresAtUtc = accessExpiresAtUtc,
+            RefreshToken = refreshToken,
+            RefreshTokenExpiresAtUtc = refreshExpiresAtUtc,
+        };
     }
 }

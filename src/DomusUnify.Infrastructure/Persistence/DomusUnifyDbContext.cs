@@ -27,6 +27,11 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     /// </summary>
     public DbSet<UserExternalLogin> UserExternalLogins => Set<UserExternalLogin>();
 
+    /// <summary>
+    /// Refresh tokens persistidos por utilizador/dispositivo.
+    /// </summary>
+    public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
+
     /// <inheritdoc />
     public DbSet<Family> Families => Set<Family>();
 
@@ -107,6 +112,7 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        var isSqlite = string.Equals(Database.ProviderName, "Microsoft.EntityFrameworkCore.Sqlite", StringComparison.Ordinal);
 
         // USER
         modelBuilder.Entity<User>(b =>
@@ -153,6 +159,28 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
 
             b.HasOne(x => x.User)
                 .WithMany(x => x.ExternalLogins)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserRefreshToken>(b =>
+        {
+            b.ToTable("UserRefreshTokens");
+            b.HasKey(x => x.Id);
+
+            b.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+            b.Property(x => x.ReplacedByTokenHash).HasMaxLength(64);
+            b.Property(x => x.UserAgent).HasMaxLength(512);
+            b.Property(x => x.ExpiresAtUtc).IsRequired();
+            b.Property(x => x.RevokedAtUtc);
+            b.Property(x => x.LastUsedAtUtc);
+
+            b.HasIndex(x => x.TokenHash).IsUnique();
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => new { x.UserId, x.ExpiresAtUtc });
+
+            b.HasOne(x => x.User)
+                .WithMany(x => x.RefreshTokens)
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
@@ -424,7 +452,10 @@ public class DomusUnifyDbContext : DbContext, IAppDbContext
             b.Property(x => x.Name).HasMaxLength(200).IsRequired();
             b.Property(x => x.IsCompleted).IsRequired();
             b.Property(x => x.Note).HasMaxLength(2000);
-            b.Property(x => x.PhotoUrl).HasColumnType("nvarchar(max)");
+            if (!isSqlite)
+            {
+                b.Property(x => x.PhotoUrl).HasColumnType("nvarchar(max)");
+            }
 
             b.HasIndex(x => new { x.SharedListId, x.IsCompleted });
 

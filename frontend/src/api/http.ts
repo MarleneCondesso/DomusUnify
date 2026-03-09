@@ -14,6 +14,7 @@
 
 import { Capacitor } from '@capacitor/core'
 import { messagesByLanguage, type Language } from '../i18n/messages'
+import { ensureValidAccessToken } from '../auth/sessionManager'
 
 export class ApiError extends Error {
   public readonly status: number
@@ -150,15 +151,27 @@ export async function apiRequest<TResponse>(
   const headers = new Headers()
   headers.set('Accept', 'application/json')
 
-  if (token) headers.set('Authorization', `Bearer ${token}`)
-
   let body: string | undefined
   if (json !== undefined) {
     headers.set('Content-Type', 'application/json')
     body = JSON.stringify(json)
   }
 
-  const response = await fetch(buildUrl(path), { method, headers, body, signal })
+  const send = async (accessToken: string | null): Promise<Response> => {
+    const requestHeaders = new Headers(headers)
+    if (accessToken) requestHeaders.set('Authorization', `Bearer ${accessToken}`)
+    return fetch(buildUrl(path), { method, headers: requestHeaders, body, signal })
+  }
+
+  const initialToken = token ? await ensureValidAccessToken({ fallbackToken: token }) : null
+  let response = await send(initialToken)
+
+  if (response.status === 401 && token) {
+    const refreshedToken = await ensureValidAccessToken({ forceRefresh: true, fallbackToken: token })
+    if (refreshedToken && refreshedToken !== initialToken) {
+      response = await send(refreshedToken)
+    }
+  }
 
   // 204 = No Content (ex.: endpoints que só fazem "set" e não devolvem JSON)
   if (response.status === 204) return undefined as TResponse
@@ -194,9 +207,22 @@ export async function apiDownload(
 ): Promise<ApiDownloadResult> {
   const headers = new Headers()
   headers.set('Accept', 'text/csv,application/octet-stream,*/*')
-  if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  const response = await fetch(buildUrl(path), { method, headers, signal })
+  const send = async (accessToken: string | null): Promise<Response> => {
+    const requestHeaders = new Headers(headers)
+    if (accessToken) requestHeaders.set('Authorization', `Bearer ${accessToken}`)
+    return fetch(buildUrl(path), { method, headers: requestHeaders, signal })
+  }
+
+  const initialToken = token ? await ensureValidAccessToken({ fallbackToken: token }) : null
+  let response = await send(initialToken)
+
+  if (response.status === 401 && token) {
+    const refreshedToken = await ensureValidAccessToken({ forceRefresh: true, fallbackToken: token })
+    if (refreshedToken && refreshedToken !== initialToken) {
+      response = await send(refreshedToken)
+    }
+  }
 
   if (!response.ok) {
     const parsed = await readBody(response)

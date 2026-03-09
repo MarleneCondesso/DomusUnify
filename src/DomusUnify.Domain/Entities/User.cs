@@ -76,4 +76,9 @@ public class User : BaseEntity
     /// Logins externos associados ao utilizador.
     /// </summary>
     public ICollection<UserExternalLogin> ExternalLogins { get; set; } = new List<UserExternalLogin>();
+
+    /// <summary>
+    /// Sessões persistentes (refresh tokens) associadas ao utilizador.
+    /// </summary>
+    public ICollection<UserRefreshToken> RefreshTokens { get; set; } = new List<UserRefreshToken>();
 }

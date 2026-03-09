@@ -3,7 +3,11 @@ using System.Net.Http.Json;
 
 namespace DomusUnify.Api.IntegrationTests.Helpers;
 
-internal sealed record AuthResponseDto(string AccessToken, DateTime ExpiresAtUtc);
+internal sealed record AuthResponseDto(
+    string AccessToken,
+    DateTime ExpiresAtUtc,
+    string RefreshToken,
+    DateTime RefreshTokenExpiresAtUtc);
 internal sealed record FamilyResponseDto(Guid Id, string Name, string Role);
 internal sealed record FamilyMemberResponseDto(Guid UserId, string? Name, string? Email, string? Role);
 internal sealed record MemberPreviewDto(Guid UserId, string Name);
@@ -123,6 +127,25 @@ internal sealed class ApiTestClient
         Assert.False(string.IsNullOrWhiteSpace(auth!.AccessToken));
 
         return auth!;
+    }
+
+    public async Task<AuthResponseDto> RefreshSessionAsync(string refreshToken)
+    {
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/refresh", new { refreshToken });
+        response.EnsureSuccessStatusCode();
+
+        var auth = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+        Assert.NotNull(auth);
+        Assert.False(string.IsNullOrWhiteSpace(auth!.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(auth.RefreshToken));
+
+        return auth!;
+    }
+
+    public async Task LogoutSessionAsync(string refreshToken)
+    {
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/logout", new { refreshToken });
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, response.StatusCode);
     }
 
     public async Task<FamilyResponseDto> GetMyFamilyAsync()

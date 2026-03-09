@@ -22,7 +22,9 @@ public sealed class AuthTests : IClassFixture<DomusUnifyApiFactory>
         var login = await api.LoginAsync(email, password);
 
         Assert.False(string.IsNullOrWhiteSpace(reg.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(reg.RefreshToken));
         Assert.False(string.IsNullOrWhiteSpace(login.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(login.RefreshToken));
     }
 
     [Fact]
@@ -34,6 +36,7 @@ public sealed class AuthTests : IClassFixture<DomusUnifyApiFactory>
         var auth = await api.LoginWithGoogleAsync(idToken);
 
         Assert.False(string.IsNullOrWhiteSpace(auth.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(auth.RefreshToken));
     }
 
     [Fact]
@@ -43,6 +46,28 @@ public sealed class AuthTests : IClassFixture<DomusUnifyApiFactory>
 
         var response = await http.PostAsJsonAsync("/api/v1/auth/oauth/google", new { idToken = "" });
 
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Refresh_Then_Logout_RevokesSession()
+    {
+        var api = new ApiTestClient(_factory.CreateHttpsClient());
+
+        var password = TestEnv.Get("DOMUSUNIFY_TEST_PASSWORD", "P@ssw0rd123!");
+        var email = $"refresh-{Guid.NewGuid():N}@example.com";
+        var login = await api.RegisterAsync("Refresh User", email, password);
+
+        var refreshed = await api.RefreshSessionAsync(login.RefreshToken);
+
+        Assert.False(string.IsNullOrWhiteSpace(refreshed.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(refreshed.RefreshToken));
+        Assert.NotEqual(login.RefreshToken, refreshed.RefreshToken);
+
+        await api.LogoutSessionAsync(refreshed.RefreshToken);
+
+        var http = _factory.CreateHttpsClient();
+        var response = await http.PostAsJsonAsync("/api/v1/auth/refresh", new { refreshToken = refreshed.RefreshToken });
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }

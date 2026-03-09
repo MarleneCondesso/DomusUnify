@@ -10,9 +10,15 @@ Push-Location $root
 try {
     Write-Host "Restaurar ferramentas dotnet (local tool manifest)..." -ForegroundColor Cyan
     dotnet tool restore
+    if ($LASTEXITCODE -ne 0) {
+        throw "Falhou o restore das ferramentas dotnet."
+    }
 
     Write-Host "Compilar solução (Release)..." -ForegroundColor Cyan
     dotnet build DomusUnify.sln -c Release
+    if ($LASTEXITCODE -ne 0) {
+        throw "Falhou a compilacao da solucao em Release."
+    }
 
     $configuration = "Release"
     $targetFramework = "net8.0"
@@ -51,6 +57,9 @@ try {
     $env:ASPNETCORE_ENVIRONMENT = "Production"
     $openApiJsonPath = Join-Path $docsApi "openapi.json"
     dotnet swagger tofile --output $openApiJsonPath $apiDll v1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Falhou a geracao do ficheiro OpenAPI."
+    }
 
     Write-Host "Gerar documentação HTML (ReDoc)..." -ForegroundColor Cyan
     $openApiHtmlPath = Join-Path $docsApi "openapi.html"

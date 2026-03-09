@@ -160,6 +160,7 @@ builder.Services.AddCors(options =>
 
 // DB + Infra
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.Configure<ExternalAuthOptions>(
     builder.Configuration.GetSection(ExternalAuthOptions.SectionName));
 builder.Services.Configure<WebPushOptions>(

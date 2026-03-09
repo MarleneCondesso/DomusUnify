@@ -63,6 +63,11 @@ public interface IAppDbContext
     DbSet<WebPushSubscription> WebPushSubscriptions { get; }
 
     /// <summary>
+    /// Conjunto de refresh tokens persistidos por utilizador/dispositivo.
+    /// </summary>
+    DbSet<UserRefreshToken> UserRefreshTokens { get; }
+
+    /// <summary>
     /// Conjunto de categorias de itens (listas).
     /// </summary>
     DbSet<ItemCategory> ItemCategories { get; }

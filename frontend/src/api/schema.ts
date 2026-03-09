@@ -246,6 +246,228 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Renova silenciosamente a sessão com base num refresh token válido. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["RefreshTokenRequest"];
+                    "text/json": components["schemas"]["RefreshTokenRequest"];
+                    "application/*+json": components["schemas"]["RefreshTokenRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AuthResponse"];
+                        "application/json": components["schemas"]["AuthResponse"];
+                        "text/json": components["schemas"]["AuthResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Termina a sessão persistente atual revogando o refresh token. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["LogoutRequest"];
+                    "text/json": components["schemas"]["LogoutRequest"];
+                    "application/*+json": components["schemas"]["LogoutRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/budgets/{budgetId}/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtém as contas visíveis neste orçamento. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    budgetId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["FinanceAccountResponse"][];
+                        "application/json": components["schemas"]["FinanceAccountResponse"][];
+                        "text/json": components["schemas"]["FinanceAccountResponse"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/budgets/{budgetId}/accounts/hidden": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtém as contas ocultadas neste orçamento. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    budgetId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["FinanceAccountResponse"][];
+                        "application/json": components["schemas"]["FinanceAccountResponse"][];
+                        "text/json": components["schemas"]["FinanceAccountResponse"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/budgets/{budgetId}/accounts/hidden/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Oculta uma conta neste orçamento. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    budgetId: string;
+                    accountId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        /** Remove uma conta da lista de ocultas (volta a ficar visível) neste orçamento. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    budgetId: string;
+                    accountId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/budgets": {
         parameters: {
             query?: never;
@@ -1689,7 +1911,7 @@ export interface paths {
         post?: never;
         /**
          * Elimina uma conta financeira.
-         * @description Ao eliminar a conta, são também eliminadas as transações associadas a essa conta.
+         * @description Apenas é possível eliminar contas que não sejam por defeito e que não estejam em uso por transações.
          */
         delete: {
             parameters: {
@@ -3000,6 +3222,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/push/public-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Devolve a chave pública VAPID usada no browser para subscrever push. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PushPublicKeyResponse"];
+                        "application/json": components["schemas"]["PushPublicKeyResponse"];
+                        "text/json": components["schemas"]["PushPublicKeyResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/push/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Regista ou atualiza uma subscrição Web Push para o utilizador autenticado. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpsertWebPushSubscriptionRequest"];
+                    "text/json": components["schemas"]["UpsertWebPushSubscriptionRequest"];
+                    "application/*+json": components["schemas"]["UpsertWebPushSubscriptionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        /** Remove uma subscrição Web Push pelo endpoint. */
+        delete: {
+            parameters: {
+                query?: {
+                    endpoint?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me/profile": {
         parameters: {
             query?: never;
@@ -3062,6 +3382,87 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/widgets/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Snapshot do widget de calendário com semana e eventos do dia. */
+        get: {
+            parameters: {
+                query?: {
+                    referenceDate?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["CalendarWidgetSnapshotResponse"];
+                        "application/json": components["schemas"]["CalendarWidgetSnapshotResponse"];
+                        "text/json": components["schemas"]["CalendarWidgetSnapshotResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/widgets/budget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Snapshot do widget pequeno de orçamento com despesas do mês e de hoje. */
+        get: {
+            parameters: {
+                query?: {
+                    budgetId?: string;
+                    referenceDate?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["BudgetWidgetSnapshotResponse"];
+                        "application/json": components["schemas"]["BudgetWidgetSnapshotResponse"];
+                        "text/json": components["schemas"]["BudgetWidgetSnapshotResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -3136,6 +3537,13 @@ export interface components {
              * @description Data/hora de expiração do token (UTC).
              */
             expiresAtUtc?: string;
+            /** @description Refresh token para renovar silenciosamente a sessão. */
+            refreshToken?: string | null;
+            /**
+             * Format: date-time
+             * @description Data/hora de expiração do refresh token (UTC).
+             */
+            refreshTokenExpiresAtUtc?: string;
         };
         /** @description Pedido para definir/atualizar um limite de despesa por categoria num orçamento. */
         BudgetCategoryLimitRequest: {
@@ -3312,6 +3720,50 @@ export interface components {
              */
             totalExpenses?: number;
         };
+        /** @description Snapshot de dados do widget pequeno de orçamento. */
+        BudgetWidgetSnapshotResponse: {
+            /** @description Indica se existe um orçamento disponível. */
+            hasBudget?: boolean;
+            /**
+             * Format: uuid
+             * @description Identificador do orçamento escolhido.
+             */
+            budgetId?: string | null;
+            /** @description Nome do orçamento. */
+            budgetName?: string | null;
+            /** @description Código da moeda. */
+            currencyCode?: string | null;
+            /**
+             * Format: date
+             * @description Dia de referência.
+             * @example 2026-02-04
+             */
+            today?: string;
+            /**
+             * Format: date
+             * @description Início do mês visível.
+             * @example 2026-02-04
+             */
+            monthStart?: string;
+            /**
+             * Format: date
+             * @description Fim do mês visível.
+             * @example 2026-02-04
+             */
+            monthEnd?: string;
+            /**
+             * Format: double
+             * @description Total de despesas do mês.
+             */
+            monthExpenses?: number;
+            /**
+             * Format: double
+             * @description Total de despesas de hoje.
+             */
+            todayExpenses?: number;
+            /** @description Deep link para abrir a app no orçamento. */
+            deepLink?: string | null;
+        };
         /**
          * Format: int32
          * @description Define o âmbito de edição de um evento recorrente.
@@ -3455,6 +3907,82 @@ export interface components {
             visibleToUserIds?: string[] | null;
             /** @description Lembretes em minutos antes do início da ocorrência. */
             reminderOffsetsMinutes?: number[] | null;
+        };
+        /** @description Dados por dia para o widget de calendário. */
+        CalendarWidgetDayResponse: {
+            /**
+             * Format: date
+             * @description Data do dia.
+             * @example 2026-02-04
+             */
+            date?: string;
+            /** @description Indica se corresponde ao dia atual. */
+            isToday?: boolean;
+            /**
+             * Format: int32
+             * @description Número total de eventos no dia.
+             */
+            eventCount?: number;
+            /** @description Eventos do dia. */
+            events?: components["schemas"]["CalendarWidgetEventResponse"][] | null;
+        };
+        /** @description Evento simplificado para widgets. */
+        CalendarWidgetEventResponse: {
+            /**
+             * Format: uuid
+             * @description Identificador do evento base.
+             */
+            eventId?: string;
+            /**
+             * Format: uuid
+             * @description Identificador da exceção, quando aplicável.
+             */
+            exceptionEventId?: string | null;
+            /** @description Título do evento. */
+            title?: string | null;
+            /**
+             * Format: date-time
+             * @description Data/hora de início.
+             */
+            startUtc?: string;
+            /**
+             * Format: date-time
+             * @description Data/hora de fim.
+             */
+            endUtc?: string;
+            /** @description Indica se é um evento de dia inteiro. */
+            isAllDay?: boolean;
+            /** @description Cor opcional do evento. */
+            colorHex?: string | null;
+        };
+        /** @description Snapshot de dados do widget de calendário. */
+        CalendarWidgetSnapshotResponse: {
+            /**
+             * Format: date
+             * @description Dia de referência.
+             * @example 2026-02-04
+             */
+            today?: string;
+            /**
+             * Format: date
+             * @description Início da semana visível.
+             * @example 2026-02-04
+             */
+            weekStart?: string;
+            /**
+             * Format: date
+             * @description Fim da semana visível.
+             * @example 2026-02-04
+             */
+            weekEnd?: string;
+            /** @description Deep link para abrir a app em vista semanal. */
+            largeDeepLink?: string | null;
+            /** @description Deep link para abrir a app em vista diária. */
+            smallDeepLink?: string | null;
+            /** @description Dias da semana e respetivos eventos. */
+            week?: components["schemas"]["CalendarWidgetDayResponse"][] | null;
+            /** @description Eventos do dia atual para o widget pequeno. */
+            dailyEvents?: components["schemas"]["CalendarWidgetEventResponse"][] | null;
         };
         /** @description Resposta com informação de uma categoria de itens (listas). */
         CategoryResponse: {
@@ -4041,6 +4569,11 @@ export interface components {
             /** @description Palavra-passe do utilizador. */
             password?: string | null;
         };
+        /** @description Pedido para terminar a sessão persistente atual. */
+        LogoutRequest: {
+            /** @description Refresh token da sessão a revogar. */
+            refreshToken?: string | null;
+        };
         /** @description Resposta com resumo de despesas/rendimentos por membro (pago por). */
         MemberSummaryResponse: {
             /**
@@ -4060,6 +4593,16 @@ export interface components {
              * @description Percentagem do total em relação ao somatório do intervalo (0–100).
              */
             percentage?: number;
+        };
+        /** @description Resposta com a chave pública VAPID. */
+        PushPublicKeyResponse: {
+            /** @description Chave pública VAPID. */
+            publicKey?: string | null;
+        };
+        /** @description Pedido para renovar uma sessão usando refresh token. */
+        RefreshTokenRequest: {
+            /** @description Refresh token emitido anteriormente. */
+            refreshToken?: string | null;
         };
         /** @description Pedido de registo de utilizador. */
         RegisterRequest: {
@@ -4368,6 +4911,25 @@ export interface components {
             phone?: string | null;
             /** @description Morada/endereço (opcional). Envia `null` para remover. */
             address?: string | null;
+        };
+        /** @description Pedido para registar ou atualizar uma subscrição Web Push. */
+        UpsertWebPushSubscriptionRequest: {
+            /** @description Endpoint da subscrição. */
+            endpoint?: string | null;
+            /** @description Chave pública P-256 do browser. */
+            p256Dh?: string | null;
+            /** @description Chave de autenticação do browser. */
+            auth?: string | null;
+            /** @description Estado global das notificações push. */
+            notificationsEnabled?: boolean;
+            /** @description Push para listas. */
+            listsEnabled?: boolean;
+            /** @description Push para orçamento. */
+            budgetEnabled?: boolean;
+            /** @description Push para calendário. */
+            calendarEnabled?: boolean;
+            /** @description Informação opcional do browser/dispositivo. */
+            userAgent?: string | null;
         };
         /** @description Resposta com informação do perfil do utilizador autenticado. */
         UserProfileResponse: {

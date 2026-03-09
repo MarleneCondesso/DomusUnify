@@ -14,4 +14,14 @@ public sealed class AuthResponse
     /// Data/hora de expiração do token (UTC).
     /// </summary>
     public DateTime ExpiresAtUtc { get; set; }
+
+    /// <summary>
+    /// Refresh token para renovar silenciosamente a sessão.
+    /// </summary>
+    public string RefreshToken { get; set; } = null!;
+
+    /// <summary>
+    /// Data/hora de expiração do refresh token (UTC).
+    /// </summary>
+    public DateTime RefreshTokenExpiresAtUtc { get; set; }
 }

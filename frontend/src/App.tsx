@@ -3,12 +3,19 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AuthPage } from './features/auth/AuthPage'
 import { FamilyGatePage } from './features/family/FamilyGatePage'
-import { clearAuth, loadAuth, saveAuth } from './auth/tokenStorage'
+import { loadAuth, type StoredAuth } from './auth/tokenStorage'
 import type { AuthResponse } from './api/domusApi'
 import { getApiOrigin, validateNativeApiOrigin } from './api/http'
 import { useAppSettings } from './utils/appSettings'
 import { syncWebPushSubscription, unsubscribeWebPush } from './utils/webPush'
 import { attachNativeDeepLinkListener, clearNativeWidgetState, syncNativeWidgetState } from './native/widgetBridge'
+import {
+  clearStoredAuthSession,
+  ensureValidAccessToken,
+  persistAuthSession,
+  revokeRefreshToken,
+  subscribeAuthState,
+} from './auth/sessionManager'
 
 function App() {
   const queryClient = useQueryClient()
@@ -17,11 +24,14 @@ function App() {
   const { settings } = useAppSettings()
 
   // Token do utilizador (JWT). É a base para chamar endpoints protegidos (Authorize).
-  const [token, setToken] = useState<string | null>(() => loadAuth()?.accessToken ?? null)
+  const [auth, setAuth] = useState<StoredAuth | null>(() => loadAuth())
+  const token = auth?.accessToken ?? null
 
   useEffect(() => {
     validateNativeApiOrigin()
   }, [])
+
+  useEffect(() => subscribeAuthState(setAuth), [])
 
   useEffect(() => {
     let cleanup: () => void = () => undefined
@@ -57,13 +67,26 @@ function App() {
   ])
 
   useEffect(() => {
-    if (!token) return
+    if (!token) {
+      void clearNativeWidgetState().catch(() => undefined)
+      return
+    }
 
     void syncNativeWidgetState({
       accessToken: token,
       apiOrigin: getApiOrigin(),
     }).catch(() => undefined)
   }, [token])
+
+  useEffect(() => {
+    if (!auth?.accessToken) return
+
+    void ensureValidAccessToken({ fallbackToken: auth.accessToken }).catch(() => undefined)
+  }, [auth?.accessToken, auth?.expiresAtUtc, auth?.refreshToken, auth?.refreshTokenExpiresAtUtc])
+
+  useEffect(() => {
+    if (!token) queryClient.clear()
+  }, [queryClient, token])
 
   function onAuthenticated(auth: AuthResponse) {
     if (!auth.accessToken) {
@@ -74,25 +97,28 @@ function App() {
     // Limpa cache anterior (caso mudes de utilizador)
     queryClient.clear()
 
-    saveAuth({ accessToken: auth.accessToken, expiresAtUtc: auth.expiresAtUtc })
-    setToken(auth.accessToken)
+    persistAuthSession(auth)
 
     // MantÃ©m a rota atual (ex.: /invite/:token) para permitir aceitar convites logo apÃ³s login.
     navigate(`${location.pathname}${location.search}`, { replace: true })
   }
 
   function onLogout() {
-    const currentToken = token
+    const currentToken = auth?.accessToken ?? null
+    const currentRefreshToken = auth?.refreshToken ?? null
 
-    clearAuth()
+    clearStoredAuthSession()
     queryClient.clear()
-    setToken(null)
     navigate('/', { replace: true })
 
     void clearNativeWidgetState().catch(() => undefined)
 
     if (currentToken) {
       void unsubscribeWebPush(currentToken).catch(() => undefined)
+    }
+
+    if (currentRefreshToken) {
+      void revokeRefreshToken(currentRefreshToken)
     }
   }
 

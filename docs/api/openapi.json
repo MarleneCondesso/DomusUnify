@@ -307,6 +307,251 @@
         }
       }
     },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Renova silenciosamente a sessão com base num refresh token válido.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Termina a sessão persistente atual revogando o refresh token.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/accounts": {
+      "get": {
+        "tags": [
+          "BudgetAccounts"
+        ],
+        "summary": "Obtém as contas visíveis neste orçamento.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceAccountResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceAccountResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceAccountResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/accounts/hidden": {
+      "get": {
+        "tags": [
+          "BudgetAccounts"
+        ],
+        "summary": "Obtém as contas ocultadas neste orçamento.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceAccountResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceAccountResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FinanceAccountResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budgets/{budgetId}/accounts/hidden/{accountId}": {
+      "put": {
+        "tags": [
+          "BudgetAccounts"
+        ],
+        "summary": "Oculta uma conta neste orçamento.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "BudgetAccounts"
+        ],
+        "summary": "Remove uma conta da lista de ocultas (volta a ficar visível) neste orçamento.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/budgets": {
       "get": {
         "tags": [
@@ -2050,7 +2295,7 @@
           "FinanceAccounts"
         ],
         "summary": "Elimina uma conta financeira.",
-        "description": "Ao eliminar a conta, são também eliminadas as transações associadas a essa conta.",
+        "description": "Apenas é possível eliminar contas que não sejam por defeito e que não estejam em uso por transações.",
         "parameters": [
           {
             "name": "accountId",
@@ -3535,6 +3780,88 @@
         }
       }
     },
+    "/api/v1/push/public-key": {
+      "get": {
+        "tags": [
+          "Push"
+        ],
+        "summary": "Devolve a chave pública VAPID usada no browser para subscrever push.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushPublicKeyResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushPublicKeyResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushPublicKeyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/push/subscriptions": {
+      "put": {
+        "tags": [
+          "Push"
+        ],
+        "summary": "Regista ou atualiza uma subscrição Web Push para o utilizador autenticado.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertWebPushSubscriptionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertWebPushSubscriptionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertWebPushSubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Push"
+        ],
+        "summary": "Remove uma subscrição Web Push pelo endpoint.",
+        "parameters": [
+          {
+            "name": "endpoint",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/users/me/profile": {
       "get": {
         "tags": [
@@ -3606,6 +3933,96 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/widgets/calendar": {
+      "get": {
+        "tags": [
+          "Widgets"
+        ],
+        "summary": "Snapshot do widget de calendário com semana e eventos do dia.",
+        "parameters": [
+          {
+            "name": "referenceDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarWidgetSnapshotResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarWidgetSnapshotResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarWidgetSnapshotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/widgets/budget": {
+      "get": {
+        "tags": [
+          "Widgets"
+        ],
+        "summary": "Snapshot do widget pequeno de orçamento com despesas do mês e de hoje.",
+        "parameters": [
+          {
+            "name": "budgetId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "referenceDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-02-04"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetWidgetSnapshotResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetWidgetSnapshotResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetWidgetSnapshotResponse"
                 }
               }
             }
@@ -3703,6 +4120,16 @@
           "expiresAtUtc": {
             "type": "string",
             "description": "Data/hora de expiração do token (UTC).",
+            "format": "date-time"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh token para renovar silenciosamente a sessão.",
+            "nullable": true
+          },
+          "refreshTokenExpiresAtUtc": {
+            "type": "string",
+            "description": "Data/hora de expiração do refresh token (UTC).",
             "format": "date-time"
           }
         },
@@ -3977,6 +4404,66 @@
         "additionalProperties": false,
         "description": "Resposta com totais e saldos de um orçamento para um período."
       },
+      "BudgetWidgetSnapshotResponse": {
+        "type": "object",
+        "properties": {
+          "hasBudget": {
+            "type": "boolean",
+            "description": "Indica se existe um orçamento disponível."
+          },
+          "budgetId": {
+            "type": "string",
+            "description": "Identificador do orçamento escolhido.",
+            "format": "uuid",
+            "nullable": true
+          },
+          "budgetName": {
+            "type": "string",
+            "description": "Nome do orçamento.",
+            "nullable": true
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "Código da moeda.",
+            "nullable": true
+          },
+          "today": {
+            "type": "string",
+            "description": "Dia de referência.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "monthStart": {
+            "type": "string",
+            "description": "Início do mês visível.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "monthEnd": {
+            "type": "string",
+            "description": "Fim do mês visível.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "monthExpenses": {
+            "type": "number",
+            "description": "Total de despesas do mês.",
+            "format": "double"
+          },
+          "todayExpenses": {
+            "type": "number",
+            "description": "Total de despesas de hoje.",
+            "format": "double"
+          },
+          "deepLink": {
+            "type": "string",
+            "description": "Deep link para abrir a app no orçamento.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Snapshot de dados do widget pequeno de orçamento."
+      },
       "CalendarEditScope": {
         "enum": [
           1,
@@ -4224,6 +4711,129 @@
         },
         "additionalProperties": false,
         "description": "Resposta com informação de uma ocorrência de evento de calendário."
+      },
+      "CalendarWidgetDayResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Data do dia.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "isToday": {
+            "type": "boolean",
+            "description": "Indica se corresponde ao dia atual."
+          },
+          "eventCount": {
+            "type": "integer",
+            "description": "Número total de eventos no dia.",
+            "format": "int32"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarWidgetEventResponse"
+            },
+            "description": "Eventos do dia.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Dados por dia para o widget de calendário."
+      },
+      "CalendarWidgetEventResponse": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "description": "Identificador do evento base.",
+            "format": "uuid"
+          },
+          "exceptionEventId": {
+            "type": "string",
+            "description": "Identificador da exceção, quando aplicável.",
+            "format": "uuid",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "description": "Título do evento.",
+            "nullable": true
+          },
+          "startUtc": {
+            "type": "string",
+            "description": "Data/hora de início.",
+            "format": "date-time"
+          },
+          "endUtc": {
+            "type": "string",
+            "description": "Data/hora de fim.",
+            "format": "date-time"
+          },
+          "isAllDay": {
+            "type": "boolean",
+            "description": "Indica se é um evento de dia inteiro."
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Cor opcional do evento.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Evento simplificado para widgets."
+      },
+      "CalendarWidgetSnapshotResponse": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "description": "Dia de referência.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "weekStart": {
+            "type": "string",
+            "description": "Início da semana visível.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "weekEnd": {
+            "type": "string",
+            "description": "Fim da semana visível.",
+            "format": "date",
+            "example": "2026-02-04"
+          },
+          "largeDeepLink": {
+            "type": "string",
+            "description": "Deep link para abrir a app em vista semanal.",
+            "nullable": true
+          },
+          "smallDeepLink": {
+            "type": "string",
+            "description": "Deep link para abrir a app em vista diária.",
+            "nullable": true
+          },
+          "week": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarWidgetDayResponse"
+            },
+            "description": "Dias da semana e respetivos eventos.",
+            "nullable": true
+          },
+          "dailyEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarWidgetEventResponse"
+            },
+            "description": "Eventos do dia atual para o widget pequeno.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Snapshot de dados do widget de calendário."
       },
       "CategoryResponse": {
         "type": "object",
@@ -5277,6 +5887,18 @@
         "additionalProperties": false,
         "description": "Pedido de autenticação (login)."
       },
+      "LogoutRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh token da sessão a revogar.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para terminar a sessão persistente atual."
+      },
       "MemberSummaryResponse": {
         "type": "object",
         "properties": {
@@ -5303,6 +5925,30 @@
         },
         "additionalProperties": false,
         "description": "Resposta com resumo de despesas/rendimentos por membro (pago por)."
+      },
+      "PushPublicKeyResponse": {
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string",
+            "description": "Chave pública VAPID.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resposta com a chave pública VAPID."
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh token emitido anteriormente.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para renovar uma sessão usando refresh token."
       },
       "RegisterRequest": {
         "type": "object",
@@ -5938,6 +6584,49 @@
         },
         "additionalProperties": false,
         "description": "Pedido para atualizar o perfil do utilizador autenticado."
+      },
+      "UpsertWebPushSubscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "description": "Endpoint da subscrição.",
+            "nullable": true
+          },
+          "p256Dh": {
+            "type": "string",
+            "description": "Chave pública P-256 do browser.",
+            "nullable": true
+          },
+          "auth": {
+            "type": "string",
+            "description": "Chave de autenticação do browser.",
+            "nullable": true
+          },
+          "notificationsEnabled": {
+            "type": "boolean",
+            "description": "Estado global das notificações push."
+          },
+          "listsEnabled": {
+            "type": "boolean",
+            "description": "Push para listas."
+          },
+          "budgetEnabled": {
+            "type": "boolean",
+            "description": "Push para orçamento."
+          },
+          "calendarEnabled": {
+            "type": "boolean",
+            "description": "Push para calendário."
+          },
+          "userAgent": {
+            "type": "string",
+            "description": "Informação opcional do browser/dispositivo.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pedido para registar ou atualizar uma subscrição Web Push."
       },
       "UserProfileResponse": {
         "type": "object",

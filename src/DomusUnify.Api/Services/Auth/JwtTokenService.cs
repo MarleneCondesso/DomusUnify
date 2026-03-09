@@ -22,7 +22,7 @@ public sealed class JwtTokenService : IJwtTokenService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var expires = DateTime.UtcNow.AddHours(2);
+        var expires = DateTime.UtcNow.AddMinutes(GetAccessTokenLifetimeMinutes(jwt));
 
         var claims = new List<Claim>
         {
@@ -41,5 +41,14 @@ public sealed class JwtTokenService : IJwtTokenService
         );
 
         return (new JwtSecurityTokenHandler().WriteToken(token), expires);
+    }
+
+    private static int GetAccessTokenLifetimeMinutes(IConfigurationSection jwt)
+    {
+        var raw = jwt["AccessTokenLifetimeMinutes"];
+        if (int.TryParse(raw, out var minutes) && minutes > 0)
+            return minutes;
+
+        return 120;
     }
 }

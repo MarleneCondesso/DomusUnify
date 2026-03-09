@@ -16,6 +16,8 @@ import { apiDownload, apiRequest, type ApiDownloadResult } from './http'
 export type LoginRequest = components['schemas']['LoginRequest']
 export type RegisterRequest = components['schemas']['RegisterRequest']
 export type ExternalLoginRequest = components['schemas']['ExternalLoginRequest']
+export type RefreshTokenRequest = components['schemas']['RefreshTokenRequest']
+export type LogoutRequest = components['schemas']['LogoutRequest']
 export type AuthResponse = components['schemas']['AuthResponse']
 
 export type CreateFamilyRequest = components['schemas']['CreateFamilyRequest']
@@ -110,6 +112,12 @@ export const domusApi = {
 
   loginWithGoogle: async (request: ExternalLoginRequest): Promise<AuthResponse> =>
     apiRequest<AuthResponse>('/api/v1/auth/oauth/google', { method: 'POST', json: request }),
+
+  refreshSession: async (request: RefreshTokenRequest): Promise<AuthResponse> =>
+    apiRequest<AuthResponse>('/api/v1/auth/refresh', { method: 'POST', json: request }),
+
+  logoutSession: async (request: LogoutRequest): Promise<void> =>
+    apiRequest<void>('/api/v1/auth/logout', { method: 'POST', json: request }),
 
   // Famílias
   getMyFamily: async (token: string): Promise<FamilyResponse> =>
